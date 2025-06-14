@@ -164,7 +164,7 @@ def handle_admin_start_game():
         return
 
     # You might want to enforce a minimum number of players
-    MIN_PLAYERS = 3  # For example: 1 wolf, 1 seer, 1 villager
+    MIN_PLAYERS = 4  # For example: 1 wolf, 1 seer, 2 villager
     if len(current_game.players) < MIN_PLAYERS:
         emit("error", {"message": f"You need at least {MIN_PLAYERS} players to start."})
         return

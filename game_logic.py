@@ -75,7 +75,7 @@ class Game:
         num_players = len(self.players)
 
         # Example logic: 1 wolf, 1 seer, rest are villagers
-        if num_players >= 3:
+        if num_players >= 4:
             roles_to_assign.append("Wolf")
             roles_to_assign.append("Seer")
             # Fill the rest with Villagers
