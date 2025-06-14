@@ -1,0 +1,290 @@
+<!-- This is the Jinja2 HTML template for the user interface. # It includes a
+simple login form, a lobby view, and placeholders # for game actions. JavaScript
+is used to communicate with the server. -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Werewolves Game</title>
+    <!-- Simple styling for a better look -->
+    <style>
+      body {
+        font-family: sans-serif;
+        background-color: #f0f2f5;
+        color: #333;
+        margin: 0;
+        padding: 20px;
+      }
+      .container {
+        max-width: 800px;
+        margin: auto;
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      h1,
+      h2 {
+        text-align: center;
+        color: #555;
+      }
+      .login-view,
+      .lobby-view,
+      .game-view {
+        display: none;
+      } /* Hide sections by default */
+      .login-view.active,
+      .lobby-view.active,
+      .game-view.active {
+        display: block;
+      }
+      input[type="text"],
+      input[type="password"] {
+        width: calc(100% - 22px);
+        padding: 10px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        width: 100%;
+        font-size: 16px;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      button.admin-action {
+        background-color: #28a745;
+        margin-top: 10px;
+      }
+      button.exclude-btn {
+        background-color: #dc3545;
+        width: auto;
+        padding: 5px 10px;
+        font-size: 12px;
+        margin-left: 10px;
+      }
+      #player-list {
+        list-style: none;
+        padding: 0;
+      }
+      #player-list li {
+        background: #f9f9f9;
+        padding: 10px;
+        border: 1px solid #eee;
+        margin-bottom: 5px;
+        border-radius: 4px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      #error-message {
+        color: #dc3545;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+      #role-info {
+        text-align: center;
+        font-size: 1.2em;
+        font-weight: bold;
+        padding: 15px;
+        background: #e9ecef;
+        border-radius: 4px;
+        margin-top: 20px;
+      }
+    </style>
+    <!-- Include the Socket.IO client library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Werewolves Game</h1>
+
+      <!-- Login View: Initial view for players to join -->
+      <div id="login-view" class="login-view active">
+        <h2>Join Game</h2>
+        <div id="error-message"></div>
+        <input type="text" id="username" placeholder="Enter Your Name" />
+        <input type="password" id="game-code" placeholder="Enter Game Code" />
+        <button id="join-btn">Join Game</button>
+      </div>
+
+      <!-- Lobby View: Shown after joining, before the game starts -->
+      <div id="lobby-view" class="lobby-view">
+        <h2 id="lobby-title">Lobby - Waiting for Players...</h2>
+        <ul id="player-list"></ul>
+        <div id="admin-controls"></div>
+      </div>
+
+      <!-- Game View: The main view during gameplay -->
+      <div id="game-view" class="game-view">
+        <h2 id="game-state-title">Game in Progress</h2>
+        <div id="role-info">Your role will be revealed here.</div>
+        <p>Living Players:</p>
+        <ul id="game-player-list"></ul>
+        <div id="game-actions">
+          <!-- Action buttons will be dynamically added here -->
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // --- Establish Socket.IO connection ---
+      // The 'connect' event is automatically fired on successful connection.
+      const socket = io();
+      let mySid = null; // To store our own session ID
+      let isAdmin = false;
+
+      // --- DOM Elements ---
+      const loginView = document.getElementById("login-view");
+      const lobbyView = document.getElementById("lobby-view");
+      const gameView = document.getElementById("game-view");
+
+      const usernameInput = document.getElementById("username");
+      const gameCodeInput = document.getElementById("game-code");
+      const joinBtn = document.getElementById("join-btn");
+
+      const playerList = document.getElementById("player-list");
+      const adminControls = document.getElementById("admin-controls");
+
+      const roleInfo = document.getElementById("role-info");
+      const gamePlayerList = document.getElementById("game-player-list");
+      const errorMessage = document.getElementById("error-message");
+
+      // --- Event Listeners ---
+      joinBtn.addEventListener("click", () => {
+        const username = usernameInput.value;
+        const gameCode = gameCodeInput.value;
+        if (username && gameCode) {
+          // Send a 'join_game' event to the server
+          socket.emit("join_game", { username: username, game_code: gameCode });
+        } else {
+          errorMessage.textContent =
+            "Please enter your name and the game code.";
+        }
+      });
+
+      // --- SocketIO Event Handlers (Client-side) ---
+
+      // The 'connect' event is a good place to get our unique session ID.
+      socket.on("connect", () => {
+        mySid = socket.id;
+        console.log("Connected to server with SID:", mySid);
+      });
+
+      // Handle generic error messages from the server
+      socket.on("error", (data) => {
+        errorMessage.textContent = data.message;
+        console.error("Server Error:", data.message);
+      });
+
+      // Handle being kicked from the game
+      socket.on("kicked", (data) => {
+        alert(data.message);
+        // A full page reload is a simple way to reset the client state
+        window.location.reload();
+      });
+
+      // Main handler for game state updates from the server
+      socket.on("game_state_update", (state) => {
+        console.log("Received game state update:", state);
+        errorMessage.textContent = ""; // Clear old errors
+
+        // Update the isAdmin flag for the current client
+        isAdmin = mySid === state.admin_sid;
+
+        // --- View Switching ---
+        if (state.game_state === "waiting") {
+          loginView.classList.remove("active");
+          gameView.classList.remove("active");
+          lobbyView.classList.add("active");
+          updateLobbyView(state);
+        } else {
+          // 'night', 'day', 'ended', etc.
+          loginView.classList.remove("active");
+          lobbyView.classList.remove("active");
+          gameView.classList.add("active");
+          updateGameView(state);
+        }
+      });
+
+      // Handler for personal state (like your role)
+      socket.on("personal_state_update", (state) => {
+        console.log("Received personal state update:", state);
+        if (state.my_role) {
+          roleInfo.textContent = `You are a ${state.my_role}.`;
+        }
+        // This can be expanded to include other personal info, like a seer's vision.
+      });
+
+      // --- UI Update Functions ---
+
+      function updateLobbyView(state) {
+        // Clear the current list
+        playerList.innerHTML = "";
+        // Populate with players from the new state
+        state.players.forEach((player) => {
+          const li = document.createElement("li");
+          li.textContent = player.username;
+          if (player.sid === state.admin_sid) {
+            li.textContent += " (Admin)";
+          }
+
+          // If we are the admin, and this player is not us, add an exclude button
+          if (isAdmin && player.sid !== mySid) {
+            const excludeBtn = document.createElement("button");
+            excludeBtn.textContent = "Exclude";
+            excludeBtn.className = "exclude-btn";
+            excludeBtn.onclick = () => {
+              socket.emit("admin_exclude_player", {
+                player_sid_to_exclude: player.sid,
+              });
+            };
+            li.appendChild(excludeBtn);
+          }
+          playerList.appendChild(li);
+        });
+
+        // Show admin controls if we are the admin
+        adminControls.innerHTML = ""; // Clear old controls
+        if (isAdmin) {
+          const startBtn = document.createElement("button");
+          startBtn.textContent = "Start Game";
+          startBtn.className = "admin-action";
+          startBtn.onclick = () => {
+            socket.emit("admin_start_game");
+          };
+          adminControls.appendChild(startBtn);
+        }
+      }
+
+      function updateGameView(state) {
+        document.getElementById("game-state-title").textContent =
+          `Game in Progress - ${state.game_state.toUpperCase()} Phase`;
+
+        // Update the list of players in the main game view
+        gamePlayerList.innerHTML = "";
+        state.players.forEach((player) => {
+          const li = document.createElement("li");
+          li.textContent = player.username;
+          if (!player.is_alive) {
+            li.style.textDecoration = "line-through";
+            li.style.color = "#999";
+          }
+          gamePlayerList.appendChild(li);
+        });
+
+        // This is where we will add buttons for game actions (voting, etc.) in later phases
+        const gameActions = document.getElementById("game-actions");
+        gameActions.innerHTML = ""; // Clear for now
+      }
+    </script>
+  </body>
+</html>
