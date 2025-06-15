@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Werewolves Lobby</title>
+    <style>
+      body {
+        font-family: sans-serif;
+      }
+      .lobby-container {
+        max-width: 600px;
+        margin: auto;
+        padding: 20px;
+      }
+      #player-list li {
+        margin-bottom: 10px;
+      }
+      .admin-controls {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #ccc;
+      }
+      .exclude-btn {
+        margin-left: 15px;
+        color: #a00;
+        cursor: pointer;
+      }
+      .you {
+        font-weight: bold;
+      }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+  </head>
+  <body>
+    <div class="lobby-container">
+      <h2>Lobby - Waiting for Players</h2>
+      <p id="game-code-area" style="display: none">
+        Game Code: <strong id="game-code-display">{{ game_code }}</strong>
+      </p>
+
+      <h3>Players:</h3>
+      <ul id="player-list"></ul>
+
+      <div id="admin-panel" style="display: none">
+        <hr />
+        <h4>Admin Controls</h4>
+        <button id="start-game-btn" disabled>Start Game</button>
+        <p><small>Need at least 4 players to start.</small></p>
+
+        <div class="admin-controls">
+          <label for="new-game-code">Set New Game Code:</label>
+          <input type="text" id="new-game-code-input" placeholder="New Code" />
+          <button id="set-code-btn">Set Code</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const socket = io();
+      let currentPlayerId = "{{ session.player_id }}";
+      let isPlayerAdmin = false;
+
+      socket.on("connect", () => {
+        console.log("Connected to server with session ID:", currentPlayerId);
+      });
+
+      socket.on("update_player_list", (data) => {
+        const playerList = document.getElementById("player-list");
+        const adminPanel = document.getElementById("admin-panel");
+        const startGameBtn = document.getElementById("start-game-btn");
+        const gameCodeArea = document.getElementById("game-code-area"); // Get the code display area
+
+        playerList.innerHTML = "";
+
+        const me = data.players.find((p) => p.id === currentPlayerId);
+        isPlayerAdmin = me ? me.is_admin : false;
+
+        // CHANGE 2: Only show the game code area if the current player is the admin.
+        gameCodeArea.style.display = isPlayerAdmin ? "block" : "none";
+
+        data.players.forEach((player) => {
+          const li = document.createElement("li");
+          li.textContent = player.username;
+          if (player.id === currentPlayerId) {
+            li.classList.add("you");
+            li.textContent += " (You)";
+          }
+          if (player.is_admin) {
+            li.textContent += " 👑";
+          }
+
+          if (isPlayerAdmin && player.id !== currentPlayerId) {
+            const excludeBtn = document.createElement("span");
+            excludeBtn.textContent = "Exclude";
+            excludeBtn.className = "exclude-btn";
+            excludeBtn.onclick = () => excludePlayer(player.id);
+            li.appendChild(excludeBtn);
+          }
+          playerList.appendChild(li);
+        });
+
+        adminPanel.style.display = isPlayerAdmin ? "block" : "none";
+        startGameBtn.disabled = data.players.length < 4;
+      });
+
+      socket.on("force_kick", () => {
+        alert("You have been removed from the lobby by the admin.");
+        window.location.href = "/";
+      });
+
+      socket.on("new_code_set", (data) => {
+        document.getElementById("game-code-display").textContent =
+          data.new_code;
+        if (isPlayerAdmin) {
+          alert(`The game code has been changed to: ${data.new_code}`);
+        }
+      });
+
+      function excludePlayer(playerId) {
+        if (confirm("Are you sure you want to exclude this player?")) {
+          socket.emit("admin_exclude_player", { player_id: playerId });
+        }
+      }
+
+      document.getElementById("set-code-btn").onclick = () => {
+        const newCodeInput = document.getElementById("new-game-code-input");
+        const newCode = newCodeInput.value.trim().toUpperCase();
+        if (newCode) {
+          socket.emit("admin_set_new_code", { new_code: newCode });
+          newCodeInput.value = "";
+        } else {
+          alert("Please enter a new code.");
+        }
+      };
+    </script>
+  </body>
+</html>
