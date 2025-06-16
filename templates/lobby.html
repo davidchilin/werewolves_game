@@ -5,28 +5,66 @@
     <title>Werewolves Lobby</title>
     <style>
       body {
-        font-family: sans-serif;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+          Arial, sans-serif;
+        background-color: #121212;
+        color: #e0e0e0;
       }
       .lobby-container {
         max-width: 600px;
-        margin: auto;
+        margin: 20px auto;
         padding: 20px;
+        background-color: #1e1e1e;
+        border: 1px solid #333;
+        border-radius: 8px;
+      }
+      #player-list {
+        padding-left: 0;
       }
       #player-list li {
         margin-bottom: 10px;
+        list-style-type: none;
+        padding: 8px;
+        background-color: #2c2c2c;
+        border-radius: 4px;
       }
       .admin-controls {
         margin-top: 20px;
         padding-top: 20px;
-        border-top: 1px solid #ccc;
+        border-top: 1px solid #444;
       }
       .exclude-btn {
         margin-left: 15px;
-        color: #a00;
+        color: #ff8a80;
         cursor: pointer;
+        font-weight: normal;
       }
       .you {
         font-weight: bold;
+      }
+      input {
+        padding: 8px;
+        border-radius: 5px;
+        border: 1px solid #444;
+        background-color: #2c2c2c;
+        color: #e0e0e0;
+      }
+      button {
+        padding: 10px 20px;
+        border-radius: 5px;
+        border: none;
+        background-color: #3f51b5;
+        color: #ffffff;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      button:hover:not(:disabled) {
+        background-color: #5c6bc0;
+      }
+      button:disabled {
+        background-color: #333;
+        cursor: not-allowed;
       }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
@@ -35,11 +73,13 @@
     <div class="lobby-container">
       <h2>Lobby - Waiting for Players</h2>
       <p id="game-code-area" style="display: none">
-        Game Code: <strong id="game-code-display">{{ game_code }}</strong>
+        Game Code: <strong id="game-code-display"></strong>
       </p>
 
       <h3>Players:</h3>
-      <ul id="player-list"></ul>
+      <ul id="player-list">
+        <!-- Player list will be populated by JavaScript -->
+      </ul>
 
       <div id="admin-panel" style="display: none">
         <hr />
@@ -57,25 +97,29 @@
 
     <script>
       const socket = io();
-      let currentPlayerId = "{{ session.player_id }}";
+      let currentPlayerId = "{{ player_id }}";
       let isPlayerAdmin = false;
 
+      // --- Event Listeners ---
       socket.on("connect", () => {
         console.log("Connected to server with session ID:", currentPlayerId);
+      });
+
+      socket.on("game_started", () => {
+        window.location.href = "/game";
       });
 
       socket.on("update_player_list", (data) => {
         const playerList = document.getElementById("player-list");
         const adminPanel = document.getElementById("admin-panel");
         const startGameBtn = document.getElementById("start-game-btn");
-        const gameCodeArea = document.getElementById("game-code-area"); // Get the code display area
+        const gameCodeArea = document.getElementById("game-code-area");
 
         playerList.innerHTML = "";
 
         const me = data.players.find((p) => p.id === currentPlayerId);
         isPlayerAdmin = me ? me.is_admin : false;
 
-        // CHANGE 2: Only show the game code area if the current player is the admin.
         gameCodeArea.style.display = isPlayerAdmin ? "block" : "none";
 
         data.players.forEach((player) => {
@@ -109,12 +153,19 @@
       });
 
       socket.on("new_code_set", (data) => {
-        document.getElementById("game-code-display").textContent =
-          data.new_code;
+        const gameCodeDisplay = document.getElementById("game-code-display");
+        if (gameCodeDisplay) {
+          gameCodeDisplay.textContent = data.new_code;
+        }
         if (isPlayerAdmin) {
           alert(`The game code has been changed to: ${data.new_code}`);
         }
       });
+
+      // --- Event Emitters ---
+      document.getElementById("start-game-btn").onclick = () => {
+        socket.emit("admin_start_game");
+      };
 
       function excludePlayer(playerId) {
         if (confirm("Are you sure you want to exclude this player?")) {

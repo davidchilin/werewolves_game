@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Werewolves - The Game</title>
+    <style>
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+          Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
+        background-color: #121212;
+        color: #e0e0e0;
+      }
+      .game-container {
+        width: 90%;
+        max-width: 800px;
+        display: flex;
+        gap: 20px;
+      }
+      .main-panel {
+        flex-grow: 1;
+      }
+      .side-panel {
+        width: 250px;
+        border-left: 1px solid #444;
+        padding-left: 20px;
+      }
+      .player-list {
+        padding-left: 0;
+      }
+      .player-list li {
+        list-style-type: none;
+        padding: 8px;
+        border-radius: 4px;
+        margin-bottom: 5px;
+        background-color: #2c2c2c;
+        transition: background-color 0.2s;
+      }
+      .player-list li.dead {
+        text-decoration: line-through;
+        color: #777;
+        background-color: #222;
+      }
+      .role-display {
+        padding: 10px;
+        background-color: #1e1e1e;
+        border: 1px solid #444;
+        border-radius: 5px;
+        text-align: center;
+        margin-bottom: 15px;
+      }
+      .phase-display {
+        font-size: 1.5em;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 20px;
+        text-transform: capitalize;
+        color: #bb86fc; /* A nice purple for emphasis */
+      }
+      .action-area {
+        min-height: 100px;
+        border: 1px dashed #555;
+        padding: 15px;
+        border-radius: 5px;
+        background-color: #1e1e1e;
+      }
+      .action-area select,
+      .action-area button {
+        font-size: 1em;
+        margin: 10px 5px 0 0;
+        padding: 8px;
+        border-radius: 5px;
+        border: 1px solid #444;
+        background-color: #2c2c2c;
+        color: #e0e0e0;
+      }
+      .action-area button {
+        background-color: #3f51b5;
+        border: none;
+        cursor: pointer;
+      }
+      .action-area button:hover {
+        background-color: #5c6bc0;
+      }
+      .log-panel {
+        height: 200px;
+        overflow-y: scroll;
+        border: 1px solid #333;
+        padding: 10px;
+        background: #1e1e1e;
+        margin-top: 20px;
+        display: flex;
+        flex-direction: column-reverse; /* Shows newest logs at the bottom, but adds them to the top */
+      }
+      .log-panel div {
+        padding-bottom: 5px;
+        margin-bottom: 5px;
+        border-bottom: 1px solid #333;
+      }
+      .wolf-choice-indicator {
+        font-size: 0.8em;
+        color: #ff8a80;
+      }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+  </head>
+  <body>
+    <div class="game-container">
+      <div class="main-panel">
+        <div id="phase-display" class="phase-display">Loading...</div>
+        <div id="action-area" class="action-area">
+          <p>Please wait for the game to begin.</p>
+        </div>
+        <h3>Game Log</h3>
+        <div id="log-panel" class="log-panel"></div>
+      </div>
+      <div class="side-panel">
+        <div id="role-display" class="role-display">
+          Your Role: <strong id="my-role">Unknown</strong>
+        </div>
+        <h3>Players</h3>
+        <ul id="player-list" class="player-list"></ul>
+      </div>
+    </div>
+
+    <script>
+      const socket = io();
+      let myRole = "{{ player_role or 'unknown' }}";
+      let myPlayerId = "{{ player_id }}";
+      let livingPlayers = [];
+      let allPlayers = []; // This will be our persistent master list
+      let wolfChoices = {};
+
+      // --- DOM Elements ---
+      const phaseDisplay = document.getElementById("phase-display");
+      const actionArea = document.getElementById("action-area");
+      const logPanel = document.getElementById("log-panel");
+      const playerListEl = document.getElementById("player-list");
+      const myRoleDisplay = document.getElementById("my-role");
+
+      // --- Utility Functions ---
+      function logMessage(message) {
+        const div = document.createElement("div");
+        div.innerHTML = message;
+        logPanel.prepend(div);
+      }
+
+      function updatePlayerListView() {
+        playerListEl.innerHTML = "";
+        const livingIds = livingPlayers.map((p) => p.id);
+        allPlayers.forEach((p) => {
+          const li = document.createElement("li");
+          li.id = `player-li-${p.id}`;
+          li.textContent = p.username;
+          if (p.id === myPlayerId) li.textContent += " (You)";
+
+          // CHANGE 1: Add skull emoji for dead players
+          if (!livingIds.includes(p.id)) {
+            li.classList.add("dead");
+            li.textContent += " 💀";
+          }
+          playerListEl.appendChild(li);
+        });
+      }
+
+      function renderActionUI(phase) {
+        actionArea.innerHTML = "";
+        const amIAlive = livingPlayers.some((p) => p.id === myPlayerId);
+
+        if (!amIAlive) {
+          actionArea.innerHTML =
+            "<h3>You are dead.</h3><p>You can observe the rest of the game.</p>";
+          return;
+        }
+
+        if (phase === "night") {
+          if (myRole === "wolf") {
+            actionArea.innerHTML = `<h4>Wolves, who will you eat?</h4>
+                    <select id="action-select"></select> <button id="action-btn">Submit Kill Vote</button>
+                    <div id="wolf-pack-choices" style="margin-top: 10px;"></div>`;
+            // Pass only living players to the dropdown
+            populateSelect("action-select", livingPlayers);
+            document.getElementById("action-btn").onclick = () => {
+              const targetId = document.getElementById("action-select").value;
+              const targetName = livingPlayers.find(
+                (p) => p.id === targetId,
+              ).username;
+              socket.emit("wolf_choice", { target_id: targetId });
+              actionArea.innerHTML = `<p>You voted to kill <strong>${targetName}</strong>. Waiting for other wolves...</p><div id="wolf-pack-choices" style="margin-top: 10px;"></div>`;
+            };
+          } else if (myRole === "seer") {
+            actionArea.innerHTML = `<h4>Seer, whose role will you see?</h4>
+                    <select id="action-select"></select> <button id="action-btn">Investigate</button>`;
+            // Pass only living players to the dropdown
+            populateSelect("action-select", livingPlayers);
+            document.getElementById("action-btn").onclick = () => {
+              const targetId = document.getElementById("action-select").value;
+              socket.emit("seer_choice", { target_id: targetId });
+              actionArea.innerHTML = `<p>You chose to investigate someone. Waiting for your vision...</p>`;
+            };
+          } else {
+            // Villager
+            actionArea.innerHTML =
+              "<p>You are sleeping. Wait for the morning.</p>";
+          }
+        } else if (phase === "day_discussion") {
+          actionArea.innerHTML =
+            "<p>The sun rises. Discuss amongst yourselves who the wolf might be.</p>";
+        }
+      }
+
+      function populateSelect(elementId, players) {
+        const select = document.getElementById(elementId);
+        if (!select) return;
+        select.innerHTML = "";
+        players.forEach((p) => {
+          // CHANGE 3: The condition to exclude self is removed.
+          const option = document.createElement("option");
+          option.value = p.id;
+          option.textContent = p.username;
+          select.appendChild(option);
+        });
+      }
+
+      // --- SocketIO Event Listeners ---
+      socket.on("connect", () => {
+        console.log("Connected to the game server.");
+        socket.emit("client_ready_for_game_state");
+      });
+
+      socket.on("your_role", (data) => {
+        myRole = data.role;
+        myRoleDisplay.textContent =
+          myRole.charAt(0).toUpperCase() + myRole.slice(1);
+      });
+
+      socket.on("phase_change", (data) => {
+        const phase = data.phase;
+        // This ensures 'allPlayers' is set once at the start of the game
+        if (data.all_players && allPlayers.length === 0) {
+          allPlayers = data.all_players;
+        }
+        livingPlayers = data.living_players;
+
+        phaseDisplay.textContent = phase.replace("_", " ");
+        logMessage(
+          `A new phase has begun: <strong>${phase.replace("_", " ")}</strong>.`,
+        );
+
+        updatePlayerListView();
+        renderActionUI(phase);
+      });
+
+      socket.on("reconnect_state", (data) => {
+        logMessage("Reconnected to the game.");
+        myRole = data.role;
+        myRoleDisplay.textContent =
+          myRole.charAt(0).toUpperCase() + myRole.slice(1);
+        socket.emit("client_ready_for_game_state");
+      });
+
+      socket.on("seer_result", (data) => {
+        const message = `Your vision reveals that <strong>${data.username}</strong> is a <strong>${data.role}</strong>.`;
+        logMessage(message);
+        actionArea.innerHTML = `<p>${message} Keep this information secret!</p>`;
+      });
+
+      socket.on("wolf_pack_update", (data) => {
+        if (myRole !== "wolf") return;
+        wolfChoices = data;
+        const choicesDiv = document.getElementById("wolf-pack-choices");
+        if (!choicesDiv) return;
+
+        choicesDiv.innerHTML = "<h4>Pack Votes:</h4>";
+        for (const [wolfId, targetId] of Object.entries(wolfChoices)) {
+          const wolfUsername =
+            allPlayers.find((p) => p.id === wolfId)?.username || "A wolf";
+          const targetUsername =
+            allPlayers.find((p) => p.id === targetId)?.username || "someone";
+          choicesDiv.innerHTML += `<p class="wolf-choice-indicator">${wolfUsername} voted for ${targetUsername}</p>`;
+        }
+      });
+
+      socket.on("night_result_kill", (data) => {
+        const killedUsername = data.killed_player.username;
+        const killedRole = data.killed_player.role;
+        const killedId = data.killed_player.id;
+        logMessage(
+          `A body has been discovered! <strong>${killedUsername}</strong> was killed. They were a <strong>${killedRole}</strong>.`,
+        );
+
+        // Immediately update client-side state
+        livingPlayers = livingPlayers.filter((p) => p.id !== killedId);
+        updatePlayerListView();
+      });
+
+      socket.on("night_result_no_kill", () => {
+        logMessage(
+          "The sun rises, and to everyone's surprise, no one was killed during the night.",
+        );
+      });
+
+      socket.on("error", (data) => {
+        alert("An error occurred: " + data.message);
+      });
+    </script>
+  </body>
+</html>
