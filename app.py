@@ -1,4 +1,4 @@
-# Version: 1.1.0
+# Version: 1.2.0
 import os
 import random
 from collections import Counter
@@ -151,16 +151,28 @@ def check_night_actions_complete():
 
 def process_night_actions():
     killed_player = None
+    # Set default "Nobody" vote for any wolf who didn't vote
+    for wolf in get_living_players("wolf"):
+        if wolf.id not in game["night_wolf_choices"]:
+            game["night_wolf_choices"][wolf.id] = ""  # Empty string for "Nobody"
+
     choices = list(game["night_wolf_choices"].values())
+    # A kill only succeeds if all wolves voted and were unanimous for a specific person.
     if (
         choices
         and len(choices) == len(get_living_players("wolf"))
         and all(c == choices[0] for c in choices)
     ):
         target_id = choices[0]
-        if target_id in game["players"] and game["players"][target_id].is_alive:
+        # Ensure the unanimous choice is not "Nobody"
+        if (
+            target_id
+            and target_id in game["players"]
+            and game["players"][target_id].is_alive
+        ):
             game["players"][target_id].is_alive = False
             killed_player = game["players"][target_id]
+
     if killed_player:
         socketio.emit(
             "night_result_kill",
@@ -335,29 +347,15 @@ def handle_disconnect():
 
 @socketio.on("admin_exclude_player")
 def admin_exclude_player(data):
-    # DEBUG CODE: Expanded for clarity
-    print(f"[DEBUG] 'admin_exclude_player' event received. Data: {data}")
-    if request.sid != game["admin_sid"]:
-        print(
-            f"[DEBUG] FAILED: Sender SID {request.sid} is not admin SID {game['admin_sid']}."
-        )
+    if request.sid != game["admin_sid"] or game["game_state"] != "waiting":
         return
-    if game["game_state"] != "waiting":
-        print(f"[DEBUG] FAILED: Game state is '{game['game_state']}', not 'waiting'.")
-        return
-
-    player_to_exclude_id = data.get("player_id")
-    if player_to_exclude_id in game["players"]:
-        player_to_exclude = game["players"][player_to_exclude_id]
-        sid_to_kick = player_to_exclude.sid
-        print(f"[DEBUG] SUCCESS: Found player '{player_to_exclude.username}' to kick.")
-        del game["players"][player_to_exclude_id]
-        socketio.emit("force_kick", room=sid_to_kick)
-        leave_room(game["game_code"], sid=sid_to_kick)
+    player_id = data.get("player_id")
+    if player_id in game["players"]:
+        sid = game["players"][player_id].sid
+        del game["players"][player_id]
+        socketio.emit("force_kick", room=sid)
+        leave_room(game["game_code"], sid=sid)
         broadcast_player_list()
-        print(f"[DEBUG] Player kicked and updates broadcasted.")
-    else:
-        print(f"[DEBUG] FAILED: Player ID '{player_to_exclude_id}' not found.")
 
 
 @socketio.on("admin_start_game")
@@ -387,7 +385,7 @@ def handle_wolf_choice(data):
         p = game["players"].get(player_id)
     if not p or p.role != "wolf" or not p.is_alive or game["game_state"] != "night":
         return
-    target_id = data.get("target_id")
+    target_id = data.get("target_id")  # Can be "" for "Nobody"
     if target_id and (
         target_id not in game["players"] or not game["players"][target_id].is_alive
     ):
