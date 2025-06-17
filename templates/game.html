@@ -1,3 +1,4 @@
+<!-- Version: 1.1.0 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -32,6 +33,9 @@
         padding-left: 0;
       }
       .player-list li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         list-style-type: none;
         padding: 8px;
         border-radius: 4px;
@@ -42,6 +46,15 @@
         text-decoration: line-through;
         color: #777;
         background-color: #222;
+      }
+      .accusation-count {
+        font-size: 0.9em;
+        font-weight: bold;
+        background-color: #c62828;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 10px;
+        margin-left: auto;
       }
       .role-display,
       .admin-panel-ui {
@@ -132,6 +145,10 @@
         margin-bottom: 5px;
         border-bottom: 1px solid #333;
       }
+      .log-panel .vote-summary {
+        font-size: 0.9em;
+        color: #aaa;
+      }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
   </head>
@@ -140,9 +157,7 @@
       <div class="main-panel">
         <div id="phase-display" class="phase-display">Loading...</div>
         <div id="timer-display" class="timer-display"></div>
-        <div id="action-area" class="action-area">
-          <p>Please wait for the game to begin.</p>
-        </div>
+        <div id="action-area" class="action-area"><p>Please wait...</p></div>
         <h3>Game Log</h3>
         <div id="log-panel" class="log-panel"></div>
       </div>
@@ -162,9 +177,10 @@
 
     <script>
       const socket = io();
-      let myRole = "{{ player_role or 'unknown' }}";
-      let myPlayerId = "{{ player_id }}";
-      let livingPlayers = [],
+      let myRole,
+        myPlayerId = "{{ player_id }}",
+        isAlive = false,
+        livingPlayers = [],
         allPlayers = [],
         isAdmin = false,
         timerInterval;
@@ -178,51 +194,49 @@
       const adminPanelUI = document.getElementById("admin-panel-ui");
 
       function logMessage(message) {
-        const div = document.createElement("div");
+        let div = document.createElement("div");
         div.innerHTML = message;
         logPanel.prepend(div);
       }
-      function updatePlayerListView() {
-        playerListEl.innerHTML = "";
-        const livingIds = livingPlayers.map((p) => p.id);
-        allPlayers.forEach((p) => {
-          const li = document.createElement("li");
-          li.id = `player-li-${p.id}`;
-          li.textContent = p.username;
-          if (p.id === myPlayerId) li.textContent += " (You)";
-          if (!livingIds.includes(p.id)) {
-            li.classList.add("dead");
-            li.textContent += " 💀";
-          }
-          playerListEl.appendChild(li);
-        });
-      }
-
       function populateSelect(elementId, players, includeNobody = false) {
         const select = document.getElementById(elementId);
         if (!select) return;
         select.innerHTML = "";
         if (includeNobody) {
-          const option = document.createElement("option");
-          option.value = ""; // Empty value for "Nobody"
-          option.textContent = "--- Accuse Nobody ---";
-          select.appendChild(option);
+          select.innerHTML += `<option value="">--- Accuse Nobody ---</option>`;
         }
         players.forEach((p) => {
-          const option = document.createElement("option");
-          option.value = p.id;
-          option.textContent = p.username;
-          select.appendChild(option);
+          select.innerHTML += `<option value="${p.id}">${p.username}</option>`;
+        });
+      }
+      function updatePlayerListView(accusationCounts = {}) {
+        playerListEl.innerHTML = "";
+        const livingIds = livingPlayers.map((p) => p.id);
+        allPlayers.forEach((p) => {
+          const li = document.createElement("li");
+          const nameSpan = document.createElement("span");
+          nameSpan.textContent =
+            p.username + (p.id === myPlayerId ? " (You)" : "");
+          li.appendChild(nameSpan);
+          const count = accusationCounts[p.id] || 0;
+          if (count > 0) {
+            const countBadge = document.createElement("span");
+            countBadge.className = "accusation-count";
+            countBadge.textContent = count;
+            li.appendChild(countBadge);
+          }
+          if (!livingIds.includes(p.id)) {
+            li.classList.add("dead");
+            nameSpan.textContent += " 💀";
+          }
+          playerListEl.appendChild(li);
         });
       }
 
       function renderActionUI(phase) {
         actionArea.innerHTML = "";
-        adminPanelUI.innerHTML = "";
         adminPanelUI.style.display = "none";
-        const amIAlive = livingPlayers.some((p) => p.id === myPlayerId);
-
-        if (isAdmin && amIAlive && phase === "day_discussion") {
+        if (isAdmin && isAlive && phase === "day_discussion") {
           adminPanelUI.style.display = "block";
           adminPanelUI.innerHTML = `<h4>Admin Action</h4><button id="initiate-lynch-btn">Start Lynch Vote</button>`;
           document.getElementById("initiate-lynch-btn").onclick = () => {
@@ -230,22 +244,19 @@
               socket.emit("admin_initiate_lynch");
           };
         }
-
-        if (!amIAlive) {
-          actionArea.innerHTML =
-            "<h3>You are dead.</h3><p>You can observe the rest of the game.</p>";
+        if (!isAlive) {
+          actionArea.innerHTML = "<h3>You are dead.</h3>";
           return;
         }
-
         if (phase === "night") {
           if (myRole === "wolf") {
-            actionArea.innerHTML = `<h4>Wolves, who will you eat?</h4><select id="action-select"></select> <button id="action-btn">Submit</button><div id="wolf-pack-choices" style="margin-top: 10px;"></div>`;
+            actionArea.innerHTML = `<h4>Wolves, who will you eat?</h4><select id="action-select"></select> <button id="action-btn">Submit</button><div id="wolf-pack-choices"></div>`;
             populateSelect("action-select", livingPlayers);
             document.getElementById("action-btn").onclick = () => {
               socket.emit("wolf_choice", {
                 target_id: document.getElementById("action-select").value,
               });
-              actionArea.innerHTML = `<p>Vote cast. Waiting for other wolves...</p><div id="wolf-pack-choices" style="margin-top: 10px;"></div>`;
+              actionArea.innerHTML = `<p>Vote cast. Waiting...</p><div id="wolf-pack-choices"></div>`;
             };
           } else if (myRole === "seer") {
             actionArea.innerHTML = `<h4>Seer, whose role will you see?</h4><select id="action-select"></select> <button id="action-btn">Investigate</button>`;
@@ -257,85 +268,79 @@
               actionArea.innerHTML = `<p>Waiting for your vision...</p>`;
             };
           } else {
-            actionArea.innerHTML =
-              "<p>You are sleeping. Wait for the morning.</p>";
+            actionArea.innerHTML = "<p>You are sleeping.</p>";
           }
         } else if (phase === "day_discussion") {
-          actionArea.innerHTML = `<h4>Who is the wolf?</h4><p>You may make one accusation.</p><select id="accuse-select"></select><button id="accuse-btn">Accuse</button><hr><h4>Ready for Night?</h4><p>A majority vote ends the day immediately.</p><button id="vote-end-day-btn">Vote to Start Night</button><div id="end-day-vote-counter" style="margin-top: 10px;"></div>`;
-          populateSelect("accuse-select", livingPlayers, true); // Include "Nobody" option
+          actionArea.innerHTML = `<h4>Who is the wolf?</h4><select id="accuse-select"></select><button id="accuse-btn">Accuse</button><hr><h4>Ready for Night?</h4><button id="vote-end-day-btn">Vote to Start Night</button><div id="end-day-vote-counter"></div>`;
+          populateSelect("accuse-select", livingPlayers, true);
           document.getElementById("accuse-btn").onclick = () =>
             socket.emit("accuse_player", {
               target_id: document.getElementById("accuse-select").value,
             });
-          document.getElementById("vote-end-day-btn").onclick = () => {
+          document.getElementById("vote-end-day-btn").onclick = function () {
             socket.emit("vote_to_end_day");
-            document.getElementById("vote-end-day-btn").disabled = true;
-            document.getElementById("vote-end-day-btn").textContent = "Voted";
+            this.disabled = true;
+            this.textContent = "Voted";
           };
         } else if (phase === "day_voting") {
           actionArea.innerHTML = `<p>The village is voting. Please wait...</p>`;
         }
       }
 
-      socket.on("connect", () => socket.emit("client_ready_for_game_state"));
-      socket.on("your_role", (data) => {
-        myRole = data.role;
+      socket.on("connect", () => {
+        socket.emit("client_ready_for_game");
+      });
+      socket.on("game_state_sync", (data) => {
+        myRole = data.your_role;
         isAdmin = data.is_admin;
+        isAlive = data.is_alive;
+        livingPlayers = data.living_players;
+        allPlayers = data.all_players;
         myRoleDisplay.textContent =
           myRole.charAt(0).toUpperCase() + myRole.slice(1);
         if (isAdmin) myRoleDisplay.innerHTML += " 👑";
-      });
-      socket.on("phase_change", (data) => {
-        if (data.all_players) allPlayers = data.all_players;
-        livingPlayers = data.living_players;
         phaseDisplay.textContent = data.phase.replace(/_/g, " ");
-        logMessage(
-          `A new phase has begun: <strong>${data.phase.replace(/_/g, " ")}</strong>.`,
-        );
-        updatePlayerListView();
         renderActionUI(data.phase);
-
-        // Timer logic
+        updatePlayerListView();
         if (timerInterval) clearInterval(timerInterval);
         timerDisplay.textContent = "";
         if (data.duration > 0) {
           let timeLeft = data.duration;
-          timerDisplay.textContent = `Time left: ${Math.floor(timeLeft / 60)}:${("0" + (timeLeft % 60)).slice(-2)}`;
+          const update = () =>
+            (timerDisplay.textContent = `Time left: ${Math.floor(timeLeft / 60)}:${("0" + (timeLeft % 60)).slice(-2)}`);
+          update();
           timerInterval = setInterval(() => {
-            timeLeft--;
-            if (timeLeft >= 0) {
-              timerDisplay.textContent = `Time left: ${Math.floor(timeLeft / 60)}:${("0" + (timeLeft % 60)).slice(-2)}`;
-            } else {
+            if (--timeLeft >= 0) update();
+            else {
               clearInterval(timerInterval);
               timerDisplay.textContent = "Time's up!";
             }
           }, 1000);
         }
       });
-      socket.on("reconnect_state", (data) => {
-        myRole = data.role;
-        isAdmin = data.is_admin;
-        myRoleDisplay.textContent =
-          myRole.charAt(0).toUpperCase() + myRole.slice(1);
-        if (isAdmin) myRoleDisplay.innerHTML += " 👑";
-        socket.emit("client_ready_for_game_state");
-      });
-      socket.on("seer_result", (data) => {
-        const msg = `Your vision reveals that <strong>${data.username}</strong> is a <strong>${data.role}</strong>.`;
-        logMessage(msg);
-        actionArea.innerHTML = `<p>${msg} Keep this secret!</p>`;
-      });
-      socket.on("wolf_pack_update", (data) => {
-        if (myRole !== "wolf") return;
-        const choicesDiv = document.getElementById("wolf-pack-choices");
-        if (!choicesDiv) return;
-        choicesDiv.innerHTML = "<h4>Pack Votes:</h4>";
-        for (const [wolfId, targetId] of Object.entries(data)) {
-          const wolfName =
-            allPlayers.find((p) => p.id === wolfId)?.username || "A wolf";
-          const targetName =
-            allPlayers.find((p) => p.id === targetId)?.username || "someone";
-          choicesDiv.innerHTML += `<p>${wolfName} voted for ${targetName}</p>`;
+      socket.on("phase_change", (data) => {
+        logMessage(
+          `A new phase has begun: <strong>${data.phase.replace(/_/g, " ")}</strong>.`,
+        );
+        livingPlayers = data.living_players;
+        allPlayers = data.all_players;
+        phaseDisplay.textContent = data.phase.replace(/_/g, " ");
+        renderActionUI(data.phase);
+        updatePlayerListView();
+        if (timerInterval) clearInterval(timerInterval);
+        timerDisplay.textContent = "";
+        if (data.duration > 0) {
+          let timeLeft = data.duration;
+          const update = () =>
+            (timerDisplay.textContent = `Time left: ${Math.floor(timeLeft / 60)}:${("0" + (timeLeft % 60)).slice(-2)}`);
+          update();
+          timerInterval = setInterval(() => {
+            if (--timeLeft >= 0) update();
+            else {
+              clearInterval(timerInterval);
+              timerDisplay.textContent = "Time's up!";
+            }
+          }, 1000);
         }
       });
       socket.on("night_result_kill", (data) => {
@@ -343,56 +348,71 @@
         logMessage(
           `A body was found! <strong>${username}</strong> was killed. They were a <strong>${role}</strong>.`,
         );
-        livingPlayers = livingPlayers.filter((p) => p.id !== id);
-        updatePlayerListView();
+        if (myPlayerId === id) isAlive = false;
+      });
+      socket.on("lynch_vote_result", (data) => {
+        let fullMessage = data.message;
+        if (data.summary) {
+          fullMessage += `<div class="vote-summary">Voted Yes: ${data.summary.yes.join(", ") || "None"}<br>Voted No: ${data.summary.no.join(", ") || "None"}</div>`;
+        }
+        logMessage(fullMessage);
+        if (data.killed_id) {
+          if (myPlayerId === data.killed_id) isAlive = false;
+        }
+      });
+      socket.on("seer_result", (data) => {
+        const msg = `Your vision reveals that <strong>${data.username}</strong> is a <strong>${data.role}</strong>.`;
+        logMessage(msg);
+        actionArea.innerHTML = `<p>${msg}</p>`;
+      });
+      socket.on("wolf_pack_update", (data) => {
+        if (myRole !== "wolf") return;
+        const choicesDiv = document.getElementById("wolf-pack-choices");
+        if (!choicesDiv) return;
+        choicesDiv.innerHTML = "<h4>Pack Votes:</h4>";
+        for (const [wolfId, targetId] of Object.entries(data)) {
+          choicesDiv.innerHTML += `<p>${allPlayers.find((p) => p.id === wolfId)?.username} voted for ${allPlayers.find((p) => p.id === targetId)?.username}</p>`;
+        }
       });
       socket.on("night_result_no_kill", () =>
-        logMessage(
-          "The sun rises, and to everyone's surprise, no one was killed.",
-        ),
+        logMessage("The sun rises, and no one was killed."),
       );
-      socket.on("error", (data) => alert("An error occurred: " + data.message));
+      socket.on("error", (data) => {
+        alert("Error: " + data.message);
+      });
       socket.on("accusation_made", (data) => {
         logMessage(
           `<strong>${data.accuser_name}</strong> accuses <strong>${data.accused_name}</strong>!`,
         );
-        if (data.accuser_id === myPlayerId) {
+        if (myPlayerId && data.accuser_id === myPlayerId) {
           const accuseBtn = document.getElementById("accuse-btn");
           if (accuseBtn) {
             accuseBtn.disabled = true;
-            accuseBtn.textContent = "You Have Accused";
+            accuseBtn.textContent = "Accused";
           }
         }
+      });
+      socket.on("accusation_update", (data) => {
+        updatePlayerListView(data);
       });
       socket.on("end_day_vote_update", (data) => {
         const counter = document.getElementById("end-day-vote-counter");
         if (counter)
-          counter.innerHTML = `Votes to end day: <strong>${data.count} / ${data.total}</strong>`;
+          counter.innerHTML = `Votes to end day: <strong>${data.count}/${data.total}</strong>`;
       });
       socket.on("lynch_vote_started", (data) => {
-        logMessage(
-          `<strong>${data.target_name}</strong> has been put on trial!`,
-        );
-        const amIAlive = livingPlayers.some((p) => p.id === myPlayerId);
-        if (amIAlive) {
+        logMessage(`<strong>${data.target_name}</strong> is on trial!`);
+        if (isAlive) {
           actionArea.innerHTML = `<h4>Will you lynch ${data.target_name}?</h4><button id="vote-yes-btn" class="vote-btn-yes">Yes</button> <button id="vote-no-btn" class="vote-btn-no">No</button>`;
           document.getElementById("vote-yes-btn").onclick = () => {
             socket.emit("cast_lynch_vote", { vote: "yes" });
-            actionArea.innerHTML = `<p>You voted <strong>YES</strong>. Waiting...</p>`;
+            actionArea.innerHTML = `<p>You voted <strong>YES</strong>.</p>`;
           };
           document.getElementById("vote-no-btn").onclick = () => {
             socket.emit("cast_lynch_vote", { vote: "no" });
-            actionArea.innerHTML = `<p>You voted <strong>NO</strong>. Waiting...</p>`;
+            actionArea.innerHTML = `<p>You voted <strong>NO</strong>.</p>`;
           };
         }
-      });
-      socket.on("lynch_vote_result", (data) => {
-        logMessage(data.message);
-        if (data.killed_id) {
-          livingPlayers = livingPlayers.filter((p) => p.id !== data.killed_id);
-          updatePlayerListView();
-        }
-        actionArea.innerHTML = `<p>The trial is over. The village has decided.</p>`;
       });
     </script>
   </body>

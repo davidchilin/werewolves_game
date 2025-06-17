@@ -1,3 +1,4 @@
+# Version: 1.1.0
 import os
 import random
 from collections import Counter
@@ -25,6 +26,7 @@ game = {
     "lynch_target_id": None,
     "lynch_votes": {},
     "day_timer": None,
+    "night_timer": None,
 }
 
 
@@ -41,8 +43,8 @@ class Player:
 
 # --- Helper Functions ---
 def get_player_by_sid(sid):
-    for player_id, player_obj in game["players"].items():
-        if player_obj.sid == sid:
+    for player_id, p in game["players"].items():
+        if p.sid == sid:
             return player_id
     return None
 
@@ -72,10 +74,21 @@ def broadcast_player_list():
 def assign_roles():
     player_ids = list(game["players"].keys())
     random.shuffle(player_ids)
-    num_players, num_wolves = len(player_ids), max(1, len(player_ids) // 4)
+    num_players = len(player_ids)
+    if 4 <= num_players <= 6:
+        num_wolves = 1
+    elif 7 <= num_players <= 8:
+        num_wolves = 2
+    elif 9 <= num_players <= 11:
+        num_wolves = 3
+    elif 12 <= num_players <= 16:
+        num_wolves = 4
+    else:
+        num_wolves = int(num_players * 0.25)
     num_seer = 1 if num_players >= 4 else 0
     for i, player_id in enumerate(player_ids):
         player = game["players"][player_id]
+        player.is_alive = True
         if i < num_wolves:
             player.role = "wolf"
         elif i < num_wolves + num_seer:
@@ -90,23 +103,21 @@ def start_new_phase(phase_name):
     game["night_wolf_choices"], game["night_seer_choice"] = {}, None
     game["accusations"], game["end_day_votes"] = {}, set()
     game["lynch_target_id"], game["lynch_votes"] = None, {}
-
     if phase_name == "day_discussion":
         game["day_timer"] = socketio.start_background_task(target=day_timer_task)
-
-    living_player_data = [
-        {"id": p.id, "username": p.username} for p in get_living_players()
-    ]
-    all_player_data = [
-        {"id": p.id, "username": p.username} for p in game["players"].values()
-    ]
-    duration = 120 if phase_name == "day_discussion" else 0
+    if phase_name == "night":
+        game["night_timer"] = socketio.start_background_task(target=night_timer_task)
+    duration = 120 if phase_name in ["day_discussion", "night"] else 0
     socketio.emit(
         "phase_change",
         {
             "phase": phase_name,
-            "living_players": living_player_data,
-            "all_players": all_player_data,
+            "living_players": [
+                {"id": p.id, "username": p.username} for p in get_living_players()
+            ],
+            "all_players": [
+                {"id": p.id, "username": p.username} for p in game["players"].values()
+            ],
             "duration": duration,
         },
         room=game["game_code"],
@@ -114,17 +125,19 @@ def start_new_phase(phase_name):
 
 
 def day_timer_task():
-    """Background task that waits 2 minutes then acts."""
-    print("Day discussion timer started (120s).")
     socketio.sleep(120)
-    print("Day discussion timer finished.")
     with app.app_context():
-        # Only proceed if the game is still in the discussion phase
         if game["game_state"] == "day_discussion":
-            print("Timer is proceeding to tally votes.")
+            print("Day timer expired. Tallying votes.")
             tally_and_start_lynch_vote()
-        else:
-            print("Timer expired, but game has already moved on. No action taken.")
+
+
+def night_timer_task():
+    socketio.sleep(120)
+    with app.app_context():
+        if game["game_state"] == "night":
+            print("Night timer expired. Processing actions.")
+            process_night_actions()
 
 
 def check_night_actions_complete():
@@ -132,7 +145,7 @@ def check_night_actions_complete():
     wolves_done = all(wolf.id in game["night_wolf_choices"] for wolf in living_wolves)
     seer_done = not living_seer or game["night_seer_choice"] is not None
     if wolves_done and seer_done:
-        socketio.sleep(1)
+        print("All players have completed night actions.")
         process_night_actions()
 
 
@@ -171,7 +184,6 @@ def tally_and_start_lynch_vote():
         socketio.emit(
             "lynch_vote_result",
             {"message": "No one was accused, so no trial will be held."},
-            room=game["game_code"],
         )
         socketio.sleep(3)
         start_new_phase("night")
@@ -181,17 +193,15 @@ def tally_and_start_lynch_vote():
         socketio.emit(
             "lynch_vote_result",
             {"message": "There was a tie in accusations. No trial will be held."},
-            room=game["game_code"],
         )
         socketio.sleep(3)
         start_new_phase("night")
         return
     target_id = most_common[0][0]
     game["lynch_target_id"], game["game_state"] = target_id, "day_voting"
-    target_player = game["players"][target_id]
     socketio.emit(
         "lynch_vote_started",
-        {"target_id": target_id, "target_name": target_player.username},
+        {"target_id": target_id, "target_name": game["players"][target_id].username},
         room=game["game_code"],
     )
 
@@ -201,18 +211,25 @@ def process_lynch_vote():
         return
     votes, target_id = list(game["lynch_votes"].values()), game["lynch_target_id"]
     yes_votes, target_player = votes.count("yes"), game["players"][target_id]
+    vote_summary = {"yes": [], "no": []}
+    for voter_id, vote in game["lynch_votes"].items():
+        vote_summary[vote].append(game["players"][voter_id].username)
     if yes_votes > len(votes) / 2:
         target_player.is_alive = False
         message = f"{target_player.username} has been lynched! They were a {target_player.role}."
         socketio.emit(
             "lynch_vote_result",
-            {"message": message, "killed_id": target_id},
+            {"message": message, "killed_id": target_id, "summary": vote_summary},
             room=game["game_code"],
         )
     else:
         message = f"The village has voted to spare {target_player.username}."
-        socketio.emit("lynch_vote_result", {"message": message}, room=game["game_code"])
-    socketio.sleep(4)
+        socketio.emit(
+            "lynch_vote_result",
+            {"message": message, "summary": vote_summary},
+            room=game["game_code"],
+        )
+    socketio.sleep(5)
     start_new_phase("night")
 
 
@@ -262,18 +279,18 @@ def game_page():
         return redirect(url_for("index"))
     if game["game_state"] == "waiting":
         return redirect(url_for("lobby"))
-    player = game["players"][player_id]
-    return render_template("game.html", player_role=player.role, player_id=player.id)
+    return render_template(
+        "game.html", player_role=game["players"][player_id].role, player_id=player_id
+    )
 
 
 # --- SocketIO Events ---
 @socketio.on("connect")
-def handle_connect():
+def handle_connect(auth=None):
     player_id = session.get("player_id")
     if not player_id:
         return
-    is_reconnecting = player_id in game["players"]
-    if not is_reconnecting:
+    if player_id not in game["players"]:
         if game["game_state"] != "waiting":
             return emit("error", {"message": "Game is already in progress."})
         new_player = Player(session.get("username"), request.sid)
@@ -289,11 +306,22 @@ def handle_connect():
     else:
         player = game["players"][player_id]
         emit(
-            "reconnect_state",
+            "game_state_sync",
             {
-                "role": player.role,
+                "phase": game["game_state"],
+                "your_role": player.role,
                 "is_alive": player.is_alive,
                 "is_admin": player.is_admin,
+                "living_players": [
+                    {"id": p.id, "username": p.username} for p in get_living_players()
+                ],
+                "all_players": [
+                    {"id": p.id, "username": p.username}
+                    for p in game["players"].values()
+                ],
+                "duration": 120
+                if game["game_state"] in ["day_discussion", "night"]
+                else 0,
             },
         )
 
@@ -307,15 +335,29 @@ def handle_disconnect():
 
 @socketio.on("admin_exclude_player")
 def admin_exclude_player(data):
-    if request.sid != game["admin_sid"] or game["game_state"] != "waiting":
+    # DEBUG CODE: Expanded for clarity
+    print(f"[DEBUG] 'admin_exclude_player' event received. Data: {data}")
+    if request.sid != game["admin_sid"]:
+        print(
+            f"[DEBUG] FAILED: Sender SID {request.sid} is not admin SID {game['admin_sid']}."
+        )
         return
+    if game["game_state"] != "waiting":
+        print(f"[DEBUG] FAILED: Game state is '{game['game_state']}', not 'waiting'.")
+        return
+
     player_to_exclude_id = data.get("player_id")
     if player_to_exclude_id in game["players"]:
-        excluded_player_sid = game["players"][player_to_exclude_id].sid
+        player_to_exclude = game["players"][player_to_exclude_id]
+        sid_to_kick = player_to_exclude.sid
+        print(f"[DEBUG] SUCCESS: Found player '{player_to_exclude.username}' to kick.")
         del game["players"][player_to_exclude_id]
-        socketio.emit("force_kick", room=excluded_player_sid)
-        leave_room(game["game_code"], sid=excluded_player_sid)
+        socketio.emit("force_kick", room=sid_to_kick)
+        leave_room(game["game_code"], sid=sid_to_kick)
         broadcast_player_list()
+        print(f"[DEBUG] Player kicked and updates broadcasted.")
+    else:
+        print(f"[DEBUG] FAILED: Player ID '{player_to_exclude_id}' not found.")
 
 
 @socketio.on("admin_start_game")
@@ -329,35 +371,13 @@ def admin_start_game():
     socketio.emit("game_started", room=game["game_code"])
 
 
-@socketio.on("client_ready_for_game_state")
+@socketio.on("client_ready_for_game")
 def on_client_ready():
     player_id = session.get("player_id")
     if not player_id or player_id not in game["players"]:
         return
-    player = game["players"][player_id]
-    emit(
-        "your_role",
-        {"role": player.role, "is_alive": player.is_alive, "is_admin": player.is_admin},
-    )
-    if request.sid == game["admin_sid"] and game["game_state"] == "night":
+    if request.sid == game["admin_sid"] and game.get("game_state") == "night":
         start_new_phase("night")
-    elif game["game_state"] != "waiting":
-        duration = 120 if game["game_state"] == "day_discussion" else 0
-        living_player_data = [
-            {"id": p.id, "username": p.username} for p in get_living_players()
-        ]
-        all_player_data = [
-            {"id": p.id, "username": p.username} for p in game["players"].values()
-        ]
-        emit(
-            "phase_change",
-            {
-                "phase": game["game_state"],
-                "living_players": living_player_data,
-                "all_players": all_player_data,
-                "duration": duration,
-            },
-        )
 
 
 @socketio.on("wolf_choice")
@@ -368,10 +388,8 @@ def handle_wolf_choice(data):
     if not p or p.role != "wolf" or not p.is_alive or game["game_state"] != "night":
         return
     target_id = data.get("target_id")
-    if (
-        not target_id
-        or target_id not in game["players"]
-        or not game["players"][target_id].is_alive
+    if target_id and (
+        target_id not in game["players"] or not game["players"][target_id].is_alive
     ):
         return
     game["night_wolf_choices"][player_id] = target_id
@@ -410,10 +428,10 @@ def handle_seer_choice(data):
 
 @socketio.on("accuse_player")
 def handle_accusation(data):
-    player_id, player = get_player_by_sid(request.sid), None
+    player_id, p = get_player_by_sid(request.sid), None
     if player_id:
-        player = game["players"].get(player_id)
-    if not player or not player.is_alive or game["game_state"] != "day_discussion":
+        p = game["players"].get(player_id)
+    if not p or not p.is_alive or game["game_state"] != "day_discussion":
         return
     target_id = data.get("target_id")
     if target_id and (
@@ -421,22 +439,17 @@ def handle_accusation(data):
     ):
         return
     if player_id in game["accusations"]:
-        return emit(
-            "error", {"message": "You have already made an accusation this day."}
-        )
+        return emit("error", {"message": "You have already made an accusation."})
     game["accusations"][player_id] = target_id
     accused_name = game["players"][target_id].username if target_id else "Nobody"
     socketio.emit(
         "accusation_made",
-        {
-            "accuser_id": player_id,
-            "accuser_name": player.username,
-            "accused_name": accused_name,
-        },
+        {"accuser_name": p.username, "accused_name": accused_name},
         room=game["game_code"],
     )
+    counts = Counter(v for v in game["accusations"].values() if v)
+    socketio.emit("accusation_update", counts, room=game["game_code"])
     if len(game["accusations"]) == len(get_living_players()):
-        print("All players have accused. Proceeding to tally.")
         tally_and_start_lynch_vote()
 
 
@@ -456,7 +469,6 @@ def handle_vote_to_end_day():
             room=game["game_code"],
         )
         if num_votes > num_living / 2:
-            print("Majority vote to end day reached.")
             start_new_phase("night")
 
 
@@ -480,6 +492,5 @@ def handle_cast_lynch_vote(data):
         process_lynch_vote()
 
 
-# --- Main Execution ---
 if __name__ == "__main__":
     socketio.run(app, debug=True)
