@@ -1,4 +1,4 @@
-<!-- Version: 1.1.0 -->
+<!-- Version: 1.2.0 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -203,7 +203,11 @@
         if (!select) return;
         select.innerHTML = "";
         if (includeNobody) {
-          select.innerHTML += `<option value="">--- Accuse Nobody ---</option>`;
+          const optionText =
+            elementId === "accuse-select"
+              ? "--- Accuse Nobody ---"
+              : "--- Kill Nobody ---";
+          select.innerHTML += `<option value="">${optionText}</option>`;
         }
         players.forEach((p) => {
           select.innerHTML += `<option value="${p.id}">${p.username}</option>`;
@@ -251,7 +255,7 @@
         if (phase === "night") {
           if (myRole === "wolf") {
             actionArea.innerHTML = `<h4>Wolves, who will you eat?</h4><select id="action-select"></select> <button id="action-btn">Submit</button><div id="wolf-pack-choices"></div>`;
-            populateSelect("action-select", livingPlayers);
+            populateSelect("action-select", livingPlayers, true); // Add "Nobody" option for wolves
             document.getElementById("action-btn").onclick = () => {
               socket.emit("wolf_choice", {
                 target_id: document.getElementById("action-select").value,
@@ -371,7 +375,12 @@
         if (!choicesDiv) return;
         choicesDiv.innerHTML = "<h4>Pack Votes:</h4>";
         for (const [wolfId, targetId] of Object.entries(data)) {
-          choicesDiv.innerHTML += `<p>${allPlayers.find((p) => p.id === wolfId)?.username} voted for ${allPlayers.find((p) => p.id === targetId)?.username}</p>`;
+          const wolfName =
+            allPlayers.find((p) => p.id === wolfId)?.username || "A wolf";
+          const targetName = targetId
+            ? allPlayers.find((p) => p.id === targetId)?.username || "someone"
+            : "Nobody";
+          choicesDiv.innerHTML += `<p>${wolfName} voted for ${targetName}</p>`;
         }
       });
       socket.on("night_result_no_kill", () =>
@@ -384,7 +393,11 @@
         logMessage(
           `<strong>${data.accuser_name}</strong> accuses <strong>${data.accused_name}</strong>!`,
         );
-        if (myPlayerId && data.accuser_id === myPlayerId) {
+        if (
+          myPlayerId &&
+          data.accuser_name ===
+            allPlayers.find((p) => p.id === myPlayerId)?.username
+        ) {
           const accuseBtn = document.getElementById("accuse-btn");
           if (accuseBtn) {
             accuseBtn.disabled = true;
