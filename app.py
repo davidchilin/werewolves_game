@@ -1,4 +1,4 @@
-# Version: 1.7.1
+# Version: 1.7.2
 import os
 import random
 from collections import Counter
@@ -18,7 +18,7 @@ game = {
     "players": {},
     "game_state": "waiting",
     "admin_sid": None,
-    "game_code": "WEREWOLF",
+    "game_code": "w",
     "night_wolf_choices": {},
     "night_seer_choice": None,
     "accusations": {},
@@ -140,7 +140,7 @@ def accusation_timer_task():
     socketio.sleep(120)
     with app.app_context():
         if game["game_state"] == "accusation_phase":
-            print("Accusation timer expired. Tallying votes.")
+            print("Accusation timer expired. Tallying accusations.")
             tally_and_start_lynch_vote()
 
 
@@ -220,7 +220,7 @@ def tally_and_start_lynch_vote():
             socketio.emit(
                 "lynch_vote_result",
                 {
-                    "message": "A tie between the only two accused players means no trial."
+                    "message": "A tie between only two accused players means no lynching."
                 },
             )
             socketio.sleep(3)
@@ -238,7 +238,7 @@ def tally_and_start_lynch_vote():
         else:  # Tie after a restart
             socketio.emit(
                 "lynch_vote_result",
-                {"message": "Another tie occurred. There will be no trial tonight."},
+                {"message": "Another tie occurred. There will be no lynching today."},
             )
             socketio.sleep(3)
             start_new_phase("night")

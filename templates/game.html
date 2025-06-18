@@ -255,7 +255,8 @@
         }
         if (phase === "night") {
           if (myRole === "wolf") {
-            actionArea.innerHTML = `<h4>Wolves, who will you eat?</h4><select id="action-select"></select> <button id="action-btn">Submit</button><div id="wolf-pack-choices"></div>`;
+            actionArea.innerHTML = `<h4>Wolf, who will you eat?</h4><select
+              id="action-select"></select> <button id="action-btn">Select</button><div id="wolf-pack-choices"></div>`;
             populateSelect("action-select", livingPlayers, true);
             document.getElementById("action-btn").onclick = () => {
               socket.emit("wolf_choice", {
@@ -405,7 +406,7 @@
       socket.on("end_day_vote_update", (data) => {
         const counter = document.getElementById("end-day-vote-counter");
         if (counter)
-          counter.innerHTML = `Votes to end day: <strong>${data.count}/${data.total}</strong>`;
+          counter.innerHTML = `Votes to sleep: <strong>${data.count}/${data.total}</strong>`;
       });
       socket.on("lynch_vote_started", (data) => {
         logMessage(`<strong>${data.target_name}</strong> is on trial!`);
