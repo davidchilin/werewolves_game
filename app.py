@@ -1,4 +1,4 @@
-# Version: 1.7.2
+# Version: 1.8.0
 import os
 import random
 from collections import Counter
@@ -18,7 +18,7 @@ game = {
     "players": {},
     "game_state": "waiting",
     "admin_sid": None,
-    "game_code": "w",
+    "game_code": "W",
     "night_wolf_choices": {},
     "night_seer_choice": None,
     "accusations": {},
@@ -30,6 +30,7 @@ game = {
     "night_timer": None,
     "accusation_restarts": 0,
     "players_ready_for_game": set(),
+    "timer_durations": {"night": 120, "accusation": 120, "lynch_vote": 120},
 }
 
 
@@ -108,18 +109,16 @@ def start_new_phase(phase_name):
     game["lynch_target_id"], game["lynch_votes"] = None, {}
 
     if phase_name == "accusation_phase":
-        if game["accusation_restarts"] == 0:
-            game["accusations"] = {}
+        game["accusations"] = {}  # Always clear accusations at the start of the phase
         game["accusation_timer"] = socketio.start_background_task(
             target=accusation_timer_task
         )
     elif phase_name == "night":
         game["accusation_restarts"] = 0
+        game["accusations"] = {}  # Also clear accusations before night
         game["night_timer"] = socketio.start_background_task(target=night_timer_task)
 
-    duration = (
-        60 if phase_name in ["accusation_phase", "lynch_vote_phase", "night"] else 0
-    )
+    duration = game["timer_durations"].get(phase_name.replace("_phase", ""), 0)
     socketio.emit(
         "phase_change",
         {
@@ -137,7 +136,8 @@ def start_new_phase(phase_name):
 
 
 def accusation_timer_task():
-    socketio.sleep(60)
+    duration = game["timer_durations"]["accusation"]
+    socketio.sleep(duration)
     with app.app_context():
         if game["game_state"] == "accusation_phase":
             print("Accusation timer expired. Tallying accusations.")
@@ -145,7 +145,8 @@ def accusation_timer_task():
 
 
 def lynch_vote_timer_task():
-    socketio.sleep(60)
+    duration = game["timer_durations"]["lynch_vote"]
+    socketio.sleep(duration)
     with app.app_context():
         if game["game_state"] == "lynch_vote_phase":
             print("Lynch vote timer expired. Processing votes.")
@@ -153,7 +154,8 @@ def lynch_vote_timer_task():
 
 
 def night_timer_task():
-    socketio.sleep(60)
+    duration = game["timer_durations"]["night"]
+    socketio.sleep(duration)
     with app.app_context():
         if game["game_state"] == "night":
             print("Night timer expired. Processing actions.")
@@ -238,7 +240,7 @@ def tally_and_start_lynch_vote():
         else:  # Tie after a restart
             socketio.emit(
                 "lynch_vote_result",
-                {"message": "Another tie occurred. There will be no lynching today."},
+                {"message": "Another tie occurred. There will be no trial tonight."},
             )
             socketio.sleep(3)
             start_new_phase("night")
@@ -257,14 +259,13 @@ def tally_and_start_lynch_vote():
         {
             "target_id": target_id,
             "target_name": game["players"][target_id].username,
-            "duration": 60,
+            "duration": game["timer_durations"]["lynch_vote"],
         },
         room=game["game_code"],
     )
 
 
 def process_lynch_vote():
-    # Default non-voting players to "No"
     for p in get_living_players():
         if p.id not in game["lynch_votes"]:
             game["lynch_votes"][p.id] = "no"
@@ -380,10 +381,9 @@ def handle_connect(auth=None):
                     {"id": p.id, "username": p.username}
                     for p in game["players"].values()
                 ],
-                "duration": 60
-                if game["game_state"]
-                in ["accusation_phase", "lynch_vote_phase", "night"]
-                else 0,
+                "duration": game["timer_durations"].get(
+                    game["game_state"].replace("_phase", ""), 0
+                ),
             },
         )
 
@@ -394,6 +394,25 @@ def handle_disconnect():
     if player_id and player_id in game["players"]:
         print(f"Player {game['players'][player_id].username} disconnected.")
         game["players_ready_for_game"].discard(player_id)
+
+
+@socketio.on("admin_set_timers")
+def admin_set_timers(data):
+    if request.sid != game["admin_sid"] or game["game_state"] != "waiting":
+        return
+    try:
+        night_duration = max(10, int(data.get("night")))
+        accusation_duration = max(10, int(data.get("accusation")))
+        lynch_duration = max(10, int(data.get("lynch_vote")))
+
+        game["timer_durations"]["night"] = night_duration
+        game["timer_durations"]["accusation"] = accusation_duration
+        game["timer_durations"]["lynch_vote"] = lynch_duration
+
+        print(f"Admin set new timer durations: {game['timer_durations']}")
+        emit("message", {"text": "Timer durations have been updated."})
+    except (ValueError, TypeError):
+        emit("error", {"message": "Invalid timer values."})
 
 
 @socketio.on("admin_exclude_player")
@@ -427,9 +446,6 @@ def on_client_ready():
     if not player_id or player_id not in game["players"]:
         return
     game["players_ready_for_game"].add(player_id)
-    print(
-        f"[DEBUG] Player {game['players'][player_id].username} is ready. Total ready: {len(game['players_ready_for_game'])}/{len(game['players'])}"
-    )
     if game["game_state"] == "night" and len(game["players_ready_for_game"]) == len(
         game["players"]
     ):

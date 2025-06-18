@@ -1,4 +1,4 @@
-<!-- Version: 1.1.0 -->
+<!-- Version: 1.8.0 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -67,6 +67,16 @@
         background-color: #333;
         cursor: not-allowed;
       }
+      .timer-setting {
+        margin-bottom: 10px;
+      }
+      .timer-setting label {
+        display: inline-block;
+        width: 150px;
+      }
+      .timer-setting input {
+        width: 80px;
+      }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
   </head>
@@ -87,6 +97,32 @@
           <label for="new-game-code">Set New Game Code:</label>
           <input type="text" id="new-game-code-input" placeholder="New Code" />
           <button id="set-code-btn">Set Code</button>
+        </div>
+        <div class="admin-controls">
+          <h5>Timer Settings (seconds)</h5>
+          <div class="timer-setting">
+            <label for="night-timer-input">Night Phase:</label>
+            <input type="number" id="night-timer-input" value="120" min="10" />
+          </div>
+          <div class="timer-setting">
+            <label for="accusation-timer-input">Accusation Phase:</label>
+            <input
+              type="number"
+              id="accusation-timer-input"
+              value="120"
+              min="10"
+            />
+          </div>
+          <div class="timer-setting">
+            <label for="lynch-vote-timer-input">Lynch Vote Phase:</label>
+            <input
+              type="number"
+              id="lynch-vote-timer-input"
+              value="120"
+              min="10"
+            />
+          </div>
+          <button id="set-timers-btn">Set Timers</button>
         </div>
       </div>
     </div>
@@ -131,7 +167,7 @@
             const excludeBtn = document.createElement("span");
             excludeBtn.textContent = "Exclude";
             excludeBtn.className = "exclude-btn";
-            excludeBtn.dataset.playerId = player.id; // Set data attribute
+            excludeBtn.dataset.playerId = player.id;
             li.appendChild(excludeBtn);
           }
           playerList.appendChild(li);
@@ -152,6 +188,12 @@
           alert(`The game code has been changed to: ${data.new_code}`);
         }
       });
+      socket.on("message", (data) => {
+        alert(data.text);
+      });
+      socket.on("error", (data) => {
+        alert("Error: " + data.message);
+      });
 
       document.getElementById("start-game-btn").onclick = () => {
         socket.emit("admin_start_game");
@@ -166,8 +208,14 @@
           alert("Please enter a new code.");
         }
       };
-
-      // New Event Delegation Listener
+      document.getElementById("set-timers-btn").onclick = () => {
+        const timers = {
+          night: document.getElementById("night-timer-input").value,
+          accusation: document.getElementById("accusation-timer-input").value,
+          lynch_vote: document.getElementById("lynch-vote-timer-input").value,
+        };
+        socket.emit("admin_set_timers", timers);
+      };
       document
         .getElementById("player-list")
         .addEventListener("click", function (e) {
