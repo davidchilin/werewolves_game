@@ -1,4 +1,4 @@
-<!-- Version: 1.3.0 -->
+<!-- Version: 1.6.0 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -241,11 +241,11 @@
       function renderActionUI(phase) {
         actionArea.innerHTML = "";
         adminPanelUI.style.display = "none";
-        if (isAdmin && isAlive && phase === "day_discussion") {
+        if (isAdmin && isAlive && phase === "accusation_phase") {
           adminPanelUI.style.display = "block";
-          adminPanelUI.innerHTML = `<h4>Admin Action</h4><button id="initiate-lynch-btn">Start Lynch Vote</button>`;
+          adminPanelUI.innerHTML = `<h4>Admin Action</h4><button id="initiate-lynch-btn">End Accusations Now</button>`;
           document.getElementById("initiate-lynch-btn").onclick = () => {
-            if (confirm("End discussion and start the lynch vote?"))
+            if (confirm("End accusations and proceed to tally?"))
               socket.emit("admin_initiate_lynch");
           };
         }
@@ -275,7 +275,7 @@
           } else {
             actionArea.innerHTML = "<p>You are sleeping.</p>";
           }
-        } else if (phase === "day_discussion") {
+        } else if (phase === "accusation_phase") {
           actionArea.innerHTML = `<h4>Who is the wolf?</h4><select id="accuse-select"></select><button id="accuse-btn">Accuse</button><hr><h4>Ready for Night?</h4><button id="vote-end-day-btn">Vote to Start Night</button><div id="end-day-vote-counter"></div>`;
           populateSelect("accuse-select", livingPlayers, true);
           document.getElementById("accuse-btn").onclick = () =>
@@ -287,8 +287,26 @@
             this.disabled = true;
             this.textContent = "Voted";
           };
-        } else if (phase === "day_voting") {
+        } else if (phase === "lynch_vote_phase") {
           actionArea.innerHTML = `<p>The village is voting. Please wait...</p>`;
+        }
+      }
+
+      function startTimer(duration) {
+        if (timerInterval) clearInterval(timerInterval);
+        timerDisplay.textContent = "";
+        if (duration > 0) {
+          let timeLeft = duration;
+          const update = () =>
+            (timerDisplay.textContent = `Time left: ${Math.floor(timeLeft / 60)}:${("0" + (timeLeft % 60)).slice(-2)}`);
+          update();
+          timerInterval = setInterval(() => {
+            if (--timeLeft >= 0) update();
+            else {
+              clearInterval(timerInterval);
+              timerDisplay.textContent = "Time's up!";
+            }
+          }, 1000);
         }
       }
 
@@ -307,46 +325,21 @@
         phaseDisplay.textContent = data.phase.replace(/_/g, " ");
         renderActionUI(data.phase);
         updatePlayerListView();
-        if (timerInterval) clearInterval(timerInterval);
-        timerDisplay.textContent = "";
-        if (data.duration > 0) {
-          let timeLeft = data.duration;
-          const update = () =>
-            (timerDisplay.textContent = `Time left: ${Math.floor(timeLeft / 60)}:${("0" + (timeLeft % 60)).slice(-2)}`);
-          update();
-          timerInterval = setInterval(() => {
-            if (--timeLeft >= 0) update();
-            else {
-              clearInterval(timerInterval);
-              timerDisplay.textContent = "Time's up!";
-            }
-          }, 1000);
-        }
+        startTimer(data.duration);
       });
       socket.on("phase_change", (data) => {
         logMessage(
           `A new phase has begun: <strong>${data.phase.replace(/_/g, " ")}</strong>.`,
         );
         livingPlayers = data.living_players;
-        if (data.all_players) allPlayers = data.all_players; // Sync all players on phase change
+        if (data.all_players) allPlayers = data.all_players;
         phaseDisplay.textContent = data.phase.replace(/_/g, " ");
         renderActionUI(data.phase);
         updatePlayerListView();
-        if (timerInterval) clearInterval(timerInterval);
-        timerDisplay.textContent = "";
-        if (data.duration > 0) {
-          let timeLeft = data.duration;
-          const update = () =>
-            (timerDisplay.textContent = `Time left: ${Math.floor(timeLeft / 60)}:${("0" + (timeLeft % 60)).slice(-2)}`);
-          update();
-          timerInterval = setInterval(() => {
-            if (--timeLeft >= 0) update();
-            else {
-              clearInterval(timerInterval);
-              timerDisplay.textContent = "Time's up!";
-            }
-          }, 1000);
-        }
+        startTimer(data.duration);
+      });
+      socket.on("message", (data) => {
+        logMessage(data.text);
       });
       socket.on("night_result_kill", (data) => {
         const { username, role, id } = data.killed_player;
@@ -416,6 +409,8 @@
       });
       socket.on("lynch_vote_started", (data) => {
         logMessage(`<strong>${data.target_name}</strong> is on trial!`);
+        phaseDisplay.textContent = "Lynch Vote";
+        startTimer(data.duration);
         if (isAlive) {
           actionArea.innerHTML = `<h4>Will you lynch ${data.target_name}?</h4><button id="vote-yes-btn" class="vote-btn-yes">Yes</button> <button id="vote-no-btn" class="vote-btn-no">No</button>`;
           document.getElementById("vote-yes-btn").onclick = () => {
