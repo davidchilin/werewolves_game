@@ -1,4 +1,4 @@
-# Version: 1.3.0
+# Version: 1.4.0
 import os
 import random
 from collections import Counter
@@ -107,7 +107,7 @@ def start_new_phase(phase_name):
         game["day_timer"] = socketio.start_background_task(target=day_timer_task)
     if phase_name == "night":
         game["night_timer"] = socketio.start_background_task(target=night_timer_task)
-    duration = 120 if phase_name in ["day_discussion", "night"] else 0
+    duration = 60 if phase_name in ["day_discussion", "night"] else 0
     socketio.emit(
         "phase_change",
         {
@@ -125,7 +125,7 @@ def start_new_phase(phase_name):
 
 
 def day_timer_task():
-    socketio.sleep(120)
+    socketio.sleep(60)
     with app.app_context():
         if game["game_state"] == "day_discussion":
             print("Day timer expired. Tallying votes.")
@@ -133,7 +133,7 @@ def day_timer_task():
 
 
 def night_timer_task():
-    socketio.sleep(120)
+    socketio.sleep(60)
     with app.app_context():
         if game["game_state"] == "night":
             print("Night timer expired. Processing actions.")
@@ -151,24 +151,14 @@ def check_night_actions_complete():
 
 def process_night_actions():
     killed_player = None
-    # Set default "Nobody" vote for any wolf who didn't vote
-    for wolf in get_living_players("wolf"):
-        if wolf.id not in game["night_wolf_choices"]:
-            print(f"[DEBUG] Defaulting non-voting wolf {wolf.username} to 'Nobody'.")
-            game["night_wolf_choices"][wolf.id] = ""  # Empty string for "Nobody"
-
-    # Default non-voting seer to "Nobody" (they just won't get a result)
-    if get_living_players("seer") and game["night_seer_choice"] is None:
-        print(f"[DEBUG] Defaulting non-voting seer to 'Nobody'.")
-        game["night_seer_choice"] = ""
-
     choices = list(game["night_wolf_choices"].values())
-    # A kill only succeeds if all wolves voted unanimously for a specific person.
+
+    # A kill only succeeds if all wolves voted unanimously for a specific person (not "Nobody").
     if (
         choices
         and len(choices) == len(get_living_players("wolf"))
         and all(c == choices[0] for c in choices)
-        and choices[0] != ""
+        and choices[0]
     ):
         target_id = choices[0]
         if target_id in game["players"] and game["players"][target_id].is_alive:
@@ -333,7 +323,7 @@ def handle_connect(auth=None):
                     {"id": p.id, "username": p.username}
                     for p in game["players"].values()
                 ],
-                "duration": 120
+                "duration": 60
                 if game["game_state"] in ["day_discussion", "night"]
                 else 0,
             },
@@ -409,20 +399,19 @@ def handle_seer_choice(data):
     if not p or p.role != "seer" or not p.is_alive or game["game_state"] != "night":
         return
     target_id = data.get("target_id")
-    if (
-        not target_id
-        or target_id not in game["players"]
-        or not game["players"][target_id].is_alive
+    if target_id and (
+        target_id not in game["players"] or not game["players"][target_id].is_alive
     ):
         return
     game["night_seer_choice"] = target_id
-    emit(
-        "seer_result",
-        {
-            "username": game["players"][target_id].username,
-            "role": game["players"][target_id].role,
-        },
-    )
+    if target_id:
+        emit(
+            "seer_result",
+            {
+                "username": game["players"][target_id].username,
+                "role": game["players"][target_id].role,
+            },
+        )
     check_night_actions_complete()
 
 
