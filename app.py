@@ -118,7 +118,7 @@ def start_new_phase(phase_name):
         game["night_timer"] = socketio.start_background_task(target=night_timer_task)
 
     duration = (
-        120 if phase_name in ["accusation_phase", "lynch_vote_phase", "night"] else 0
+        60 if phase_name in ["accusation_phase", "lynch_vote_phase", "night"] else 0
     )
     socketio.emit(
         "phase_change",
@@ -137,7 +137,7 @@ def start_new_phase(phase_name):
 
 
 def accusation_timer_task():
-    socketio.sleep(120)
+    socketio.sleep(60)
     with app.app_context():
         if game["game_state"] == "accusation_phase":
             print("Accusation timer expired. Tallying accusations.")
@@ -145,7 +145,7 @@ def accusation_timer_task():
 
 
 def lynch_vote_timer_task():
-    socketio.sleep(120)
+    socketio.sleep(60)
     with app.app_context():
         if game["game_state"] == "lynch_vote_phase":
             print("Lynch vote timer expired. Processing votes.")
@@ -153,7 +153,7 @@ def lynch_vote_timer_task():
 
 
 def night_timer_task():
-    socketio.sleep(120)
+    socketio.sleep(60)
     with app.app_context():
         if game["game_state"] == "night":
             print("Night timer expired. Processing actions.")
@@ -257,7 +257,7 @@ def tally_and_start_lynch_vote():
         {
             "target_id": target_id,
             "target_name": game["players"][target_id].username,
-            "duration": 120,
+            "duration": 60,
         },
         room=game["game_code"],
     )
@@ -380,7 +380,7 @@ def handle_connect(auth=None):
                     {"id": p.id, "username": p.username}
                     for p in game["players"].values()
                 ],
-                "duration": 120
+                "duration": 60
                 if game["game_state"]
                 in ["accusation_phase", "lynch_vote_phase", "night"]
                 else 0,
