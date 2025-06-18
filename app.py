@@ -1,4 +1,4 @@
-# Version: 1.4.0
+# Version: 1.6.0
 import os
 import random
 from collections import Counter
@@ -27,6 +27,7 @@ game = {
     "lynch_votes": {},
     "day_timer": None,
     "night_timer": None,
+    "players_ready_for_game": set(),
 }
 
 
@@ -152,8 +153,6 @@ def check_night_actions_complete():
 def process_night_actions():
     killed_player = None
     choices = list(game["night_wolf_choices"].values())
-
-    # A kill only succeeds if all wolves voted unanimously for a specific person (not "Nobody").
     if (
         choices
         and len(choices) == len(get_living_players("wolf"))
@@ -164,7 +163,6 @@ def process_night_actions():
         if target_id in game["players"] and game["players"][target_id].is_alive:
             game["players"][target_id].is_alive = False
             killed_player = game["players"][target_id]
-
     if killed_player:
         socketio.emit(
             "night_result_kill",
@@ -335,6 +333,7 @@ def handle_disconnect():
     player_id = get_player_by_sid(request.sid)
     if player_id and player_id in game["players"]:
         print(f"Player {game['players'][player_id].username} disconnected.")
+        game["players_ready_for_game"].discard(player_id)
 
 
 @socketio.on("admin_exclude_player")
@@ -358,6 +357,7 @@ def admin_start_game():
         return emit("error", {"message": "Cannot start with fewer than 4 players."})
     assign_roles()
     game["game_state"] = "night"
+    game["players_ready_for_game"].clear()  # Ensure ready set is empty for new game
     socketio.emit("game_started", room=game["game_code"])
 
 
@@ -366,7 +366,16 @@ def on_client_ready():
     player_id = session.get("player_id")
     if not player_id or player_id not in game["players"]:
         return
-    if request.sid == game["admin_sid"] and game.get("game_state") == "night":
+
+    game["players_ready_for_game"].add(player_id)
+    print(
+        f"[DEBUG] Player {game['players'][player_id].username} is ready. Total ready: {len(game['players_ready_for_game'])}/{len(game['players'])}"
+    )
+
+    # If all players are now ready and it's the initial 'night' state, start the game for everyone.
+    if game["game_state"] == "night" and len(game["players_ready_for_game"]) == len(
+        game["players"]
+    ):
         start_new_phase("night")
 
 
