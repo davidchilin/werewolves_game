@@ -1,4 +1,4 @@
-<!-- Version: 1.6.0 -->
+<!-- Version: 1.9.0 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -56,8 +56,7 @@
         border-radius: 10px;
         margin-left: auto;
       }
-      .role-display,
-      .admin-panel-ui {
+      .role-display {
         padding: 10px;
         background-color: #1e1e1e;
         border: 1px solid #444;
@@ -99,14 +98,12 @@
         background-color: #2c2c2c;
         color: #e0e0e0;
       }
-      .action-area button,
-      .admin-panel-ui button {
+      .action-area button {
         background-color: #3f51b5;
         border: none;
         cursor: pointer;
       }
-      .action-area button:hover:not(:disabled),
-      .admin-panel-ui button:hover {
+      .action-area button:hover:not(:disabled) {
         background-color: #5c6bc0;
       }
       .action-area button:disabled {
@@ -162,11 +159,6 @@
         <div id="log-panel" class="log-panel"></div>
       </div>
       <div class="side-panel">
-        <div
-          id="admin-panel-ui"
-          class="admin-panel-ui"
-          style="display: none"
-        ></div>
         <div id="role-display" class="role-display">
           Your Role: <strong id="my-role">Unknown</strong>
         </div>
@@ -176,6 +168,7 @@
     </div>
 
     <script>
+      console.log("[DEBUG] game.html JavaScript is executing.");
       const socket = io();
       let myRole,
         myPlayerId = "{{ player_id }}",
@@ -191,7 +184,6 @@
       const logPanel = document.getElementById("log-panel");
       const playerListEl = document.getElementById("player-list");
       const myRoleDisplay = document.getElementById("my-role");
-      const adminPanelUI = document.getElementById("admin-panel-ui");
 
       function logMessage(message) {
         let div = document.createElement("div");
@@ -240,29 +232,19 @@
 
       function renderActionUI(phase) {
         actionArea.innerHTML = "";
-        adminPanelUI.style.display = "none";
-        if (isAdmin && isAlive && phase === "accusation_phase") {
-          adminPanelUI.style.display = "block";
-          adminPanelUI.innerHTML = `<h4>Admin Action</h4><button id="initiate-lynch-btn">End Accusations Now</button>`;
-          document.getElementById("initiate-lynch-btn").onclick = () => {
-            if (confirm("End accusations and proceed to tally?"))
-              socket.emit("admin_initiate_lynch");
-          };
-        }
         if (!isAlive) {
           actionArea.innerHTML = "<h3>You are dead.</h3>";
           return;
         }
         if (phase === "night") {
           if (myRole === "wolf") {
-            actionArea.innerHTML = `<h4>Wolf, who will you eat?</h4><select
-              id="action-select"></select> <button id="action-btn">Select</button><div id="wolf-pack-choices"></div>`;
+            actionArea.innerHTML = `<h4>Wolf, who will you eat?</h4><select id="action-select"></select> <button id="action-btn">Submit</button>`;
             populateSelect("action-select", livingPlayers, true);
             document.getElementById("action-btn").onclick = () => {
               socket.emit("wolf_choice", {
                 target_id: document.getElementById("action-select").value,
               });
-              actionArea.innerHTML = `<p>Vote cast. Waiting...</p><div id="wolf-pack-choices"></div>`;
+              actionArea.innerHTML = `<p>Vote cast. Waiting...</p>`;
             };
           } else if (myRole === "seer") {
             actionArea.innerHTML = `<h4>Seer, whose role will you see?</h4><select id="action-select"></select> <button id="action-btn">Investigate</button>`;
@@ -312,9 +294,12 @@
       }
 
       socket.on("connect", () => {
+        console.log("[DEBUG] Client connected to /game page.");
+        console.log("[DEBUG] Emitting 'client_ready_for_game'.");
         socket.emit("client_ready_for_game");
       });
       socket.on("game_state_sync", (data) => {
+        console.log("[DEBUG] 'game_state_sync' event received.", data);
         myRole = data.your_role;
         isAdmin = data.is_admin;
         isAlive = data.is_alive;
@@ -329,6 +314,7 @@
         startTimer(data.duration);
       });
       socket.on("phase_change", (data) => {
+        console.log("[DEBUG] 'phase_change' event received.", data);
         logMessage(
           `A new phase has begun: <strong>${data.phase.replace(/_/g, " ")}</strong>.`,
         );
@@ -364,18 +350,14 @@
         logMessage(msg);
         actionArea.innerHTML = `<p>${msg}</p>`;
       });
-      socket.on("wolf_pack_update", (data) => {
-        if (myRole !== "wolf") return;
-        const choicesDiv = document.getElementById("wolf-pack-choices");
-        if (!choicesDiv) return;
-        choicesDiv.innerHTML = "<h4>Pack Votes:</h4>";
-        for (const [wolfId, targetId] of Object.entries(data)) {
-          const wolfName =
-            allPlayers.find((p) => p.id === wolfId)?.username || "A wolf";
-          const targetName = targetId
-            ? allPlayers.find((p) => p.id === targetId)?.username || "someone"
-            : "Nobody";
-          choicesDiv.innerHTML += `<p>${wolfName} voted for ${targetName}</p>`;
+      socket.on("wolf_team_info", (data) => {
+        console.log("[DEBUG] 'wolf_team_info' received.", data);
+        if (data.teammates.length > 0) {
+          logMessage(
+            `You are a wolf. Your fellow wolves are: <strong>${data.teammates.join(", ")}</strong>.`,
+          );
+        } else {
+          logMessage(`You are the lone wolf.`);
         }
       });
       socket.on("night_result_no_kill", () =>
@@ -406,7 +388,7 @@
       socket.on("end_day_vote_update", (data) => {
         const counter = document.getElementById("end-day-vote-counter");
         if (counter)
-          counter.innerHTML = `Votes to sleep: <strong>${data.count}/${data.total}</strong>`;
+          counter.innerHTML = `<strong>${1 + ~~(data.total / 2) - data.count}</strong> more votes needed to sleep!`;
       });
       socket.on("lynch_vote_started", (data) => {
         logMessage(`<strong>${data.target_name}</strong> is on trial!`);

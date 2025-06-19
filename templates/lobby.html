@@ -1,4 +1,4 @@
-<!-- Version: 1.8.0 -->
+<!-- Version: 1.9.0 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -139,9 +139,12 @@
       }
 
       socket.on("connect", () => {
-        console.log("Connected to server with session ID:", currentPlayerId);
+        console.log("[DEBUG] Connected to Lobby, server with session ID:", currentPlayerId);
       });
       socket.on("game_started", () => {
+        console.log(
+          "[DEBUG] 'game_started' event received. Redirecting to /game page.",
+        );
         window.location.href = "/game";
       });
       socket.on("update_player_list", (data) => {
