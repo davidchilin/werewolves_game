@@ -13,7 +13,7 @@ Players join a lobby using a unique game code, are secretly assigned roles
 During the night, wolves secretly choose a player to eliminate, and the seer can
 investigate a player's role. During the day, players discuss and vote to lynch
 someone they suspect is a wolf. The game is designed to be played alongside a
-separate video or voice chat (like Zoom or Discord), where the real-time
+separate video or voice chat (like Jitsi Meet or Zoom), where the real-time
 discussion and deception take place.
 
 ## **Core Features (Implemented)**
@@ -24,6 +24,8 @@ discussion and deception take place.
   ability to:
   - Exclude players from the lobby.
   - Start the game once enough players have joined (minimum of 4).
+  - Set custom timer durations (in seconds) for the Night, Accusation, and Lynch
+    Vote phases.
   - Set a new game code.
 - **Persistent Sessions:** Players can refresh their browser or momentarily
   disconnect without losing their place in the game.
@@ -34,14 +36,47 @@ discussion and deception take place.
     the majority.
   - **Seer:** A special villager who can investigate one player's role each
     night.
-- **Night Phase Logic:**
-  - Living wolves can each vote to kill a player. A kill only succeeds if all
-    living wolves vote for the same person.
-  - The living seer can choose one player to reveal their role (the result is
-    shown only to the seer).
 - **Live Game Updates:** The UI updates in real-time for all players using
   WebSockets, showing phase changes, player status, and game log events.
 - **Dark Mode UI:** A clean, modern dark theme for comfortable gameplay.
+
+## Game Phases
+
+- Night Phase (Timed):
+
+  - Phase ends when either the timer runs out OR all Wolves and the Seer have
+    submitted their actions.
+  - Wolves: Secretly vote to kill a player. A kill only succeeds if all living
+    wolves vote unanimously for the same player. They can also choose to kill
+    "Nobody". If the timer expires, any non-voting wolf's action is skipped.
+  - Seer: Investigates one player's role each night. The result is shown only to
+    the seer. They can also choose to see "Nobody". If the timer expires, the
+    Seer's action is skipped.
+
+- Accusation Phase (Timed):
+
+  - Phase ends when either the timer runs out OR all living players have made an
+    accusation.
+  - Living players vote to accuse one person or "Nobody".
+  - If the timer expires, any non-voting player defaults to accusing "Nobody".
+  - A live count of accusations is displayed next to each player's name.
+  - Tie-Breaking Logic: If there is a tie for the most accused player:
+    - If the tie is between only two players, no lynch vote occurs.
+    - If the tie is among more than two players, the accusation phase is
+      restarted once. A second tie results in no lynch vote.
+
+- Lynch Vote Phase (Timed):
+
+  - If a single player has the most accusations, a trial begins.
+  - Phase ends when either the timer runs out OR all living players have voted.
+  - Living players vote "Yes" or "No" to lynch the accused player.
+  - If the timer expires, any non-voting player defaults to a "No" vote.
+  - A majority "Yes" vote is required for the lynch to succeed.
+  - A detailed summary of who voted "Yes" and "No" is displayed in the game log.
+
+- General Day Phase Actions: Living players can vote to end the day phase early
+  and immediately start the night. If a majority is reached, the game
+  transitions.
 
 ## **Tech Stack**
 
@@ -76,14 +111,6 @@ To run this project locally, follow these steps:
 
 This project is under active development. The next planned features are:
 
-- **Phase 3: Day Phase \- Accusations & Voting:**
-  - Implement the ability for living players to accuse each other during the
-    day.
-  - Allow players to vote to end the day phase early and immediately start the
-    night.
-- **Phase 4: Day Phase \- Lynch Execution:**
-  - Tally accusations to determine the most-accused player.
-  - Implement a majority-rules vote to lynch the accused player.
 - **Phase 5: Winning Conditions & Game Loop:**
   - Check for win conditions after every death (Villagers win if all wolves are
     dead; Wolves win if they equal or outnumber other players).
