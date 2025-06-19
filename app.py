@@ -38,7 +38,7 @@ game = {
     "night_timer": None,
     "accusation_restarts": 0,
     "players_ready_for_game": set(),
-    "timer_durations": {"night": 120, "accusation": 120, "lynch_vote": 30},
+    "timer_durations": {"night": 60, "accusation": 60, "lynch_vote": 30},
     "current_timer_id": 0,
 }
 
