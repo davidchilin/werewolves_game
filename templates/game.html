@@ -1,4 +1,4 @@
-<!-- Version: 1.9.0 -->
+<!-- Version: 1.9.1 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -202,7 +202,12 @@
             optionText = "--- See Nobody ---";
           select.innerHTML += `<option value="">${optionText}</option>`;
         }
-        players.forEach((p) => {
+
+        // shuffle player dropdown for less bias
+        const shuffledPlayers = [...players];
+        shuffledPlayers.sort(() => 0.5 - Math.random());
+
+        shuffledPlayers.forEach((p) => {
           select.innerHTML += `<option value="${p.id}">${p.username}</option>`;
         });
       }
@@ -281,7 +286,9 @@
         if (duration > 0) {
           let timeLeft = duration;
           const update = () =>
-            (timerDisplay.textContent = `Time left: ${Math.floor(timeLeft / 60)}:${("0" + (timeLeft % 60)).slice(-2)}`);
+            (timerDisplay.textContent = `Time left: ${Math.floor(
+              timeLeft / 60,
+            )}:${("0" + (timeLeft % 60)).slice(-2)}`);
           update();
           timerInterval = setInterval(() => {
             if (--timeLeft >= 0) update();
@@ -388,7 +395,9 @@
       socket.on("end_day_vote_update", (data) => {
         const counter = document.getElementById("end-day-vote-counter");
         if (counter)
-          counter.innerHTML = `<strong>${1 + ~~(data.total / 2) - data.count}</strong> more votes needed to sleep!`;
+          counter.innerHTML = `<strong>${
+            1 + Math.floor(data.total / 2) - data.count
+          }</strong> more votes needed to sleep!`;
       });
       socket.on("lynch_vote_started", (data) => {
         logMessage(`<strong>${data.target_name}</strong> is on trial!`);

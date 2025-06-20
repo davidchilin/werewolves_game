@@ -40,6 +40,7 @@ game = {
     "players_ready_for_game": set(),
     "timer_durations": {"night": 60, "accusation": 60, "lynch_vote": 30},
     "current_timer_id": 0,
+    "seer_investigated": False,  # Flag to track seer action per night
 }
 
 
@@ -112,6 +113,9 @@ def assign_roles():
 
 def start_new_phase(phase_name):
     print(f"--- Starting new phase: {phase_name.upper()} ---")
+    print(
+        f"[DEBUG] --- reset wolf_choice, seer_choice, end_day_votes, lynch_target ---"
+    )
     game["current_timer_id"] += 1
     current_timer_id = game["current_timer_id"]
 
@@ -122,16 +126,18 @@ def start_new_phase(phase_name):
 
     if phase_name == "accusation_phase":
         game["accusations"] = {}
+        print(f"[DEBUG] --- reset accusations ---")
         game["accusation_timer"] = socketio.start_background_task(
             target=accusation_timer_task, timer_id=current_timer_id
         )
     elif phase_name == "night":
         game["accusation_restarts"] = 0
         game["accusations"] = {}
+        print(f"[DEBUG] --- reset accusations ---")
         game["night_timer"] = socketio.start_background_task(
             target=night_timer_task, timer_id=current_timer_id
         )
-        # At the beginning of the first night, tell wolves who their teammates are.
+        # Bug here, true every night. At the beginning of the first night, tell wolves who their teammates are.
         if (
             game["accusation_restarts"] == 0
         ):  # This condition implies it's the first night
@@ -202,7 +208,11 @@ def night_timer_task(timer_id):
 def check_night_actions_complete():
     living_wolves, living_seer = get_living_players("wolf"), get_living_players("seer")
     wolves_done = all(wolf.id in game["night_wolf_choices"] for wolf in living_wolves)
-    seer_done = not living_seer or game["night_seer_choice"] is not None
+    seer_done = (
+        not living_seer
+        or game["night_seer_choice"] is not None
+        or game["seer_investigated"]
+    )
     if wolves_done and seer_done:
         print("All players have completed night actions.")
         process_night_actions()
@@ -239,6 +249,10 @@ def process_night_actions():
 
 
 def tally_and_start_lynch_vote(from_timer=False):
+    game[
+        "seer_investigated"
+    ] = False  # Reset seer action flag at start of accusation phase
+    print("[DEBUG] seer_investigated = False.")
     if from_timer:
         for p in get_living_players():
             if p.id not in game["accusations"]:
@@ -387,10 +401,20 @@ def game_page():
 @app.route("/favicon.ico")
 def favicon():
     return send_from_directory(
-        os.path.join(app.root_path, "static"),
+        app.root_path,
         "favicon.ico",
         mimetype="image/vnd.microsoft.icon",
     )
+
+
+# no caching for flask app
+@app.after_request
+def add_header(r):
+    r.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    r.headers["Pragma"] = "no-cache"
+    r.headers["Expires"] = "0"
+    r.headers["Cache-Control"] = "public, max-age=0"
+    return r
 
 
 # --- SocketIO Events ---
@@ -462,7 +486,7 @@ def admin_set_timers(data):
         return
     try:
         night_duration = max(15, int(data.get("night")))
-        accusation_duration = max(15, int(data.get("accusation")))
+        accusation_duration = max(30, int(data.get("accusation")))
         lynch_duration = max(15, int(data.get("lynch_vote")))
 
         game["timer_durations"]["night"] = night_duration
@@ -542,8 +566,17 @@ def handle_seer_choice(data):
     player_id, p = get_player_by_sid(request.sid), None
     if player_id:
         p = game["players"].get(player_id)
-    if not p or p.role != "seer" or not p.is_alive or game["game_state"] != "night":
+
+    print(f"[DEBUG] if seer_choice: seer_investigated = {game['seer_investigated']}.")
+    if (
+        not p
+        or p.role != "seer"
+        or not p.is_alive
+        or game["game_state"] != "night"
+        or game["seer_investigated"]
+    ):
         return
+
     target_id = data.get("target_id")
     if target_id and (
         target_id not in game["players"] or not game["players"][target_id].is_alive
@@ -551,6 +584,10 @@ def handle_seer_choice(data):
         return
     game["night_seer_choice"] = target_id
     if target_id:
+        game["seer_investigated"] = True
+        print(
+            f"[DEBUG] seer_investigated set to True, actual: {game['seer_investigated']}."
+        )
         emit(
             "seer_result",
             {
