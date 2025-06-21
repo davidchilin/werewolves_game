@@ -1,4 +1,5 @@
 # Version: 1.9.0
+# phase 4
 import os
 import random
 from collections import Counter
@@ -38,7 +39,7 @@ game = {
     "night_timer": None,
     "accusation_restarts": 0,
     "players_ready_for_game": set(),
-    "timer_durations": {"night": 60, "accusation": 60, "lynch_vote": 30},
+    "timer_durations": {"night": 90, "accusation": 90, "lynch_vote": 60},
     "current_timer_id": 0,
     "seer_investigated": False,  # Flag to track seer action per night
 }
@@ -50,13 +51,14 @@ class Player:
         self.id = session.get("player_id")
         self.username = username
         self.sid = sid
-        self.is_admin = False
-        self.is_alive = True
         self.role = None
+        self.is_alive = True
+        self.is_admin = False
 
 
 # --- Helper Functions ---
 def get_player_by_sid(sid):
+    # Helper to find player_id by sid
     for player_id, p in game["players"].items():
         if p.sid == sid:
             return player_id
@@ -113,9 +115,6 @@ def assign_roles():
 
 def start_new_phase(phase_name):
     print(f"--- Starting new phase: {phase_name.upper()} ---")
-    print(
-        f"[DEBUG] --- reset wolf_choice, seer_choice, end_day_votes, lynch_target ---"
-    )
     game["current_timer_id"] += 1
     current_timer_id = game["current_timer_id"]
 
@@ -321,6 +320,7 @@ def process_lynch_vote():
     for p in get_living_players():
         if p.id not in game["lynch_votes"]:
             game["lynch_votes"][p.id] = "no"
+    # is this if needed?
     if len(game["lynch_votes"]) != len(get_living_players()):
         return
     votes, target_id = list(game["lynch_votes"].values()), game["lynch_target_id"]
@@ -350,12 +350,14 @@ def process_lynch_vote():
 # --- HTTP Routes ---
 @app.route("/", methods=["GET", "POST"])
 def index():
+    # returning player redirect to lobby
     if "player_id" in session and session["player_id"] in game["players"]:
         return (
             redirect(url_for("game_page"))
             if game["game_state"] != "waiting"
             else redirect(url_for("lobby"))
         )
+    # login properly then redirect to lobby
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         code = request.form.get("game_code", "").strip().upper()
@@ -485,9 +487,9 @@ def admin_set_timers(data):
     if request.sid != game["admin_sid"] or game["game_state"] != "waiting":
         return
     try:
-        night_duration = max(15, int(data.get("night")))
+        night_duration = max(30, int(data.get("night")))
         accusation_duration = max(30, int(data.get("accusation")))
-        lynch_duration = max(15, int(data.get("lynch_vote")))
+        lynch_duration = max(30, int(data.get("lynch_vote")))
 
         game["timer_durations"]["night"] = night_duration
         game["timer_durations"]["accusation"] = accusation_duration
@@ -583,7 +585,7 @@ def handle_seer_choice(data):
     ):
         return
     game["night_seer_choice"] = target_id
-    if target_id:
+    if target_id: # this if can be removed?
         game["seer_investigated"] = True
         print(
             f"[DEBUG] seer_investigated set to True, actual: {game['seer_investigated']}."
@@ -621,7 +623,8 @@ def handle_accusation(data):
     )
     counts = Counter(v for v in game["accusations"].values() if v)
     socketio.emit("accusation_update", counts, room=game["game_code"])
-    if len(game["accusations"]) == len(get_living_players()):
+    # Check if all living players have accused
+    if len(game["accusations"]) >= len(get_living_players()):
         tally_and_start_lynch_vote()
 
 
@@ -634,14 +637,15 @@ def handle_vote_to_end_day():
         return
     if player_id not in game["end_day_votes"]:
         game["end_day_votes"].add(player_id)
-        num_living, num_votes = len(get_living_players()), len(game["end_day_votes"])
+        num_living = len(get_living_players())
+        num_votes = len(game["end_day_votes"])
         socketio.emit(
             "end_day_vote_update",
             {"count": num_votes, "total": num_living},
             room=game["game_code"],
         )
         if num_votes > num_living / 2:
-            start_new_phase("night")
+            tally_and_start_lynch_vote(from_timer=True)
 
 
 @socketio.on("cast_lynch_vote")
@@ -654,7 +658,8 @@ def handle_cast_lynch_vote(data):
     vote = data.get("vote")
     if player_id not in game["lynch_votes"] and vote in ["yes", "no"]:
         game["lynch_votes"][player_id] = vote
-        if len(game["lynch_votes"]) == len(get_living_players()):
+        # Check if all living players have voted
+        if len(game["lynch_votes"]) >= len(get_living_players()):
             process_lynch_vote()
 
 

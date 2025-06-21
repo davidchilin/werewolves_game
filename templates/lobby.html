@@ -102,15 +102,15 @@
           <h5>Timer Settings (seconds)</h5>
           <div class="timer-setting">
             <label for="night-timer-input">Night Phase:</label>
-            <input type="number" id="night-timer-input" value="120" min="10" />
+            <input type="number" id="night-timer-input" value="90" min="30" />
           </div>
           <div class="timer-setting">
             <label for="accusation-timer-input">Accusation Phase:</label>
             <input
               type="number"
               id="accusation-timer-input"
-              value="120"
-              min="10"
+              value="90"
+              min="30"
             />
           </div>
           <div class="timer-setting">
@@ -118,8 +118,8 @@
             <input
               type="number"
               id="lynch-vote-timer-input"
-              value="120"
-              min="10"
+              value="60"
+              min="30"
             />
           </div>
           <button id="set-timers-btn">Set Timers</button>
@@ -139,7 +139,10 @@
       }
 
       socket.on("connect", () => {
-        console.log("[DEBUG] Connected to Lobby, server with session ID:", currentPlayerId);
+        console.log(
+          "[DEBUG] Connected to Lobby, server with session ID:",
+          currentPlayerId,
+        );
       });
       socket.on("game_started", () => {
         console.log(
@@ -179,7 +182,7 @@
         startGameBtn.disabled = data.players.length < 4;
       });
       socket.on("force_kick", () => {
-        alert("You have been removed from the lobby by the admin.");
+        alert("You have been dropped from the lobby.");
         window.location.href = "/";
       });
       socket.on("new_code_set", (data) => {

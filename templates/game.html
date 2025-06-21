@@ -238,18 +238,25 @@
       function renderActionUI(phase) {
         actionArea.innerHTML = "";
         if (!isAlive) {
-          actionArea.innerHTML = "<h3>You are dead.</h3>";
+          actionArea.innerHTML =
+            "<h3>You are dead. You can observe the game.</h3>";
           return;
         }
         if (phase === "night") {
           if (myRole === "wolf") {
-            actionArea.innerHTML = `<h4>Wolf, who will you eat?</h4><select id="action-select"></select> <button id="action-btn">Submit</button>`;
+            actionArea.innerHTML = `<h4>Wolf, who will you eat?</h4><select
+              id="action-select"></select> <button id="action-btn">Select</button>`;
             populateSelect("action-select", livingPlayers, true);
             document.getElementById("action-btn").onclick = () => {
+              const actionSelect = document.getElementById("action-select");
+              const targetId = actionSelect.value;
+              const selectedPlayerName =
+                actionSelect.options[actionSelect.selectedIndex].text;
               socket.emit("wolf_choice", {
-                target_id: document.getElementById("action-select").value,
+                target_id: targetId,
               });
-              actionArea.innerHTML = `<p>Vote cast. Waiting...</p>`;
+              actionArea.innerHTML = `<p>You are hungry for
+                    <strong>${selectedPlayerName}</strong>. Waiting...</p>`;
             };
           } else if (myRole === "seer") {
             actionArea.innerHTML = `<h4>Seer, whose role will you see?</h4><select id="action-select"></select> <button id="action-btn">Investigate</button>`;
@@ -258,13 +265,15 @@
               socket.emit("seer_choice", {
                 target_id: document.getElementById("action-select").value,
               });
-              actionArea.innerHTML = `<p>You have made your choice.</p>`;
+              actionArea.innerHTML = `<p>You have seen all that you can see tonight.</p>`;
             };
           } else {
-            actionArea.innerHTML = "<p>You are sleeping.</p>";
+            actionArea.innerHTML =
+              "<p>You are dreaming of yummy pupusas while the night creatures are
+              stirring ...</p>";
           }
         } else if (phase === "accusation_phase") {
-          actionArea.innerHTML = `<h4>Who is the wolf?</h4><select id="accuse-select"></select><button id="accuse-btn">Accuse</button><hr><h4>Ready for Night?</h4><button id="vote-end-day-btn">Vote to Start Night</button><div id="end-day-vote-counter"></div>`;
+          actionArea.innerHTML = `<h4>Who is the wolf?</h4><select id="accuse-select"></select><button id="accuse-btn">Accuse</button><hr><h4>Ready for Night?</h4><button id="vote-end-day-btn">Vote to Sleep</button><div id="end-day-vote-counter"></div>`;
           populateSelect("accuse-select", livingPlayers, true);
           document.getElementById("accuse-btn").onclick = () =>
             socket.emit("accuse_player", {
@@ -338,7 +347,7 @@
       socket.on("night_result_kill", (data) => {
         const { username, role, id } = data.killed_player;
         logMessage(
-          `A body was found! <strong>${username}</strong> was killed. They were a <strong>${role}</strong>.`,
+          `Remnants of a body were found! <strong>${username}</strong> was killed. They were a <strong>${role}</strong>.`,
         );
         if (myPlayerId === id) isAlive = false;
       });
@@ -389,9 +398,11 @@
           }
         }
       });
+
       socket.on("accusation_update", (data) => {
         updatePlayerListView(data);
       });
+
       socket.on("end_day_vote_update", (data) => {
         const counter = document.getElementById("end-day-vote-counter");
         if (counter)
@@ -399,6 +410,7 @@
             1 + Math.floor(data.total / 2) - data.count
           }</strong> more votes needed to sleep!`;
       });
+
       socket.on("lynch_vote_started", (data) => {
         logMessage(`<strong>${data.target_name}</strong> is on trial!`);
         phaseDisplay.textContent = "Lynch Vote";
