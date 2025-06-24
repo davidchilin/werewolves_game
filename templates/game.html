@@ -244,19 +244,13 @@
         }
         if (phase === "night") {
           if (myRole === "wolf") {
-            actionArea.innerHTML = `<h4>Wolf, who will you eat?</h4><select
-              id="action-select"></select> <button id="action-btn">Select</button>`;
+            actionArea.innerHTML = `<h4>Wolf, who will you eat?</h4><select id="action-select"></select> <button id="action-btn">Select</button>`;
             populateSelect("action-select", livingPlayers, true);
             document.getElementById("action-btn").onclick = () => {
-              const actionSelect = document.getElementById("action-select");
-              const targetId = actionSelect.value;
-              const selectedPlayerName =
-                actionSelect.options[actionSelect.selectedIndex].text;
               socket.emit("wolf_choice", {
-                target_id: targetId,
+                target_id: document.getElementById("action-select").value,
               });
-              actionArea.innerHTML = `<p>You are hungry for
-                    <strong>${selectedPlayerName}</strong>. Waiting...</p>`;
+              actionArea.innerHTML = `<p>Vote cast. Waiting...</p>`;
             };
           } else if (myRole === "seer") {
             actionArea.innerHTML = `<h4>Seer, whose role will you see?</h4><select id="action-select"></select> <button id="action-btn">Investigate</button>`;
@@ -269,8 +263,7 @@
             };
           } else {
             actionArea.innerHTML =
-              "<p>You are dreaming of yummy pupusas while the night creatures are
-              stirring ...</p>";
+              "<p>You are dreaming of yummy pupusas while the night creatures are stirring ...</p>";
           }
         } else if (phase === "accusation_phase") {
           actionArea.innerHTML = `<h4>Who is the wolf?</h4><select id="accuse-select"></select><button id="accuse-btn">Accuse</button><hr><h4>Ready for Night?</h4><button id="vote-end-day-btn">Vote to Sleep</button><div id="end-day-vote-counter"></div>`;
