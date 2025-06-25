@@ -147,7 +147,10 @@
         color: #aaa;
       }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <!--    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    -->
   </head>
   <body>
     <div class="game-container">
@@ -165,6 +168,28 @@
         <h3>Players</h3>
         <ul id="player-list" class="player-list"></ul>
       </div>
+    </div>
+
+    <!-- Description: This container is hidden by default. JavaScript will show it
+     when the 'game_over' event is received. It holds the final results. -->
+    <div
+      id="game-over-screen"
+      style="display: none; text-align: center; width: 90%; max-width: 800px"
+    >
+      <h1 id="game-over-title"></h1>
+      <h2 id="game-over-reason"></h2>
+      <h3>Final Roles:</h3>
+      <ul
+        id="final-roles-list"
+        style="
+          list-style-type: none;
+          padding: 0;
+          max-width: 300px;
+          margin: 20px auto;
+          text-align: left;
+        "
+      ></ul>
+      <button id="return-to-lobby-btn">Return to Lobby</button>
     </div>
 
     <script>
@@ -247,10 +272,13 @@
             actionArea.innerHTML = `<h4>Wolf, who will you eat?</h4><select id="action-select"></select> <button id="action-btn">Select</button>`;
             populateSelect("action-select", livingPlayers, true);
             document.getElementById("action-btn").onclick = () => {
+              actionSelect = document.getElementById("action-select");
               socket.emit("wolf_choice", {
-                target_id: document.getElementById("action-select").value,
+                target_id: actionSelect.value,
               });
-              actionArea.innerHTML = `<p>Vote cast. Waiting...</p>`;
+              const playerPicked =
+                actionSelect[actionSelect.options.selectedIndex].text;
+              actionArea.innerHTML = `<p>You are hungry for ${playerPicked}. Waiting ...</p>`;
             };
           } else if (myRole === "seer") {
             actionArea.innerHTML = `<h4>Seer, whose role will you see?</h4><select id="action-select"></select> <button id="action-btn">Investigate</button>`;
@@ -307,6 +335,7 @@
         console.log("[DEBUG] Emitting 'client_ready_for_game'.");
         socket.emit("client_ready_for_game");
       });
+
       socket.on("game_state_sync", (data) => {
         console.log("[DEBUG] 'game_state_sync' event received.", data);
         myRole = data.your_role;
@@ -419,6 +448,44 @@
             actionArea.innerHTML = `<p>You voted <strong>NO</strong>.</p>`;
           };
         }
+      });
+      // Description: This listener waits for the 'game_over' message from the server.
+      // When it arrives, it hides the main game area and displays the results screen,
+      // populating it with the winner, reason, and list of roles from the server.
+      socket.on("game_over", (data) => {
+        if (timerInterval) clearInterval(timerInterval);
+
+        // Hide the main game container
+        document.querySelector(".game-container").style.display = "none";
+
+        // Get the game over screen elements
+        const gameOverScreen = document.getElementById("game-over-screen");
+        const rolesList = document.getElementById("final-roles-list");
+
+        // Populate the screen with data from the server
+        document.getElementById("game-over-title").textContent =
+          `The ${data.winning_team} Win!`;
+        document.getElementById("game-over-reason").textContent = data.reason;
+
+        // Create the list of final roles
+        rolesList.innerHTML = ""; // Clear any previous list items
+        for (const [name, role] of Object.entries(data.roles)) {
+          const li = document.createElement("li");
+          li.innerHTML = `<strong>${name}</strong> was a <strong>${role}</strong>`;
+          li.style.backgroundColor = "#2c2c2c";
+          li.style.padding = "8px";
+          li.style.marginBottom = "5px";
+          li.style.borderRadius = "4px";
+          rolesList.appendChild(li);
+        }
+
+        // Make the game over screen visible
+        gameOverScreen.style.display = "block";
+
+        // Add the redirect functionality to the button
+        document.getElementById("return-to-lobby-btn").onclick = () => {
+          window.location.href = "/lobby";
+        };
       });
     </script>
   </body>
