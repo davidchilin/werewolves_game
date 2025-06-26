@@ -1,4 +1,4 @@
-# Version: 1.9.1
+# Version: 1.9.2
 # gemini final version phase 5
 import os
 import random
@@ -42,6 +42,7 @@ game = {
     "players_ready_for_game": set(),
     "timer_durations": {"night": 90, "accusation": 90, "lynch_vote": 60},
     "current_timer_id": 0,
+    "rematch_votes": set(),
 }
 
 
@@ -58,7 +59,6 @@ class Player:
 
 # --- Helper Functions ---
 def get_player_by_sid(sid):
-    # Helper to find player_id by sid
     for player_id, p in game["players"].items():
         if p.sid == sid:
             return player_id, p
@@ -92,6 +92,25 @@ def broadcast_player_list():
 
 
 # --- Game Logic ---
+# Resets game to initial state, clearing temporary data. does NOT remove players.
+def reset_game_state():
+    log_and_emit("A majority voteed for a new match. Get Ready!")
+    game["game_state"] = "waiting"
+    game["night_wolf_choices"] = {}
+    game["night_seer_choice"] = None
+    game["seer_investigated"] = False
+    game["accusations"] = {}
+    game["end_day_votes"] = set()
+    game["lynch_target_id"] = None
+    game["lynch_votes"] = {}
+    game["rematch_votes"] = set()
+
+    # Reset individual player states
+    for player in game["players"].values():
+        player.role = None
+        player.is_alive = True
+
+
 def assign_roles():
     player_ids = list(game["players"].keys())
     random.shuffle(player_ids)
@@ -119,9 +138,8 @@ def assign_roles():
     log_and_emit("Roles have been assigned.")
 
 
-# Check for win condition. It calculates the number of living players for
-# each faction and compares them. If a winner found, changes game
-# state to "ended", and emits 'game_over' event.
+# Check for win condition. Calculates number living players for
+# each faction and checks win condition. If a winner found, changes game state to "ended", and emits 'game_over' event.
 def check_win_conditions():
     # Don't check for wins if the game isn't in a state where players can die.
     log_and_emit(f"checking win conditions, current game_state: {game['game_state']}")
@@ -137,18 +155,18 @@ def check_win_conditions():
     winner = None
     reason = ""
 
-    # Villager Win Condition: No wolves are left alive.
+    # Villager Win: No wolves left alive.
     if num_living_wolves == 0 and num_living_non_wolves > 0:
         winner = "Villagers"
         reason = "All of the wolves have been eradicated."
-    # Wolf Win Condition: The number of wolves is equal to or greater than the non-wolves.
+    # Wolf Win: number of wolves >= non-wolves.
     elif num_living_wolves >= num_living_non_wolves and num_living_wolves > 0:
         winner = "Wolves"
         reason = "The wolves have taken over the village."
 
     if winner:
         game["game_state"] = "ended"
-        # Create a dictionary of all player names and their roles to show at the end.
+        # Create dictionary all player names and roles for game_over
         all_roles = {p.username: p.role for p in game["players"].values()}
         payload = {"winning_team": winner, "reason": reason, "roles": all_roles}
         log_and_emit(f"Game over! The {winner} have won! {reason}")
@@ -173,7 +191,7 @@ def start_new_phase(phase_name):
 
     game["game_state"] = phase_name
     game["night_wolf_choices"], game["night_seer_choice"] = {}, None
-    game["end_day_votes"] = set()  # Reset this always
+    game["end_day_votes"] = set()
     game["lynch_target_id"], game["lynch_votes"] = None, {}
 
     if phase_name == "accusation_phase":
@@ -367,8 +385,8 @@ def process_lynch_vote():
         if p.id not in game["lynch_votes"]:
             game["lynch_votes"][p.id] = "no"
     if len(game["lynch_votes"]) != len(get_living_players()):
-        print(
-            f"==========================> This line never gets printed"
+        log_and_emit(
+            f"======================> This line never gets printed"
         )  # is if needed?
         return
     votes, target_id = list(game["lynch_votes"].values()), game["lynch_target_id"]
@@ -668,6 +686,19 @@ def handle_accuse_player(data):
         tally_accusations()
 
 
+@socketio.on("cast_lynch_vote")
+def handle_cast_lynch_vote(data):
+    player_id, p = get_player_by_sid(request.sid)
+    if not p or not p.is_alive or game["game_state"] != "lynch_vote_phase":
+        return
+    vote = data.get("vote")
+    if player_id not in game["lynch_votes"] and vote in ["yes", "no"]:
+        game["lynch_votes"][player_id] = vote
+        # Check if all living players have voted
+        if len(game["lynch_votes"]) >= len(get_living_players()):
+            process_lynch_vote()
+
+
 @socketio.on("vote_to_end_day")
 def handle_vote_to_end_day():
     player_id, p = get_player_by_sid(request.sid)
@@ -686,17 +717,28 @@ def handle_vote_to_end_day():
             tally_accusations(from_timer=True)
 
 
-@socketio.on("cast_lynch_vote")
-def handle_cast_lynch_vote(data):
+# handle voting process after game ends. tracks votes, upon
+# majority , resets game state and redirects all to lobby
+@socketio.on("vote_for_rematch")
+def handle_vote_for_rematch():
     player_id, p = get_player_by_sid(request.sid)
-    if not p or not p.is_alive or game["game_state"] != "lynch_vote_phase":
+    if not p or game["game_state"] != "ended":
         return
-    vote = data.get("vote")
-    if player_id not in game["lynch_votes"] and vote in ["yes", "no"]:
-        game["lynch_votes"][player_id] = vote
-        # Check if all living players have voted
-        if len(game["lynch_votes"]) >= len(get_living_players()):
-            process_lynch_vote()
+
+    if player_id not in game["rematch_votes"]:
+        game["rematch_votes"].add(player_id)
+
+        num_votes = len(game["rematch_votes"])
+        total_players = len(game["players"])
+
+        # Check if a majority has been reached
+        if num_votes > total_players / 2:
+            reset_game_state()
+            socketio.emit("redirect_to_lobby", {}, room=game["game_code"])
+        else:
+            # Broadcast the current vote count
+            payload = {"count": num_votes, "total": total_players}
+            socketio.emit("rematch_vote_update", payload, room=game["game_code"])
 
 
 if __name__ == "__main__":

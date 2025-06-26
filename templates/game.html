@@ -1,4 +1,4 @@
-<!-- Version: 1.9.1 -->
+<!-- Version: 1.9.2 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -146,11 +146,62 @@
         font-size: 0.9em;
         color: #aaa;
       }
+      #game-over-screen {
+        display: none; /* Keep it hidden by default */
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(18, 18, 18, 0.95);
+        z-index: 100;
+      }
+      .game-over-box {
+        width: 90%;
+        max-width: 500px;
+        padding: 30px;
+        background-color: #1e1e1e;
+        border: 1px solid #bb86fc; /* Purple highlight border */
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      }
+      #game-over-title {
+        color: #bb86fc; /* Purple title */
+        margin-top: 0;
+        font-size: 2.5em;
+      }
+      #final-roles-list {
+        list-style-type: none;
+        padding: 0;
+        margin-top: 20px;
+        max-width: 300px;
+        margin-left: auto;
+        margin-right: auto;
+        text-align: left;
+      }
+      #final-roles-list li {
+        background-color: #2c2c2c;
+        padding: 10px;
+        margin-bottom: 8px;
+        border-radius: 5px;
+      }
+      #return-to-lobby-btn {
+        margin-top: 25px;
+        padding: 12px 24px;
+        font-size: 1.1em;
+      }
+      #rematch-vote-status {
+        margin-top: 15px;
+        font-size: 0.9em;
+        color: #aaa;
+        min-height: 20px;
+      }
     </style>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-    <!--    <script
-        src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-    -->
   </head>
   <body>
     <div class="game-container">
@@ -170,26 +221,16 @@
       </div>
     </div>
 
-    <!-- Description: This container is hidden by default. JavaScript will show it
-     when the 'game_over' event is received. It holds the final results. -->
-    <div
-      id="game-over-screen"
-      style="display: none; text-align: center; width: 90%; max-width: 800px"
-    >
-      <h1 id="game-over-title"></h1>
-      <h2 id="game-over-reason"></h2>
-      <h3>Final Roles:</h3>
-      <ul
-        id="final-roles-list"
-        style="
-          list-style-type: none;
-          padding: 0;
-          max-width: 300px;
-          margin: 20px auto;
-          text-align: left;
-        "
-      ></ul>
-      <button id="return-to-lobby-btn">Return to Lobby</button>
+    <!-- This container is hidden by default. JavaScript will show it when 'game_over' event triggered. It holds the final results. -->
+    <div id="game-over-screen">
+      <div class="game-over-box">
+        <h1 id="game-over-title"></h1>
+        <h2 id="game-over-reason"></h2>
+        <h3>Final Roles:</h3>
+        <ul id="final-roles-list"></ul>
+        <button id="return-to-lobby-btn">Vote to Return to Lobby</button>
+        <div id="rematch-vote-status"></div>
+      </div>
     </div>
 
     <script>
@@ -215,6 +256,7 @@
         div.innerHTML = message;
         logPanel.prepend(div);
       }
+
       function populateSelect(elementId, players, includeNobody = false) {
         const select = document.getElementById(elementId);
         if (!select) return;
@@ -236,6 +278,7 @@
           select.innerHTML += `<option value="${p.id}">${p.username}</option>`;
         });
       }
+
       function updatePlayerListView(accusationCounts = {}) {
         playerListEl.innerHTML = "";
         const livingIds = livingPlayers.map((p) => p.id);
@@ -264,7 +307,7 @@
         actionArea.innerHTML = "";
         if (!isAlive) {
           actionArea.innerHTML =
-            "<h3>You are dead. You can observe the game.</h3>";
+            "<h3>You are dead. You can observe the game in silence.</h3>";
           return;
         }
         if (phase === "night") {
@@ -294,7 +337,7 @@
               "<p>You are dreaming of yummy pupusas while the night creatures are stirring ...</p>";
           }
         } else if (phase === "accusation_phase") {
-          actionArea.innerHTML = `<h4>Who is the wolf?</h4><select id="accuse-select"></select><button id="accuse-btn">Accuse</button><hr><h4>Ready for Night?</h4><button id="vote-end-day-btn">Vote to Sleep</button><div id="end-day-vote-counter"></div>`;
+          actionArea.innerHTML = `<h4>Who is the wolf? Time for discussion!</h4><select id="accuse-select"></select><button id="accuse-btn">Accuse</button><hr><h4>Ready for Night?</h4><button id="vote-end-day-btn">Vote to Sleep</button><div id="end-day-vote-counter"></div>`;
           populateSelect("accuse-select", livingPlayers, true);
           document.getElementById("accuse-btn").onclick = () =>
             socket.emit("accuse_player", {
@@ -332,7 +375,6 @@
 
       socket.on("connect", () => {
         console.log("[DEBUG] Client connected to /game page.");
-        console.log("[DEBUG] Emitting 'client_ready_for_game'.");
         socket.emit("client_ready_for_game");
       });
 
@@ -351,6 +393,7 @@
         updatePlayerListView();
         startTimer(data.duration);
       });
+
       socket.on("phase_change", (data) => {
         console.log("[DEBUG] 'phase_change' event received.", data);
         logMessage(
@@ -373,6 +416,7 @@
         );
         if (myPlayerId === id) isAlive = false;
       });
+
       socket.on("lynch_vote_result", (data) => {
         let fullMessage = data.message;
         if (data.summary) {
@@ -383,11 +427,13 @@
           if (myPlayerId === data.killed_id) isAlive = false;
         }
       });
+
       socket.on("seer_result", (data) => {
         const msg = `Your vision reveals that <strong>${data.username}</strong> is a <strong>${data.role}</strong>.`;
         logMessage(msg);
         actionArea.innerHTML = `<p>${msg}</p>`;
       });
+
       socket.on("wolf_team_info", (data) => {
         console.log("[DEBUG] 'wolf_team_info' received.", data);
         if (data.teammates.length > 0) {
@@ -449,8 +495,9 @@
           };
         }
       });
-      // Description: This listener waits for the 'game_over' message from the server.
-      // When it arrives, it hides the main game area and displays the results screen,
+
+      // listener waits for 'game_over' message from server. 
+      // Then hides main game area and displays results screen,
       // populating it with the winner, reason, and list of roles from the server.
       socket.on("game_over", (data) => {
         if (timerInterval) clearInterval(timerInterval);
@@ -467,25 +514,38 @@
           `The ${data.winning_team} Win!`;
         document.getElementById("game-over-reason").textContent = data.reason;
 
-        // Create the list of final roles
-        rolesList.innerHTML = ""; // Clear any previous list items
+        // Create fresh list of final roles
+        rolesList.innerHTML = "";
         for (const [name, role] of Object.entries(data.roles)) {
           const li = document.createElement("li");
           li.innerHTML = `<strong>${name}</strong> was a <strong>${role}</strong>`;
-          li.style.backgroundColor = "#2c2c2c";
-          li.style.padding = "8px";
-          li.style.marginBottom = "5px";
-          li.style.borderRadius = "4px";
           rolesList.appendChild(li);
         }
 
         // Make the game over screen visible
-        gameOverScreen.style.display = "block";
+        //gameOverScreen.style.display = "block";
 
-        // Add the redirect functionality to the button
-        document.getElementById("return-to-lobby-btn").onclick = () => {
-          window.location.href = "/lobby";
+        document.getElementById("return-to-lobby-btn").onclick = (event) => {
+          socket.emit("vote_for_rematch");
+          event.target.disabled = true;
+          event.target.textContent = "Voted!";
         };
+        gameOverScreen.style.display = "flex";
+      });
+// listens for updates on the rematch vote count and
+// displays the status to the players.
+      socket.on("rematch_vote_update", (data) => {
+        const statusEl = document.getElementById("rematch-vote-status");
+        if (statusEl) {
+          statusEl.textContent = `${data.count} / ${data.total} players have voted to return.`;
+        }
+      });
+
+// listens for final signal from server, sent 
+// upon vote passes, then performs lobby redirect.
+      socket.on("redirect_to_lobby", () => {
+        logMessage("Majority vote reached! Returning to lobby...");
+        window.location.href = "/lobby";
       });
     </script>
   </body>
