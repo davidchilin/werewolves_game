@@ -321,7 +321,8 @@
               });
               const playerPicked =
                 actionSelect[actionSelect.options.selectedIndex].text;
-              actionArea.innerHTML = `<p>You are hungry for ${playerPicked}. Waiting ...</p>`;
+              actionArea.innerHTML = `<p>You are hungry for <span style="color:
+                #ff0000">${playerPicked}</span>. Waiting ...</p>`;
             };
           } else if (myRole === "seer") {
             actionArea.innerHTML = `<h4>Seer, whose role will you see?</h4><select id="action-select"></select> <button id="action-btn">Investigate</button>`;
@@ -496,7 +497,7 @@
         }
       });
 
-      // listener waits for 'game_over' message from server. 
+      // listener waits for 'game_over' message from server.
       // Then hides main game area and displays results screen,
       // populating it with the winner, reason, and list of roles from the server.
       socket.on("game_over", (data) => {
@@ -532,8 +533,8 @@
         };
         gameOverScreen.style.display = "flex";
       });
-// listens for updates on the rematch vote count and
-// displays the status to the players.
+      // listens for updates on the rematch vote count and
+      // displays the status to the players.
       socket.on("rematch_vote_update", (data) => {
         const statusEl = document.getElementById("rematch-vote-status");
         if (statusEl) {
@@ -541,8 +542,8 @@
         }
       });
 
-// listens for final signal from server, sent 
-// upon vote passes, then performs lobby redirect.
+      // listens for final signal from server, sent
+      // upon vote passes, then performs lobby redirect.
       socket.on("redirect_to_lobby", () => {
         logMessage("Majority vote reached! Returning to lobby...");
         window.location.href = "/lobby";

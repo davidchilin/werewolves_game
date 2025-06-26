@@ -489,7 +489,7 @@ def add_header(r):
 # --- SocketIO Events ---
 @socketio.on("connect")
 def handle_connect(auth=None):
-    print(f"===> A client connected. SID: {request.sid}")
+    log_and_emit(f"===> A client connected. SID: {request.sid}")
     player_id = session.get("player_id")
     if not player_id:
         return
@@ -510,6 +510,11 @@ def handle_connect(auth=None):
     else:
         game["players"][player_id].sid = request.sid
         log_and_emit(f"===> +++ Player {game['players'][player_id]} reconnected.")
+        if game["players"][player_id].is_admin:
+            game["admin_sid"] = request.sid
+            log_and_emit(
+                f"===> Admin {game['players'][player_id].username} confirmed and SID updated."
+            )
 
     join_room(game["game_code"])
 
