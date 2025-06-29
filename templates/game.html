@@ -234,7 +234,6 @@
     </div>
 
     <script>
-      console.log("[DEBUG] game.html JavaScript is executing.");
       const socket = io();
       let myRole,
         myPlayerId = "{{ player_id }}",
@@ -262,11 +261,7 @@
         if (!select) return;
         select.innerHTML = "";
         if (includeNobody) {
-          let optionText = "--- Vote Nobody ---";
-          if (elementId === "accuse-select")
-            optionText = "--- Accuse Nobody ---";
-          if (elementId === "action-select" && myRole === "seer")
-            optionText = "--- See Nobody ---";
+          let optionText = "Nobody";
           select.innerHTML += `<option value="">${optionText}</option>`;
         }
 
@@ -392,6 +387,7 @@
         phaseDisplay.textContent = data.phase.replace(/_/g, " ");
         renderActionUI(data.phase);
         updatePlayerListView();
+        // timer issue is here, duration should be current elapsed time
         startTimer(data.duration);
       });
 
@@ -407,15 +403,9 @@
         updatePlayerListView();
         startTimer(data.duration);
       });
+
       socket.on("message", (data) => {
         logMessage(data.text);
-      });
-      socket.on("night_result_kill", (data) => {
-        const { username, role, id } = data.killed_player;
-        logMessage(
-          `Remnants of a body were found! <strong>${username}</strong> was killed. They were a <strong>${role}</strong>.`,
-        );
-        if (myPlayerId === id) isAlive = false;
       });
 
       socket.on("lynch_vote_result", (data) => {
@@ -445,12 +435,23 @@
           logMessage(`You are the lone wolf.`);
         }
       });
+
+      socket.on("night_result_kill", (data) => {
+        const { username, role, id } = data.killed_player;
+        logMessage(
+          `Remnants of a body were found! <strong>${username}</strong> was killed. They were a <strong>${role}</strong>.`,
+        );
+        if (myPlayerId === id) isAlive = false;
+      });
+
       socket.on("night_result_no_kill", () =>
         logMessage("The sun rises, and no one was killed."),
       );
+
       socket.on("error", (data) => {
         alert("Error: " + data.message);
       });
+
       socket.on("accusation_made", (data) => {
         logMessage(
           `<strong>${data.accuser_name}</strong> accuses <strong>${data.accused_name}</strong>!`,

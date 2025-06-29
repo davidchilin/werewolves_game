@@ -26,6 +26,7 @@ socketio = SocketIO(app)
 game = {
     "players": {},
     "game_state": "waiting",
+    "players_ready_for_game": set(),
     "admin_sid": None,
     "game_code": "W",
     "night_wolf_choices": {},
@@ -39,7 +40,6 @@ game = {
     "accusation_timer": None,
     "lynch_vote_timer": None,
     "night_timer": None,
-    "players_ready_for_game": set(),
     "timer_durations": {"night": 90, "accusation": 90, "lynch_vote": 60},
     "current_timer_id": 0,
     "rematch_votes": set(),
@@ -170,39 +170,35 @@ def check_win_conditions():
         all_roles = {p.username: p.role for p in game["players"].values()}
         payload = {"winning_team": winner, "reason": reason, "roles": all_roles}
         log_and_emit(f"Game over! The {winner} have won! {reason}")
+        socketio.sleep(6)
         socketio.emit("game_over", payload, room=game["game_code"])
 
-        #        # possibly don't need to cancel
-        #        for timer_key in ["accusation_timer", "lynch_vote_timer", "night_timer"]:
-        #            if game.get(timer_key):
-        #                log_and_emit(f"===> +++ Canceling timer {timer_key}")
-        #                game[timer_key].cancel()
         return True  # Game is over
-
     return False  # Game continues
 
 
+# need to fix/reorganize phase Initialization resets
 def start_new_phase(phase_name):
-    log_and_emit(f"--- Starting New Phase: {phase_name.upper()} ---")
-    game[
-        "current_timer_id"
-    ] += 1  # ? add check to see if new phase_name == old phase_name
+    log_and_emit(f">>> Starting New Phase: {phase_name.upper()} <<<")
+
+    if game["game_state"] != phase_name or phase_name == "accusation_phase":
+        game["current_timer_id"] += 1
     current_timer_id = game["current_timer_id"]
 
     game["game_state"] = phase_name
-    game["night_wolf_choices"], game["night_seer_choice"] = {}, None
     game["end_day_votes"] = set()
     game["lynch_target_id"], game["lynch_votes"] = None, {}
 
     if phase_name == "accusation_phase":
         game["seer_investigated"] = False  # Reset seer flag during accusation_phase
+        game["night_wolf_choices"], game["night_seer_choice"] = {}, None
         game["accusations"] = {}
         game["accusation_timer"] = socketio.start_background_task(
             target=accusation_timer_task, timer_id=current_timer_id
         )
     elif phase_name == "night":
         game["accusation_restarts"] = 0
-        game["accusations"] = {}
+        # game["accusations"] = {}
         game["night_timer"] = socketio.start_background_task(
             target=night_timer_task, timer_id=current_timer_id
         )
@@ -281,6 +277,8 @@ def check_night_actions_complete():
     if wolves_done and seer_done:
         log_and_emit("All players have completed night actions.")
         process_night_actions()
+    else:
+        log_and_emit("check night actions -> night Not done yet")
 
 
 def process_night_actions():
@@ -384,11 +382,6 @@ def process_lynch_vote():
     for p in get_living_players():
         if p.id not in game["lynch_votes"]:
             game["lynch_votes"][p.id] = "no"
-    if len(game["lynch_votes"]) != len(get_living_players()):
-        log_and_emit(
-            f"======================> This line never gets printed"
-        )  # is if needed?
-        return
     votes, target_id = list(game["lynch_votes"].values()), game["lynch_target_id"]
     yes_votes, target_player = votes.count("yes"), game["players"][target_id]
     vote_summary = {"yes": [], "no": []}
@@ -507,9 +500,13 @@ def handle_connect(auth=None):
         log_and_emit(
             f"===> +++ New player {new_player.username} added to game. id: {new_player.id} +++"
         )
+    # reconnecting player
     else:
         game["players"][player_id].sid = request.sid
-        log_and_emit(f"===> +++ Player {game['players'][player_id]} reconnected.")
+        log_and_emit(
+            f"===> +++ Player {game['players'][player_id].username} reconnected."
+        )
+        # reestablish admin for new game/rematch
         if game["players"][player_id].is_admin:
             game["admin_sid"] = request.sid
             log_and_emit(
@@ -614,22 +611,19 @@ def handle_client_ready_for_game():
     log_and_emit(
         f"{game['players'][player_id].username} is ready. Total ready: {len(game['players_ready_for_game'])}/{len(game['players'])}"
     )
-    if game["game_state"] == "night" and len(game["players_ready_for_game"]) == len(
-        game["players"]
-    ):
-        log_and_emit("***** All players ready. Starting first night phase. *****")
-        start_new_phase("night")
 
 
 @socketio.on("wolf_choice")
 def handle_wolf_choice(data):
     player_id, p = get_player_by_sid(request.sid)
     if not p or p.role != "wolf" or not p.is_alive or game["game_state"] != "night":
+        log_and_emit(f"wolf_choice do nothing but return1")
         return
     target_id = data.get("target_id")
     if target_id and (
         target_id not in game["players"] or not game["players"][target_id].is_alive
     ):
+        log_and_emit(f"wolf_choice do nothing but return2")
         return
     game["night_wolf_choices"][player_id] = target_id
     check_night_actions_complete()
@@ -645,12 +639,14 @@ def handle_seer_choice(data):
         or game["game_state"] != "night"
         or game["seer_investigated"]
     ):
+        log_and_emit(f"seer_choice do nothing but return1")
         return
 
     target_id = data.get("target_id")
     if target_id and (
         target_id not in game["players"] or not game["players"][target_id].is_alive
     ):
+        log_and_emit(f"seer_choice do nothing but return2")
         return
     game["night_seer_choice"] = target_id
     if target_id:  # this if can be removed?
@@ -659,7 +655,9 @@ def handle_seer_choice(data):
             "seer_result",
             {
                 "username": game["players"][target_id].username,
-                "role": game["players"][target_id].role,
+                "role": "wolf"
+                if game["players"][target_id].role == "wolf"
+                else "not wolf",
             },
         )
     check_night_actions_complete()
@@ -747,4 +745,4 @@ def handle_vote_for_rematch():
 
 
 if __name__ == "__main__":
-    socketio.run(app, debug=True)
+    socketio.run(app, debug=False)
