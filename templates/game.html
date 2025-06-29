@@ -1,4 +1,4 @@
-<!-- Version: 1.9.2 -->
+<!-- Version: 1.9.3 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -333,12 +333,21 @@
               "<p>You are dreaming of yummy pupusas while the night creatures are stirring ...</p>";
           }
         } else if (phase === "accusation_phase") {
-          actionArea.innerHTML = `<h4>Who is the wolf? Time for discussion!</h4><select id="accuse-select"></select><button id="accuse-btn">Accuse</button><hr><h4>Ready for Night?</h4><button id="vote-end-day-btn">Vote to Sleep</button><div id="end-day-vote-counter"></div>`;
+          actionArea.innerHTML = `<h4>Who is the wolf? Time for discussion!</h4><select id="accuse-select"></select><button id="accuse-btn">Accuse</button><hr><h4>Ready for Night?</h4><button id="vote-end-day-btn" disabled>Vote to Sleep (30s)</button><div id="end-day-vote-counter"></div>`;
           populateSelect("accuse-select", livingPlayers, true);
           document.getElementById("accuse-btn").onclick = () =>
             socket.emit("accuse_player", {
               target_id: document.getElementById("accuse-select").value,
             });
+
+          setTimeout(() => {
+            const voteBtn = document.getElementById("vote-end-day-btn");
+            if (voteBtn) {
+              voteBtn.disabled = false;
+              voteBtn.textContent = "Vote to Sleep";
+            }
+          }, 30000); // 30,000 milliseconds = 30 seconds
+
           document.getElementById("vote-end-day-btn").onclick = function () {
             socket.emit("vote_to_end_day");
             this.disabled = true;
@@ -516,11 +525,11 @@
           `The ${data.winning_team} Win!`;
         document.getElementById("game-over-reason").textContent = data.reason;
 
-        // Create fresh list of final roles
         rolesList.innerHTML = "";
-        for (const [name, role] of Object.entries(data.roles)) {
+        for (const player of data.final_player_states) {
           const li = document.createElement("li");
-          li.innerHTML = `<strong>${name}</strong> was a <strong>${role}</strong>`;
+          const isDead = !player.is_alive;
+          li.innerHTML = `<strong>${player.username}</strong> was a <strong>${player.role}</strong> ${isDead ? "💀" : ""}`;
           rolesList.appendChild(li);
         }
 

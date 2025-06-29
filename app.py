@@ -1,4 +1,4 @@
-# Version: 1.9.2
+# Version: 1.9.3
 # gemini final version phase 5
 import os
 import random
@@ -24,35 +24,37 @@ socketio = SocketIO(app)
 
 # --- Game State ---
 game = {
-    "players": {},
-    "game_state": "waiting",
-    "players_ready_for_game": set(),
+    "players": {},  # dictionary mapping player_id (UUID string) to Player objects
+    "game_state": "waiting",  # started night accusation_phase lynch_vote_phase ended
+    "players_ready_for_game": set(),  # ready player_ids
     "admin_sid": None,
     "game_code": "W",
-    "night_wolf_choices": {},
+    "night_wolf_choices": {},  # dictionary wolf player_ids to chosen target_id kill
     "night_seer_choice": None,
     "seer_investigated": False,
-    "accusations": {},
+    "accusations": {},  # dictionary player_ids to accused target_id for lynch_vote
     "accusation_restarts": 0,
-    "end_day_votes": set(),
+    "end_day_votes": set(),  # set player_ids
     "lynch_target_id": None,
-    "lynch_votes": {},
+    "lynch_votes": {},  # dictionary player_ids to yes/no
     "accusation_timer": None,
     "lynch_vote_timer": None,
     "night_timer": None,
     "timer_durations": {"night": 90, "accusation": 90, "lynch_vote": 60},
     "current_timer_id": 0,
-    "rematch_votes": set(),
+    "rematch_votes": set(),  # set player_ids for game_over rematch
 }
 
 
 # --- Player Class ---
 class Player:
     def __init__(self, username, sid):
+        # unique, persistent identifier for the player, stored in session
         self.id = session.get("player_id")
         self.username = username
+        # player's current SocketIO session ID. Changes on reconnect
         self.sid = sid
-        self.role = None
+        self.role = None  # 'villager', 'wolf', 'seer'
         self.is_alive = True
         self.is_admin = False
 
@@ -166,12 +168,20 @@ def check_win_conditions():
 
     if winner:
         game["game_state"] = "ended"
-        # Create dictionary all player names and roles for game_over
-        all_roles = {p.username: p.role for p in game["players"].values()}
-        payload = {"winning_team": winner, "reason": reason, "roles": all_roles}
+        final_player_states = [
+            {"username": p.username, "role": p.role, "is_alive": p.is_alive}
+            for p in game["players"].values()
+        ]
+        payload = {
+            "winning_team": winner,
+            "reason": reason,
+            "final_player_states": final_player_states,
+        }
         log_and_emit(f"Game over! The {winner} have won! {reason}")
         socketio.sleep(6)
         socketio.emit("game_over", payload, room=game["game_code"])
+
+        return True
 
         return True  # Game is over
     return False  # Game continues
@@ -181,8 +191,8 @@ def check_win_conditions():
 def start_new_phase(phase_name):
     log_and_emit(f">>> Starting New Phase: {phase_name.upper()} <<<")
 
-    if game["game_state"] != phase_name or phase_name == "accusation_phase":
-        game["current_timer_id"] += 1
+    #    if game["game_state"] != phase_name or phase_name == "accusation_phase":
+    game["current_timer_id"] += 1
     current_timer_id = game["current_timer_id"]
 
     game["game_state"] = phase_name
@@ -238,7 +248,9 @@ def accusation_timer_task(timer_id):
             )
             tally_accusations(from_timer=True)
         else:
-            log_and_emit(f"Old accusation timer ({timer_id}) expired. Ignoring.")
+            log_and_emit(
+                f"=================== Old accusation timer ({timer_id}) expired. Ignoring."
+            )
 
 
 def lynch_vote_timer_task(timer_id):
@@ -252,7 +264,9 @@ def lynch_vote_timer_task(timer_id):
             log_and_emit(f"Lynch vote timer ({timer_id}) expired. Processing votes.")
             process_lynch_vote()
         else:
-            log_and_emit(f"Old lynch vote timer ({timer_id}) expired. Ignoring.")
+            log_and_emit(
+                f"================== Old lynch vote timer ({timer_id}) expired. Ignoring."
+            )
 
 
 def night_timer_task(timer_id):
@@ -263,7 +277,9 @@ def night_timer_task(timer_id):
             log_and_emit(f"Night timer ({timer_id}) expired. Processing night actions.")
             process_night_actions()
         else:
-            log_and_emit(f"Old night timer ({timer_id}) expired. Ignoring.")
+            log_and_emit(
+                f"==================== Old night timer ({timer_id}) expired. Ignoring."
+            )
 
 
 def check_night_actions_complete():
@@ -594,7 +610,7 @@ def handle_admin_start_game():
         return emit("error", {"message": "Cannot start with fewer than 4 players."})
     log_and_emit("===> Admin started game. Assigning roles.")
     assign_roles()
-    game["game_state"] = "night"
+    game["game_state"] = "started"
     game["players_ready_for_game"].clear()
     socketio.emit("game_started", room=game["game_code"])
 
@@ -611,6 +627,10 @@ def handle_client_ready_for_game():
     log_and_emit(
         f"{game['players'][player_id].username} is ready. Total ready: {len(game['players_ready_for_game'])}/{len(game['players'])}"
     )
+    if game["game_state"] == "started" and len(game["players_ready_for_game"]) == len(
+        game["players"]
+    ):
+        start_new_phase("night")
 
 
 @socketio.on("wolf_choice")
