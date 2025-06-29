@@ -18,6 +18,8 @@ discussion and deception take place.
 
 ## **Core Features (Implemented)**
 
+<img src="lobby.png" width="50%" align="right" />
+
 - **Secure Game Lobby:** Players join a single game instance using a shared,
   verbally communicated game code.
 - **Admin Controls:** The first player to join becomes the admin and has the
@@ -56,10 +58,9 @@ discussion and deception take place.
 
 ## **Game Phases**
 
-<img src="game_over.png" width="50%"/>
+<img src="game_over.png" width="50%" align="right"/>
 
 - **Night Phase (Timed):**
-
   - Phase ends when either the timer runs out OR all Wolves and the Seer have
     submitted their actions.
   - **Wolves:** Secretly vote to kill a player. A kill only succeeds if all
@@ -95,7 +96,7 @@ discussion and deception take place.
   early and immediately start the accusation process. If a majority is reached,
   the game transitions.
 
-<img src="game_screen.png" width="300" height="auto"/>
+<img src="game_screen.png" width="80%" align="center"/>
 
 ## **Tech Stack**
 
@@ -138,7 +139,6 @@ To run this project locally, follow these steps:
     `http://127.0.0.1:5000`. Open multiple tabs or browsers to simulate
     different players joining the game.
 
-<img src="lobby.png" width="50%" />
 
 ## **Project Roadmap**
 
