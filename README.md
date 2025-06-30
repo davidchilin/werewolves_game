@@ -1,9 +1,9 @@
 # **Werewolves - A Flask-based Multiplayer Game**
 
-A real-time, multiplayer social deduction game inspired by Mafia and Werewolf.
-This web application is built primarily with Python, using the Flask framework
-and WebSockets for live player interaction. I made this to practice using an
-LLM.
+A self-hosted real-time multiplayer social deduction game inspired by Werewolves
+and Mafia. This web application is built primarily with Python, using the Flask
+framework and WebSockets for live player interaction. I made this to practice
+using an LLM.
 
 ## **Description**
 
@@ -16,7 +16,7 @@ someone they suspect is a wolf. The game is designed to be played alongside a
 separate video or voice chat (like Jitsi Meet or Zoom), where the real-time
 discussion and deception take place.
 
-## **Core Features (Implemented)**
+## **Core Features**
 
 <img src="lobby.png" width="50%" align="right" />
 
@@ -61,6 +61,7 @@ discussion and deception take place.
 <img src="game_over.png" width="50%" align="right"/>
 
 - **Night Phase (Timed):**
+
   - Phase ends when either the timer runs out OR all Wolves and the Seer have
     submitted their actions.
   - **Wolves:** Secretly vote to kill a player. A kill only succeeds if all
@@ -132,13 +133,12 @@ To run this project locally, follow these steps:
 4.  **Run the Flask application:**
 
     ```bash
-    python app.py
+    FLASK_APP=app.py SECRET_KEY=CHANGE_TO_SOMETHING_RANDOM flask run -h 0.0.0.0
     ```
 
-5.  **Access the game:** Open your web browser and go to
-    `http://127.0.0.1:5000`. Open multiple tabs or browsers to simulate
-    different players joining the game.
-
+5.  **Access the game:** Open your web browser and go to `http://127.0.0.1:5000`
+    or `http://your_computer_ip:5000`. Open multiple tabs or browsers to
+    simulate different players joining the game.
 
 ## **Project Roadmap**
 
@@ -147,9 +147,12 @@ depth and improving the user experience.
 
 - **Future Enhancements (Planned):**
   - **Additional Roles:** Introduce new roles like the Doctor, Hunter, or Witch
-    to add more complexity and strategy.
+  - **Docker Setup:** Setup a Docker release for easy deployment to add more
+    complexity and strategy.
   - **Enhanced UI/UX:** Improve the user interface with more visual cues,
     animations, and sound effects for a more immersive experience. during
     certain phases.
   - **Spectator Mode:** Allow users to join a game as a non-participating
     spectator.
+  - **Single Phone Mode:** Allow a game to be guided by passing around a single
+    phone with psuedo-admin.
