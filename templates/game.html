@@ -1,4 +1,4 @@
-<!-- Version: 1.9.3 -->
+<!-- Version: 1.9.9 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -11,7 +11,9 @@
           Arial, sans-serif;
         display: flex;
         justify-content: center;
-        margin-top: 20px;
+        align-items: center;
+        margin: 0;
+        height: 100vh;
         background-color: #121212;
         color: #e0e0e0;
       }
@@ -193,6 +195,15 @@
         margin-top: 25px;
         padding: 12px 24px;
         font-size: 1.1em;
+        color: white;
+        background-color: #3f51b5;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      #return-to-lobby-btn:disabled {
+        background-color: #333;
+        cursor: not-allowed;
       }
       #rematch-vote-status {
         margin-top: 15px;
@@ -310,7 +321,7 @@
             actionArea.innerHTML = `<h4>Wolf, who will you eat?</h4><select id="action-select"></select> <button id="action-btn">Select</button>`;
             populateSelect("action-select", livingPlayers, true);
             document.getElementById("action-btn").onclick = () => {
-              actionSelect = document.getElementById("action-select");
+              const actionSelect = document.getElementById("action-select");
               socket.emit("wolf_choice", {
                 target_id: actionSelect.value,
               });
@@ -412,11 +423,7 @@
         updatePlayerListView();
         startTimer(data.duration);
       });
-
-      socket.on("message", (data) => {
-        logMessage(data.text);
-      });
-
+      socket.on("message", (data) => logMessage(data.text));
       socket.on("lynch_vote_result", (data) => {
         let fullMessage = data.message;
         if (data.summary) {
@@ -477,11 +484,7 @@
           }
         }
       });
-
-      socket.on("accusation_update", (data) => {
-        updatePlayerListView(data);
-      });
-
+      socket.on("accusation_update", (data) => updatePlayerListView(data));
       socket.on("end_day_vote_update", (data) => {
         const counter = document.getElementById("end-day-vote-counter");
         if (counter)
@@ -557,6 +560,12 @@
       socket.on("redirect_to_lobby", () => {
         logMessage("Majority vote reached! Returning to lobby...");
         window.location.href = "/lobby";
+      });
+      socket.on("force_relogin", (data) => {
+        alert(
+          `The admin has set a new game code.\nYou will now be returned to the login screen.`,
+        );
+        window.location.href = "/";
       });
     </script>
   </body>

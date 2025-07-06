@@ -1,4 +1,4 @@
-# Version: 1.9.3
+# Version: 1.10.0
 # gemini final version phase 5
 import os
 import random
@@ -40,7 +40,9 @@ game = {
     "accusation_timer": None,
     "lynch_vote_timer": None,
     "night_timer": None,
+    # dictionary storing duration (in seconds) for each game phase timer
     "timer_durations": {"night": 90, "accusation": 90, "lynch_vote": 60},
+    # A unique, incrementing ID for each timer instance to prevent old timers from firing.
     "current_timer_id": 0,
     "rematch_votes": set(),  # set player_ids for game_over rematch
 }
@@ -89,14 +91,46 @@ def broadcast_player_list():
         for p in game["players"].values()
     ]
     socketio.emit(
-        "update_player_list", {"players": player_list}, room=game["game_code"]
+        "update_player_list",
+        {"players": player_list, "game_code": game["game_code"]},
+        room=game["game_code"],
     )
+
+
+def full_game_reset(new_code="W", admin_to_keep=None):
+    """Resets the entire game object, optionally preserving the admin."""
+    global game
+    print(f"Admin has reset the game with a new code.")
+    game = {
+        "players": {},
+        "game_state": "waiting",
+        "players_ready_for_game": set(),
+        "admin_sid": None,
+        "game_code": new_code,
+        "night_wolf_choices": {},
+        "night_seer_choice": None,
+        "seer_investigated": False,
+        "accusations": {},
+        "accusation_restarts": 0,
+        "end_day_votes": set(),
+        "lynch_target_id": None,
+        "lynch_votes": {},
+        "accusation_timer": None,
+        "lynch_vote_timer": None,
+        "night_timer": None,
+        "timer_durations": {"night": 90, "accusation": 90, "lynch_vote": 60},
+        "current_timer_id": 0,
+        "rematch_votes": set(),
+    }
+    if admin_to_keep:
+        game["players"] = {admin_to_keep.id: admin_to_keep}
+        game["admin_sid"] = admin_to_keep.sid
 
 
 # --- Game Logic ---
 # Resets game to initial state, clearing temporary data. does NOT remove players.
 def reset_game_state():
-    log_and_emit("A majority voteed for a new match. Get Ready!")
+    log_and_emit("A majority voted for a new match. Get Ready!")
     game["game_state"] = "waiting"
     game["night_wolf_choices"] = {}
     game["night_seer_choice"] = None
@@ -181,8 +215,6 @@ def check_win_conditions():
         socketio.sleep(6)
         socketio.emit("game_over", payload, room=game["game_code"])
 
-        return True
-
         return True  # Game is over
     return False  # Game continues
 
@@ -190,9 +222,8 @@ def check_win_conditions():
 # need to fix/reorganize phase Initialization resets
 def start_new_phase(phase_name):
     log_and_emit(f">>> Starting New Phase: {phase_name.upper()} <<<")
-
-    #    if game["game_state"] != phase_name or phase_name == "accusation_phase":
-    game["current_timer_id"] += 1
+    if game["game_state"] != phase_name or phase_name == "accusation_phase":
+        game["current_timer_id"] += 1
     current_timer_id = game["current_timer_id"]
 
     game["game_state"] = phase_name
@@ -508,10 +539,14 @@ def handle_connect(auth=None):
         if game["game_state"] != "waiting":
             return emit("error", {"message": "Game is already in progress."})
         new_player = Player(session.get("username"), request.sid)
-        # set first player in room to be admin
-        if not get_living_players():
+        # set first player in room to be admin, if no admin from previous match
+        # check if error here, since possilbe game["players"] is empty, even in rematch?
+        if not any(p.is_admin for p in game["players"].values()):
             new_player.is_admin = True
             game["admin_sid"] = request.sid
+            log_and_emit(
+                f"===> +++ New player Admin {new_player.username} added to game. id: {new_player.id} +++"
+            )
         game["players"][player_id] = new_player
         log_and_emit(
             f"===> +++ New player {new_player.username} added to game. id: {new_player.id} +++"
@@ -519,9 +554,7 @@ def handle_connect(auth=None):
     # reconnecting player
     else:
         game["players"][player_id].sid = request.sid
-        log_and_emit(
-            f"===> +++ Player {game['players'][player_id].username} reconnected."
-        )
+        log_and_emit(f"===> Player {game['players'][player_id].username} reconnected.")
         # reestablish admin for new game/rematch
         if game["players"][player_id].is_admin:
             game["admin_sid"] = request.sid
@@ -613,6 +646,34 @@ def handle_admin_start_game():
     game["game_state"] = "started"
     game["players_ready_for_game"].clear()
     socketio.emit("game_started", room=game["game_code"])
+
+
+@socketio.on("admin_set_new_code")
+def handle_admin_set_new_code(data):
+    """Handles admin setting a new game code, keeping admin in lobby and kicking others."""
+    if request.sid != game.get("admin_sid"):
+        return
+    new_code = data.get("new_code", "").strip().upper()
+    if not new_code:
+        return emit("error", {"message": "New code cannot be empty."})
+
+    admin_id, admin_player = get_player_by_sid(request.sid)
+    if not admin_player:
+        return
+
+    # Notify all OTHER players to re-login
+    socketio.emit(
+        "force_relogin",
+        {"new_code": new_code},
+        room=game["game_code"],
+        skip_sid=request.sid,
+    )
+
+    # Reset the game, preserving only the admin
+    full_game_reset(new_code=new_code, admin_to_keep=admin_player)
+
+    # Update the admin's lobby view
+    broadcast_player_list()
 
 
 @socketio.on("client_ready_for_game")

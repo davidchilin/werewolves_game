@@ -1,4 +1,4 @@
-<!-- Version: 1.9.2 -->
+<!-- Version: 1.10.0 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -157,10 +157,14 @@
         const adminPanel = document.getElementById("admin-panel");
         const startGameBtn = document.getElementById("start-game-btn");
         const gameCodeArea = document.getElementById("game-code-area");
+        const gameCodeDisplay = document.getElementById("game-code-display");
         playerList.innerHTML = "";
         const me = data.players.find((p) => p.id === currentPlayerId);
         isPlayerAdmin = me ? me.is_admin : false;
         gameCodeArea.style.display = isPlayerAdmin ? "block" : "none";
+        if (isPlayerAdmin) {
+          gameCodeDisplay.textContent = data.game_code;
+        }
         data.players.forEach((player) => {
           const li = document.createElement("li");
           li.textContent = player.username;
@@ -183,18 +187,16 @@
         adminPanel.style.display = isPlayerAdmin ? "block" : "none";
         startGameBtn.disabled = data.players.length < 4;
       });
+
       socket.on("force_kick", () => {
         alert("You have been dropped from the lobby.");
         window.location.href = "/";
       });
-      socket.on("new_code_set", (data) => {
-        const gameCodeDisplay = document.getElementById("game-code-display");
-        if (gameCodeDisplay) {
-          gameCodeDisplay.textContent = data.new_code;
-        }
-        if (isPlayerAdmin) {
-          alert(`The game code has been changed to: ${data.new_code}`);
-        }
+      socket.on("force_relogin", (data) => {
+        alert(
+          `The admin has set a new game code.\nYou will now be returned to the login screen.`,
+        );
+        window.location.href = "/";
       });
       socket.on("message", (data) => {
         alert(data.text);
