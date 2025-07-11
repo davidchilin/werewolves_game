@@ -1,4 +1,4 @@
-<!-- Version: 1.10.0 -->
+<!-- Version: 1.10.2 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -65,6 +65,7 @@
       }
       button:disabled {
         background-color: #333;
+        color: #777;
         cursor: not-allowed;
       }
       .timer-setting {
@@ -77,6 +78,37 @@
       .timer-setting input {
         width: 80px;
       }
+      .chat-container {
+        margin-top: 20px;
+        border-top: 1px solid #444;
+        padding-top: 15px;
+      }
+      .chat-messages {
+        height: 150px;
+        overflow-y: auto;
+        border: 1px solid #333;
+        padding: 10px;
+        background: #1e1e1e;
+        margin-bottom: 10px;
+        display: flex;
+        flex-direction: column-reverse;
+      }
+      .chat-messages div {
+        padding-bottom: 5px;
+        margin-bottom: 5px;
+        border-bottom: 1px solid #333;
+      }
+      .chat-messages .announcement {
+        color: #bb86fc;
+        font-weight: bold;
+      }
+      #chat-form {
+        display: flex;
+      }
+      #chat-input {
+        flex-grow: 1;
+        margin-right: 10px;
+      }
     </style>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   </head>
@@ -88,6 +120,21 @@
       </p>
       <h3>Players:</h3>
       <ul id="player-list"></ul>
+
+      <div class="chat-container">
+        <h4>Lobby Chat</h4>
+        <div id="chat-messages" class="chat-messages"></div>
+        <form id="chat-form" action="#">
+          <input
+            id="chat-input"
+            type="text"
+            placeholder="Type a message..."
+            autocomplete="off"
+          />
+          <button id="chat-send-btn" type="submit">Send</button>
+        </form>
+      </div>
+
       <div id="admin-panel" style="display: none">
         <hr />
         <h4>Admin Controls</h4>
@@ -97,6 +144,9 @@
           <label for="new-game-code">Set New Game Code:</label>
           <input type="text" id="new-game-code-input" placeholder="New Code" />
           <button id="set-code-btn">Set Code</button>
+        </div>
+        <div class="admin-controls">
+          <button id="toggle-chat-btn">Toggle Admin-Only Chat</button>
         </div>
         <div class="admin-controls">
           <h5>Timer Settings (seconds)</h5>
@@ -132,9 +182,24 @@
       let currentPlayerId = "{{ player_id }}";
       let isPlayerAdmin = false;
 
+      const chatMessages = document.getElementById("chat-messages");
+      const chatForm = document.getElementById("chat-form");
+      const chatInput = document.getElementById("chat-input");
+      const chatSendBtn = document.getElementById("chat-send-btn");
+
       function excludePlayer(playerId) {
         if (confirm("Exclude this player?")) {
           socket.emit("admin_exclude_player", { player_id: playerId });
+        }
+      }
+
+      function setChatMode(isAdminOnly) {
+        if (isAdminOnly && !isPlayerAdmin) {
+          chatSendBtn.disabled = true;
+          chatInput.placeholder = "Chat is admin-only";
+        } else {
+          chatSendBtn.disabled = false;
+          chatInput.placeholder = "Type a message...";
         }
       }
 
@@ -186,6 +251,7 @@
         });
         adminPanel.style.display = isPlayerAdmin ? "block" : "none";
         startGameBtn.disabled = data.players.length < 4;
+        setChatMode(data.admin_only_chat);
       });
 
       socket.on("force_kick", () => {
@@ -205,6 +271,30 @@
         alert("Error: " + data.message);
       });
 
+      socket.on("new_message", (data) => {
+        if (data.channel === "lobby" || data.channel === "announcement") {
+          const messageEl = document.createElement("div");
+          messageEl.innerHTML = data.text;
+          if (data.channel === "announcement") {
+            messageEl.classList.add("announcement");
+          }
+          chatMessages.prepend(messageEl);
+        }
+      });
+
+      socket.on("chat_mode_update", (data) => {
+        setChatMode(data.admin_only);
+      });
+
+      chatForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const message = chatInput.value.trim();
+        if (message) {
+          socket.emit("send_message", { message: message });
+          chatInput.value = "";
+        }
+      });
+
       document.getElementById("start-game-btn").onclick = () => {
         socket.emit("admin_start_game");
       };
@@ -217,6 +307,9 @@
         } else {
           alert("Please enter a new code.");
         }
+      };
+      document.getElementById("toggle-chat-btn").onclick = () => {
+        socket.emit("admin_toggle_chat");
       };
       document.getElementById("set-timers-btn").onclick = () => {
         const timers = {

@@ -1,4 +1,4 @@
-<!-- Version: 1.9.9 -->
+<!-- Version: 1.10.2 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -30,6 +30,8 @@
         width: 250px;
         border-left: 1px solid #444;
         padding-left: 20px;
+        display: flex;
+        flex-direction: column;
       }
       .player-list {
         padding-left: 0;
@@ -211,6 +213,45 @@
         color: #aaa;
         min-height: 20px;
       }
+      .chat-container {
+        margin-top: 20px;
+        display: flex;
+        flex-direction: column;
+      }
+      .chat-messages {
+        height: 150px;
+        overflow-y: auto;
+        border: 1px solid #333;
+        padding: 10px;
+        background: #1e1e1e;
+        margin-bottom: 10px;
+        display: flex;
+        flex-direction: column-reverse;
+      }
+      .chat-messages div {
+        padding-bottom: 5px;
+        margin-bottom: 5px;
+        border-bottom: 1px solid #333;
+      }
+      .chat-form {
+        display: flex;
+      }
+      .chat-input {
+        flex-grow: 1;
+        margin-right: 10px;
+      }
+      .ghost-chat {
+        color: #a0a0ff; /* Light blue for ghost chat */
+        font-style: italic;
+      }
+      .announcement {
+        color: #bb86fc;
+        font-weight: bold;
+      }
+      #admin-chat-toggle-btn {
+        margin-top: 10px;
+        width: 100%;
+      }
     </style>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   </head>
@@ -227,8 +268,25 @@
         <div id="role-display" class="role-display">
           Your Role: <strong id="my-role">Unknown</strong>
         </div>
+        <button id="admin-chat-toggle-btn" style="display: none">
+          Toggle Admin-Only Chat
+        </button>
         <h3>Players</h3>
         <ul id="player-list" class="player-list"></ul>
+        <div id="game-chat-container" class="chat-container">
+          <h4 id="chat-title">Living Chat</h4>
+          <div id="game-chat-messages" class="chat-messages"></div>
+          <form id="game-chat-form" class="chat-form" action="#">
+            <input
+              id="game-chat-input"
+              class="chat-input"
+              type="text"
+              placeholder="Type a message..."
+              autocomplete="off"
+            />
+            <button id="game-chat-send-btn" type="submit">Send</button>
+          </form>
+        </div>
       </div>
     </div>
 
@@ -239,6 +297,20 @@
         <h2 id="game-over-reason"></h2>
         <h3>Final Roles:</h3>
         <ul id="final-roles-list"></ul>
+        <div id="game-over-chat-container" class="chat-container">
+          <h4>Post-Game Chat</h4>
+          <div id="game-over-chat-messages" class="chat-messages"></div>
+          <form id="game-over-chat-form" class="chat-form" action="#">
+            <input
+              id="game-over-chat-input"
+              class="chat-input"
+              type="text"
+              placeholder="Type a message..."
+              autocomplete="off"
+            />
+            <button id="game-over-chat-send-btn" type="submit">Send</button>
+          </form>
+        </div>
         <button id="return-to-lobby-btn">Vote to Return to Lobby</button>
         <div id="rematch-vote-status"></div>
       </div>
@@ -254,17 +326,52 @@
         isAdmin = false,
         timerInterval;
 
+      // --- DOM Elements ---
       const phaseDisplay = document.getElementById("phase-display");
       const timerDisplay = document.getElementById("timer-display");
       const actionArea = document.getElementById("action-area");
       const logPanel = document.getElementById("log-panel");
       const playerListEl = document.getElementById("player-list");
       const myRoleDisplay = document.getElementById("my-role");
+      const adminChatToggleBtn = document.getElementById(
+        "admin-chat-toggle-btn",
+      );
 
+      // Game Chat
+      const gameChatTitle = document.getElementById("chat-title");
+      const gameChatMessages = document.getElementById("game-chat-messages");
+      const gameChatForm = document.getElementById("game-chat-form");
+      const gameChatInput = document.getElementById("game-chat-input");
+      const gameChatSendBtn = document.getElementById("game-chat-send-btn");
+
+      // Game Over Chat
+      const gameOverScreen = document.getElementById("game-over-screen");
+      const gameOverChatMessages = document.getElementById(
+        "game-over-chat-messages",
+      );
+      const gameOverChatForm = document.getElementById("game-over-chat-form");
+      const gameOverChatInput = document.getElementById("game-over-chat-input");
+      const gameOverChatSendBtn = document.getElementById(
+        "game-over-chat-send-btn",
+      );
+
+      // --- Functions ---
       function logMessage(message) {
         let div = document.createElement("div");
         div.innerHTML = message;
         logPanel.prepend(div);
+      }
+
+      function setChatMode(isAdminOnly) {
+        const isChatDisabled = isAdminOnly && !isAdmin;
+        const placeholder = isChatDisabled
+          ? "Chat is admin-only"
+          : "Type a message...";
+
+        gameChatSendBtn.disabled = isChatDisabled;
+        gameChatInput.placeholder = placeholder;
+        gameOverChatSendBtn.disabled = isChatDisabled;
+        gameOverChatInput.placeholder = placeholder;
       }
 
       function populateSelect(elementId, players, includeNobody = false) {
@@ -307,6 +414,16 @@
           }
           playerListEl.appendChild(li);
         });
+      }
+
+      function updateChatUI() {
+        if (!isAlive) {
+          gameChatTitle.textContent = "Ghost Chat";
+          gameChatInput.placeholder = "Whisper to the other side...";
+        } else {
+          gameChatTitle.textContent = "Living Chat";
+          gameChatInput.placeholder = "Type a message...";
+        }
       }
 
       function renderActionUI(phase) {
@@ -389,13 +506,13 @@
         }
       }
 
+      // --- Socket Listeners ---
       socket.on("connect", () => {
         console.log("[DEBUG] Client connected to /game page.");
         socket.emit("client_ready_for_game");
       });
 
       socket.on("game_state_sync", (data) => {
-        console.log("[DEBUG] 'game_state_sync' event received.", data);
         myRole = data.your_role;
         isAdmin = data.is_admin;
         isAlive = data.is_alive;
@@ -403,16 +520,20 @@
         allPlayers = data.all_players;
         myRoleDisplay.textContent =
           myRole.charAt(0).toUpperCase() + myRole.slice(1);
-        if (isAdmin) myRoleDisplay.innerHTML += " 👑";
+        if (isAdmin) {
+          myRoleDisplay.innerHTML += " 👑";
+          adminChatToggleBtn.style.display = "block";
+        }
         phaseDisplay.textContent = data.phase.replace(/_/g, " ");
         renderActionUI(data.phase);
         updatePlayerListView();
+        updateChatUI();
+        setChatMode(data.admin_only_chat);
         // timer issue is here, duration should be current elapsed time
         startTimer(data.duration);
       });
 
       socket.on("phase_change", (data) => {
-        console.log("[DEBUG] 'phase_change' event received.", data);
         logMessage(
           `A new phase has begun: <strong>${data.phase.replace(/_/g, " ")}</strong>.`,
         );
@@ -423,7 +544,37 @@
         updatePlayerListView();
         startTimer(data.duration);
       });
+
       socket.on("message", (data) => logMessage(data.text));
+
+      socket.on("new_message", (data) => {
+        const messageEl = document.createElement("div");
+        messageEl.innerHTML = data.text;
+
+        if (data.channel === "announcement") {
+          messageEl.classList.add("announcement");
+          gameChatMessages.prepend(messageEl.cloneNode(true));
+          gameOverChatMessages.prepend(messageEl.cloneNode(true));
+          return;
+        }
+
+        if (data.channel === "lobby") {
+          gameOverChatMessages.prepend(messageEl);
+          return;
+        }
+
+        if (isAlive && data.channel === "living") {
+          gameChatMessages.prepend(messageEl);
+        } else if (!isAlive && data.channel === "ghost") {
+          messageEl.classList.add("ghost-chat");
+          gameChatMessages.prepend(messageEl);
+        }
+      });
+
+      socket.on("chat_mode_update", (data) => {
+        setChatMode(data.admin_only);
+      });
+
       socket.on("lynch_vote_result", (data) => {
         let fullMessage = data.message;
         if (data.summary) {
@@ -431,7 +582,10 @@
         }
         logMessage(fullMessage);
         if (data.killed_id) {
-          if (myPlayerId === data.killed_id) isAlive = false;
+          if (myPlayerId === data.killed_id) {
+            isAlive = false;
+            updateChatUI();
+          }
         }
       });
 
@@ -442,7 +596,6 @@
       });
 
       socket.on("wolf_team_info", (data) => {
-        console.log("[DEBUG] 'wolf_team_info' received.", data);
         if (data.teammates.length > 0) {
           logMessage(
             `You are a wolf. Your fellow wolves are: <strong>${data.teammates.join(", ")}</strong>.`,
@@ -457,7 +610,10 @@
         logMessage(
           `Remnants of a body were found! <strong>${username}</strong> was killed. They were a <strong>${role}</strong>.`,
         );
-        if (myPlayerId === id) isAlive = false;
+        if (myPlayerId === id) {
+          isAlive = false;
+          updateChatUI();
+        }
       });
 
       socket.on("night_result_no_kill", () =>
@@ -535,15 +691,6 @@
           li.innerHTML = `<strong>${player.username}</strong> was a <strong>${player.role}</strong> ${isDead ? "💀" : ""}`;
           rolesList.appendChild(li);
         }
-
-        // Make the game over screen visible
-        //gameOverScreen.style.display = "block";
-
-        document.getElementById("return-to-lobby-btn").onclick = (event) => {
-          socket.emit("vote_for_rematch");
-          event.target.disabled = true;
-          event.target.textContent = "Voted!";
-        };
         gameOverScreen.style.display = "flex";
       });
       // listens for updates on the rematch vote count and
@@ -567,6 +714,35 @@
         );
         window.location.href = "/";
       });
+
+      // --- Event Listeners ---
+      adminChatToggleBtn.addEventListener("click", () => {
+        socket.emit("admin_toggle_chat");
+      });
+
+      gameChatForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const message = gameChatInput.value.trim();
+        if (message) {
+          socket.emit("send_message", { message: message });
+          gameChatInput.value = "";
+        }
+      });
+
+      gameOverChatForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const message = gameOverChatInput.value.trim();
+        if (message) {
+          socket.emit("send_message", { message: message });
+          gameOverChatInput.value = "";
+        }
+      });
+
+      document.getElementById("return-to-lobby-btn").onclick = (event) => {
+        socket.emit("vote_for_rematch");
+        event.target.disabled = true;
+        event.target.textContent = "Voted!";
+      };
     </script>
   </body>
 </html>

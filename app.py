@@ -1,4 +1,4 @@
-# Version: 1.10.0
+# Version: 1.10.2
 # gemini final version phase 5
 import os
 import random
@@ -29,6 +29,7 @@ game = {
     "players_ready_for_game": set(),  # ready player_ids
     "admin_sid": None,
     "game_code": "W",
+    "admin_only_chat": False,
     "night_wolf_choices": {},  # dictionary wolf player_ids to chosen target_id kill
     "night_seer_choice": None,
     "seer_investigated": False,
@@ -92,7 +93,11 @@ def broadcast_player_list():
     ]
     socketio.emit(
         "update_player_list",
-        {"players": player_list, "game_code": game["game_code"]},
+        {
+            "players": player_list,
+            "game_code": game["game_code"],
+            "admin_only_chat": game.get("admin_only_chat", False),
+        },
         room=game["game_code"],
     )
 
@@ -107,6 +112,7 @@ def full_game_reset(new_code="W", admin_to_keep=None):
         "players_ready_for_game": set(),
         "admin_sid": None,
         "game_code": new_code,
+        "admin_only_chat": False,
         "night_wolf_choices": {},
         "night_seer_choice": None,
         "seer_investigated": False,
@@ -140,6 +146,7 @@ def reset_game_state():
     game["lynch_target_id"] = None
     game["lynch_votes"] = {}
     game["rematch_votes"] = set()
+    game["admin_only_chat"] = False  # Also reset chat mode
 
     # Reset individual player states
     for player in game["players"].values():
@@ -202,6 +209,7 @@ def check_win_conditions():
 
     if winner:
         game["game_state"] = "ended"
+        game["admin_only_chat"] = False  # reset chat mode
         final_player_states = [
             {"username": p.username, "role": p.role, "is_alive": p.is_alive}
             for p in game["players"].values()
@@ -589,6 +597,7 @@ def handle_connect(auth=None):
                 "duration": game["timer_durations"].get(
                     game["game_state"].replace("_phase", ""), 0
                 ),
+                "admin_only_chat": game.get("admin_only_chat", False),
             },
         )
 
@@ -601,6 +610,61 @@ def handle_disconnect():
             f"==== Player {game['players'][player_id].username} disconnected ===="
         )
         game["players_ready_for_game"].discard(player_id)
+
+
+@socketio.on("send_message")
+def handle_send_message(data):
+    player_id, p = get_player_by_sid(request.sid)
+    if not p:
+        return
+
+    message_text = data.get("message", "").strip()
+    if not message_text:
+        return
+
+    channel = "announcement"
+    # Admin only chat logic
+    if game.get("admin_only_chat", False):
+        if not p.is_admin:
+            emit("message", {"text": "Chat is currently restricted to the admin."})
+            return
+        # Admin message is an announcement to all
+        formatted_message = f"<strong>ADMIN:</strong> {message_text}"
+    else:
+        # Regular chat logic
+        formatted_message = f"<strong>{p.username}:</strong> {message_text}"
+        if game["game_state"] in ["waiting", "ended"]:
+            channel = "lobby"
+        else:
+            channel = "living" if p.is_alive else "ghost"
+
+    socketio.emit(
+        "new_message",
+        {"text": formatted_message, "channel": channel},
+        room=game["game_code"],
+    )
+
+
+@socketio.on("admin_toggle_chat")
+def handle_admin_toggle_chat():
+    player_id, p = get_player_by_sid(request.sid)
+    if not p or not p.is_admin:
+        return
+
+    game["admin_only_chat"] = not game.get("admin_only_chat", False)
+    status = "Admin Only" if game["admin_only_chat"] else "All Players"
+    is_admin_only = game["admin_only_chat"]
+
+    socketio.emit(
+        "chat_mode_update",
+        {"admin_only": is_admin_only},
+        room=game["game_code"],
+    )
+    socketio.emit(
+        "message",
+        {"text": f"Chat mode has been set to: {status}."},
+        room=game["game_code"],
+    )
 
 
 @socketio.on("admin_set_timers")
@@ -816,7 +880,7 @@ def handle_vote_for_rematch():
         total_players = len(game["players"])
 
         # Check if a majority has been reached
-        if num_votes > total_players / 2:
+        if num_votes > total_players / 2 or p.is_admin:
             reset_game_state()
             socketio.emit("redirect_to_lobby", {}, room=game["game_code"])
         else:
