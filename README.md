@@ -112,18 +112,19 @@ discussion and deception take place.
 To run this project locally, follow these steps:
 
 1.  **Clone the repository:**
-
     ```bash
     git clone [https://github.com/davidchilin/werewolves_game.git](https://github.com/davidchilin/werewolves_game.git)
     cd werewolves_game
     ```
-
-2.  **Create and activate a virtual environment:**
-
-    - **Windows:** `python -m venv venv` followed by `.\venv\Scripts\activate`
-    - **macOS / Linux:** `python3 -m venv venv` followed by
-      `source venv/bin/activate`
-
+```markdown
+2. EITHER run through Docker (steps 2A,5) OR install and run locally (2B-5).
+    A. **Build docker and run.** Can change port used in browser to 8080 for example: -p 8080:5000.
+        - `docker build -t werewolves_game .`
+        - `docker run -p 5000:5000 --name werewolves_game werewolves_game`. Can also include local .env `-v ./.env:/werewolves_game/.env`
+    B. Create and activate a virtual environment:
+        - **Windows:** `python -m venv venv` followed by `.\venv\Scripts\activate`
+        - **macOS / Linux:** `python3 -m venv venv` followed by `source venv/bin/activate`
+```
 3.  **Install the required dependencies:**
 
     ```bash
@@ -156,3 +157,4 @@ depth and improving the user experience.
     spectator.
   - **Single Phone Mode:** Allow a game to be guided by passing around a single
     phone with psuedo-admin.
+

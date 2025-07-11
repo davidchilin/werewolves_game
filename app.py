@@ -826,4 +826,4 @@ def handle_vote_for_rematch():
 
 
 if __name__ == "__main__":
-    socketio.run(app, debug=False)
+    socketio.run(app, host="0.0.0.0", debug=True, allow_unsafe_werkzeug=True)
