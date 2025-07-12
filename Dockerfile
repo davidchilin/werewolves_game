@@ -9,7 +9,7 @@ RUN pip3 install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 # Expose the port the app runs on
 EXPOSE 5000
 # Define the command to run the application
-ENV FLASK_APP=app
-CMD ["python", "app.py"]
-#RUN pip install gunicorn
-#CMD ["gunicorn", "app:app", "-b", "0.0.0.0:5000", "-w", "8"]
+#ENV FLASK_APP=app
+#CMD ["python", "app.py"]
+RUN pip install gunicorn eventlet
+CMD ["gunicorn", "--worker-class", "eventlet", "-w", "1", "-b", "0.0.0.0:5000", "app:app"]

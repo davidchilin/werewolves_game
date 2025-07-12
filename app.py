@@ -891,3 +891,6 @@ def handle_vote_for_rematch():
 
 if __name__ == "__main__":
     socketio.run(app, host="0.0.0.0", debug=True, allow_unsafe_werkzeug=True)
+
+    # Socket.IO CORS: Configure Socket.IO to only accept connections from your game's domain name. This prevents malicious websites from connecting to your game server.
+    # socketio.run(app, cors_allowed_origins="https://your-game-domain.com")

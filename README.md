@@ -29,6 +29,7 @@ discussion and deception take place.
   - Set custom timer durations (in seconds) for the Night, Accusation, and Lynch
     Vote phases.
   - Set a new game code.
+  - Set admin only chat.
 - **Persistent Sessions:** Players can refresh their browser or momentarily
   disconnect without losing their place in the game.
 - **Dynamic Role Assignment:** At the start of the game, players are randomly
@@ -38,8 +39,9 @@ discussion and deception take place.
     the majority.
   - **Seer:** A special villager who can investigate one player's role each
     night.
-- **Live Game Updates:** The UI updates in real-time for all players using
-  WebSockets, showing phase changes, player status, and game log events.
+- **Live Game Updates and Chat:** The UI updates in real-time for all players
+  using WebSockets, showing phase changes, player status, game chat, and game
+  log events.
 - **Automated Game Loop & Win Conditions:** The game automatically cycles
   through phases. After each death (from a wolf kill, a lynch vote) the system
   checks for win conditions:
@@ -116,15 +118,18 @@ To run this project locally, follow these steps:
     git clone [https://github.com/davidchilin/werewolves_game.git](https://github.com/davidchilin/werewolves_game.git)
     cd werewolves_game
     ```
+
 ```markdown
-2. EITHER run through Docker (steps 2A,5) OR install and run locally (2B-5).
-    A. **Build docker and run.** Can change port used in browser to 8080 for example: -p 8080:5000.
-        - `docker build -t werewolves_game .`
-        - `docker run -p 5000:5000 --name werewolves_game werewolves_game`. Can also include local .env `-v ./.env:/werewolves_game/.env`
-    B. Create and activate a virtual environment:
-        - **Windows:** `python -m venv venv` followed by `.\venv\Scripts\activate`
-        - **macOS / Linux:** `python3 -m venv venv` followed by `source venv/bin/activate`
+2. EITHER run through Docker (steps 2A,5) OR install and run locally (steps
+   2B-5). A. **Build docker and run.** Can change port used in browser to 8080
+   for example: -p 8080:5000. - `docker build -t werewolves_game .` -
+   `docker run -p 5000:5000 --name werewolves_game werewolves_game`. Can also
+   include local .env `-v ./.env:/werewolves_game/.env` B. Create and activate a
+   virtual environment: - **Windows:** `python -m venv venv` followed by
+   `.\venv\Scripts\activate` - **macOS / Linux:** `python3 -m venv venv`
+   followed by `source venv/bin/activate`
 ```
+
 3.  **Install the required dependencies:**
 
     ```bash
@@ -135,6 +140,11 @@ To run this project locally, follow these steps:
 
     ```bash
     FLASK_APP=app.py SECRET_KEY=CHANGE_TO_SOMETHING_RANDOM flask run -h 0.0.0.0
+    ```
+    OR alternatively for better performance and security run the Flask app through gunicorn:
+    ```bash
+    pip install gunicorn eventlet
+    gunicorn --worker-class eventlet -w 1 -b 0.0.0.0:5000 app:app
     ```
 
 5.  **Access the game:** Open your web browser and go to `http://127.0.0.1:5000`
@@ -157,4 +167,3 @@ depth and improving the user experience.
     spectator.
   - **Single Phone Mode:** Allow a game to be guided by passing around a single
     phone with psuedo-admin.
-
