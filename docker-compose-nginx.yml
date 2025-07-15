@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  # The Flask Application Service
+  app:
+    build: .
+    #  dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env.werewolves
+    expose:
+      # Expose port 5000 to the internal Docker network, but not to the host machine
+      - "5000"
+    volumes:
+      # Mount the current directory into the container for easy development changes
+      # For pure production, you might remove this volume mount
+      - .:/werewolves_game
+
+  # The Nginx Reverse Proxy Service
+  nginx:
+    image: nginx:latest
+    restart: unless-stopped
+    ports:
+      # Map the host port (from .env) to the container's port 80
+      - "${NGINX_PORT:-5000}:80"
+      # If you set up SSL, you would also map port 443
+      # - "443:443"
+    volumes:
+      # Mount the Nginx configuration file
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      # If you set up SSL with Let's Encrypt, you would add volumes for certificates
+      # - ./nginx/letsencrypt:/etc/letsencrypt
+    depends_on:
+      - app
+

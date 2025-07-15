@@ -1,6 +1,7 @@
-# Version: 1.10.2
+# Version: 1.10.3
 # gemini final version phase 5
 import os
+from dotenv import load_dotenv, find_dotenv
 import random
 from collections import Counter
 from flask import (
@@ -16,11 +17,26 @@ from flask_socketio import SocketIO, join_room, leave_room, emit
 import uuid
 
 # --- App Initialization ---
+load_dotenv(find_dotenv(filename=".env.werewolves"))
+
 app = Flask(__name__)
+# IMPORTANT: In production, this MUST be set as an environment variable.
 app.config["SECRET_KEY"] = os.environ.get(
-    "SECRET_KEY", "a-very-secret-key-that-is-long-and-random"
+    "FLASK_SECRET_KEY", "omiunhbybt7vr6c53wz3523c2r445ybF4y6jmo8o8p"
 )
-socketio = SocketIO(app)
+
+# Configure CORS for Socket.IO from environment variables
+# This is crucial for security in a production environment.
+origins = os.environ.get("CORS_ALLOWED_ORIGINS")
+socketio = SocketIO(
+    app,
+    cors_allowed_origins=origins.split(",") if origins else ["http://127.0.0.1:5000"],
+)
+
+if origins:
+    print(f"+++> .env FILE FOUND")
+else:
+    print(f"---> .env FILE NOT FOUND")
 
 # --- Game State ---
 game = {
@@ -890,7 +906,13 @@ def handle_vote_for_rematch():
 
 
 if __name__ == "__main__":
-    socketio.run(app, host="0.0.0.0", debug=True, allow_unsafe_werkzeug=True)
+    print(f"this is origins: {origins}")
+    # This block is for local development only and will not be used by Gunicorn
+    socketio.run(
+        app,
+        debug=True,
+    )
 
     # Socket.IO CORS: Configure Socket.IO to only accept connections from your game's domain name. This prevents malicious websites from connecting to your game server.
     # socketio.run(app, cors_allowed_origins="https://your-game-domain.com")
+    # allow_unsafe_werkzeug=True,
