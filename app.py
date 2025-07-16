@@ -1,8 +1,9 @@
-# Version: 1.10.3
+# Version: 1.10.5
 # gemini final version phase 5
 import os
 from dotenv import load_dotenv, find_dotenv
 import random
+import time
 from collections import Counter
 from flask import (
     Flask,
@@ -42,6 +43,8 @@ else:
 game = {
     "players": {},  # dictionary mapping player_id (UUID string) to Player objects
     "game_state": "waiting",  # started night accusation_phase lynch_vote_phase ended
+    "phase_start_time": None,  # timestamp for the current phase
+    "game_over_data": None,  # Stores the final game over payload
     "players_ready_for_game": set(),  # ready player_ids
     "admin_sid": None,
     "game_code": "W",
@@ -58,7 +61,7 @@ game = {
     "lynch_vote_timer": None,
     "night_timer": None,
     # dictionary storing duration (in seconds) for each game phase timer
-    "timer_durations": {"night": 60, "accusation": 60, "lynch_vote": 60},
+    "timer_durations": {"night": 90, "accusation": 90, "lynch_vote": 60},
     # A unique, incrementing ID for each timer instance to prevent old timers from firing.
     "current_timer_id": 0,
     "rematch_votes": set(),  # set player_ids for game_over rematch
@@ -125,6 +128,8 @@ def full_game_reset(new_code="W", admin_to_keep=None):
     game = {
         "players": {},
         "game_state": "waiting",
+        "phase_start_time": None,
+        "game_over_data": None,
         "players_ready_for_game": set(),
         "admin_sid": None,
         "game_code": new_code,
@@ -154,6 +159,8 @@ def full_game_reset(new_code="W", admin_to_keep=None):
 def reset_game_state():
     log_and_emit("A majority voted for a new match. Get Ready!")
     game["game_state"] = "waiting"
+    game["phase_start_time"] = None
+    game["game_over_data"] = None
     game["night_wolf_choices"] = {}
     game["night_seer_choice"] = None
     game["seer_investigated"] = False
@@ -226,6 +233,12 @@ def check_win_conditions():
     if winner:
         game["game_state"] = "ended"
         game["admin_only_chat"] = False  # reset chat mode
+        socketio.emit(
+            "chat_mode_update",
+            {"admin_only": game["admin_only_chat"]},
+            room=game["game_code"],
+        )
+
         final_player_states = [
             {"username": p.username, "role": p.role, "is_alive": p.is_alive}
             for p in game["players"].values()
@@ -235,6 +248,7 @@ def check_win_conditions():
             "reason": reason,
             "final_player_states": final_player_states,
         }
+        game["game_over_data"] = payload  # Store results for refreshes
         log_and_emit(f"Game over! The {winner} have won! {reason}")
         socketio.sleep(6)
         socketio.emit("game_over", payload, room=game["game_code"])
@@ -251,6 +265,7 @@ def start_new_phase(phase_name):
     current_timer_id = game["current_timer_id"]
 
     game["game_state"] = phase_name
+    game["phase_start_time"] = time.time()  # Record when the phase starts
     game["end_day_votes"] = set()
     game["lynch_target_id"], game["lynch_votes"] = None, {}
 
@@ -604,6 +619,18 @@ def handle_connect(auth=None):
         log_and_emit(
             f">>>> Game Phase: {game['game_state']}. Syncing state for {player.username}."
         )
+
+        # Calculate remaining time for the current phase timer
+        remaining_duration = 0
+        if game["game_state"] not in ["waiting", "ended"] and game.get(
+            "phase_start_time"
+        ):
+            elapsed = time.time() - game["phase_start_time"]
+            phase_duration = game["timer_durations"].get(
+                game["game_state"].replace("_phase", ""), 0
+            )
+            remaining_duration = max(0, phase_duration - elapsed)
+
         emit(
             "game_state_sync",
             {
@@ -618,10 +645,9 @@ def handle_connect(auth=None):
                     {"id": p.id, "username": p.username}
                     for p in game["players"].values()
                 ],
-                "duration": game["timer_durations"].get(
-                    game["game_state"].replace("_phase", ""), 0
-                ),
+                "duration": remaining_duration,
                 "admin_only_chat": game.get("admin_only_chat", False),
+                "game_over_data": game.get("game_over_data"),
             },
         )
 
@@ -646,11 +672,11 @@ def handle_send_message(data):
     if not message_text:
         return
 
-    channel = "announcement"
     # Admin only chat logic
     if game.get("admin_only_chat", False) or game["game_state"] == "night":
         if p.is_admin:
             # Admin message is an announcement to all
+            channel = "announcement"
             formatted_message = f"<strong>ADMIN:</strong> {message_text}"
         else:  # restricted chat - admin/night
             if game["game_state"] == "night":
@@ -736,7 +762,7 @@ def handle_admin_start_game():
     log_and_emit("===> Admin started game. Assigning roles.")
     assign_roles()
     game["game_state"] = "started"
-    game["players_ready_for_game"].clear()
+    game["players_ready_for_game"].clear()  # debug: is this still needed?
     socketio.emit("game_started", room=game["game_code"])
 
 
@@ -904,7 +930,7 @@ def handle_vote_for_rematch():
         num_votes = len(game["rematch_votes"])
         total_players = len(game["players"])
 
-        # Check if a majority has been reached
+        # Check if a majority has been reached or admin forces
         if num_votes > total_players / 2 or p.is_admin:
             reset_game_state()
             socketio.emit("redirect_to_lobby", {}, room=game["game_code"])
@@ -915,13 +941,5 @@ def handle_vote_for_rematch():
 
 
 if __name__ == "__main__":
-    print(f"this is origins: {origins}")
     # This block is for local development only and will not be used by Gunicorn
-    socketio.run(
-        app,
-        debug=True,
-    )
-
-    # Socket.IO CORS: Configure Socket.IO to only accept connections from your game's domain name. This prevents malicious websites from connecting to your game server.
-    # socketio.run(app, cors_allowed_origins="https://your-game-domain.com")
-    # allow_unsafe_werkzeug=True,
+    socketio.run(app, host="0.0.0.0", debug=True, allow_unsafe_werkzeug=True)

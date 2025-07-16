@@ -1,4 +1,4 @@
-<!-- Version: 1.10.3b -->
+<!-- Version: 1.10.5 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -254,8 +254,8 @@
         font-weight: bold;
       }
       #admin-chat-toggle-btn {
-        margin-top: 10px;
-        width: 80%;
+        margin-top: 5px;
+        width: 90%;
       }
 
       /* --- Mobile Responsive Styles --- */
@@ -482,8 +482,7 @@
               actionArea.innerHTML = `<p>You have seen all that you can see tonight.</p>`;
             };
           } else {
-            actionArea.innerHTML = `<p>You are dreaming of yummy pupusas while the night
-              creatures are stirring ...  </p><h4>Who is acting quirky this night?</h4><select
+            actionArea.innerHTML = `<p>You are dreaming of yummy pupusas while the night creatures are stirring ...  </p><h4>Who is acting quirky this night?</h4><select
               id="action-select"></select> <button id="action-btn">Select</button>`;
             populateSelect("action-select", livingPlayers, true);
             document.getElementById("action-btn").onclick = () => {
@@ -521,10 +520,11 @@
         timerDisplay.textContent = "";
         if (duration > 0) {
           let timeLeft = duration;
-          const update = () =>
-            (timerDisplay.textContent = `Time left: ${Math.floor(
-              timeLeft / 60,
-            )}:${("0" + (timeLeft % 60)).slice(-2)}`);
+          const update = () => {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = Math.floor(timeLeft % 60);
+            timerDisplay.textContent = `Time left: ${minutes}:${("0" + seconds).slice(-2)}`;
+          };
           update();
           timerInterval = setInterval(() => {
             if (--timeLeft >= 0) update();
@@ -534,6 +534,38 @@
             }
           }, 1000);
         }
+      }
+
+      // listener waits for 'game_over' message from server.
+      // Then hides main game area and displays results screen,
+      // populating it with the winner, reason, and list of roles from the server.
+      function showGameOverScreen(data) {
+        if (timerInterval) clearInterval(timerInterval);
+
+        // Hide the main game container
+        document.querySelector(".game-container").style.display = "none";
+
+        // Get the game over screen elements
+        // Populate the screen with data from the server
+        const rolesList = document.getElementById("final-roles-list");
+        document.getElementById("game-over-title").textContent =
+          `The ${data.winning_team} Win!`;
+        document.getElementById("game-over-reason").textContent = data.reason;
+        rolesList.innerHTML = "";
+        for (const player of data.final_player_states) {
+          const li = document.createElement("li");
+          const isDead = !player.is_alive;
+          li.innerHTML = `<strong>${player.username}</strong> was a <strong>${player.role}</strong> ${isDead ? "💀" : ""}`;
+          rolesList.appendChild(li);
+        }
+
+        gameOverScreen.style.display = "flex";
+
+        document.getElementById("return-to-lobby-btn").onclick = (event) => {
+          socket.emit("vote_for_rematch");
+          event.target.disabled = true;
+          event.target.textContent = "Voted!";
+        };
       }
 
       // --- Socket Listeners ---
@@ -548,6 +580,13 @@
         isAlive = data.is_alive;
         livingPlayers = data.living_players;
         allPlayers = data.all_players;
+
+        if (data.phase === "ended" && data.game_over_data) {
+          showGameOverScreen(data.game_over_data);
+          updateChatUI();
+          return;
+        }
+
         myRoleDisplay.textContent =
           myRole.charAt(0).toUpperCase() + myRole.slice(1);
         if (isAdmin) {
@@ -559,7 +598,6 @@
         updatePlayerListView();
         updateChatUI();
         setChatMode(data.admin_only_chat);
-        // timer issue is here, duration should be current elapsed time
         startTimer(data.duration);
       });
 
@@ -700,29 +738,7 @@
       // Then hides main game area and displays results screen,
       // populating it with the winner, reason, and list of roles from the server.
       socket.on("game_over", (data) => {
-        if (timerInterval) clearInterval(timerInterval);
-
-        // Hide the main game container
-        document.querySelector(".game-container").style.display = "none";
-
-        // Get the game over screen elements
-        const gameOverScreen = document.getElementById("game-over-screen");
-        const rolesList = document.getElementById("final-roles-list");
-
-        // Populate the screen with data from the server
-        document.getElementById("game-over-title").textContent =
-          `The ${data.winning_team} Win!`;
-        document.getElementById("game-over-reason").textContent = data.reason;
-
-        rolesList.innerHTML = "";
-        for (const player of data.final_player_states) {
-          const li = document.createElement("li");
-          const isDead = !player.is_alive;
-          li.innerHTML = `<strong>${player.username}</strong> was a <strong>${player.role}</strong> ${isDead ? "💀" : ""}`;
-          rolesList.appendChild(li);
-        }
-
-        gameOverScreen.style.display = "flex";
+        showGameOverScreen(data);
       });
       // listens for updates on the rematch vote count and
       // displays the status to the players.
