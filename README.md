@@ -83,19 +83,19 @@ To run this project locally, follow these steps:
     cd werewolves_game
     ```
 
-2. EITHER run via Dockerfile (steps 2A ,5) OR through docker-compose (steps 2B, 5) OR install and run locally (steps 2C-5). Edit `.env.werewolves` file: FLASK_SECRET_KEY to_something_long_random, CORS_ALLOWED_ORIGINS to desired game web address http://127.0.0.1:5000,http://your.ip.here:5000,https://your.site.here:5000.
+2. **EITHER** run via Dockerfile (steps 2A & 5) **OR** through docker-compose (steps 2B & 5) **OR** install and run locally (steps 2C-5). **Edit** `.env.werewolves` file: FLASK_SECRET_KEY to_something_long_random, CORS_ALLOWED_ORIGINS to desired game web address http://127.0.0.1:5000,http://your.ip.here:5000,https://your.site.here:5000.
 ```markdown
-    A. **Build docker and run.** Can change port used in browser to 8080 for example: -p 8080:5000.   
+    A. Build docker and run. Can change port used in browser to 8080 for example: -p 8080:5000.   
         - `docker build -t werewolves_game .`
         - `docker run -p 5000:5000 --name werewolves_game werewolves_game`
-    B. **Build docker compose and run.**
+    B. Build docker compose and run.
         - `docker compose up --build`
         - `docker compose up`
-        For nginx docker compose version, edit `.env.werewolves` file: NGINX_PORT to desired port (default 5000) and server_name in nginx.conf
+        For nginx docker compose version: edit `.env.werewolves` file: NGINX_PORT to desired port (default 5000) and server_name in nginx.conf
         - `docker compose -f ./docker-compose-nginx.yml up --build`
     C. Create and activate a virtual environment:
-        - **Windows:** `python -m venv venv` followed by `.\venv\Scripts\activate`
-        - **macOS / Linux:** `python3 -m venv venv` followed by `source venv/bin/activate`
+        - Windows: `python -m venv venv` followed by `.\venv\Scripts\activate`
+        - macOS / Linux: `python3 -m venv venv` followed by `source venv/bin/activate`
 ```
 
 3.  **Install the required dependencies:**
@@ -107,7 +107,7 @@ To run this project locally, follow these steps:
 4.  **Run the Flask application:**
 
     ```bash
-    FLASK_APP=app.py FLASK_SECRET_KEY=CHANGE_TO_SOMETHING_RANDOM flask run -h 0.0.0.0
+    FLASK_APP=app.py flask run -h 0.0.0.0
     ```
     OR alternatively for better performance and security run the Flask app through gunicorn:
     ```bash

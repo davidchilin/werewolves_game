@@ -58,7 +58,7 @@ game = {
     "lynch_vote_timer": None,
     "night_timer": None,
     # dictionary storing duration (in seconds) for each game phase timer
-    "timer_durations": {"night": 90, "accusation": 90, "lynch_vote": 60},
+    "timer_durations": {"night": 60, "accusation": 60, "lynch_vote": 60},
     # A unique, incrementing ID for each timer instance to prevent old timers from firing.
     "current_timer_id": 0,
     "rematch_votes": set(),  # set player_ids for game_over rematch
@@ -255,6 +255,7 @@ def start_new_phase(phase_name):
     game["lynch_target_id"], game["lynch_votes"] = None, {}
 
     if phase_name == "accusation_phase":
+        game["admin_only_chat"] = False
         game["seer_investigated"] = False  # Reset seer flag during accusation_phase
         game["night_wolf_choices"], game["night_seer_choice"] = {}, None
         game["accusations"] = {}
@@ -262,6 +263,7 @@ def start_new_phase(phase_name):
             target=accusation_timer_task, timer_id=current_timer_id
         )
     elif phase_name == "night":
+        game["admin_only_chat"] = True
         game["accusation_restarts"] = 0
         # game["accusations"] = {}
         game["night_timer"] = socketio.start_background_task(
@@ -272,6 +274,12 @@ def start_new_phase(phase_name):
         for wolf in all_wolves:
             teammates = [name for name in wolf_names if name != wolf.username]
             socketio.emit("wolf_team_info", {"teammates": teammates}, room=wolf.sid)
+
+    socketio.emit(
+        "chat_mode_update",
+        {"admin_only": game["admin_only_chat"]},
+        room=game["game_code"],
+    )
 
     duration = game["timer_durations"].get(phase_name.replace("_phase", ""), 0)
     socketio.emit(
@@ -320,7 +328,7 @@ def lynch_vote_timer_task(timer_id):
             process_lynch_vote()
         else:
             log_and_emit(
-                f"================== Old lynch vote timer ({timer_id}) expired. Ignoring."
+                f"========= Old lynch vote timer ({timer_id}) expired. Ignoring."
             )
 
 
@@ -415,7 +423,7 @@ def tally_accusations(from_timer=False):
             game["accusations"].clear()
             socketio.emit(
                 "message",
-                {"text": "A tie has occurred! A new round of accusations will begin."},
+                {"text": "A tie has occurred! A new round of accusations will begin 🎭"},
             )
             socketio.sleep(3)
             start_new_phase("accusation_phase")
@@ -460,7 +468,7 @@ def process_lynch_vote():
         vote_summary[vote].append(game["players"][voter_id].username)
     if yes_votes > len(votes) / 2:
         target_player.is_alive = False
-        message = f"{target_player.username} has been lynched! They were a {target_player.role}."
+        message = f"🔪 {target_player.username} has been lynched! They were a {target_player.role} ⚰️"
         socketio.emit(
             "lynch_vote_result",
             {"message": message, "killed_id": target_id, "summary": vote_summary},
@@ -640,12 +648,21 @@ def handle_send_message(data):
 
     channel = "announcement"
     # Admin only chat logic
-    if game.get("admin_only_chat", False):
-        if not p.is_admin:
-            emit("message", {"text": "Chat is currently restricted to the admin."})
+    if game.get("admin_only_chat", False) or game["game_state"] == "night":
+        if p.is_admin:
+            # Admin message is an announcement to all
+            formatted_message = f"<strong>ADMIN:</strong> {message_text}"
+        else:  # restricted chat - admin/night
+            if game["game_state"] == "night":
+                emit(
+                    "message",
+                    {
+                        "text": f"shhh...the village is sleeping quietly, <strong>{p.username}</strong>"
+                    },
+                )
+            else:
+                emit("message", {"text": "Chat is currently restricted."})
             return
-        # Admin message is an announcement to all
-        formatted_message = f"<strong>ADMIN:</strong> {message_text}"
     else:
         # Regular chat logic
         formatted_message = f"<strong>{p.username}:</strong> {message_text}"
@@ -674,11 +691,6 @@ def handle_admin_toggle_chat():
     socketio.emit(
         "chat_mode_update",
         {"admin_only": is_admin_only},
-        room=game["game_code"],
-    )
-    socketio.emit(
-        "message",
-        {"text": f"Chat mode has been set to: {status}."},
         room=game["game_code"],
     )
 
@@ -778,13 +790,11 @@ def handle_client_ready_for_game():
 def handle_wolf_choice(data):
     player_id, p = get_player_by_sid(request.sid)
     if not p or p.role != "wolf" or not p.is_alive or game["game_state"] != "night":
-        log_and_emit(f"wolf_choice do nothing but return1")
         return
     target_id = data.get("target_id")
     if target_id and (
         target_id not in game["players"] or not game["players"][target_id].is_alive
     ):
-        log_and_emit(f"wolf_choice do nothing but return2")
         return
     game["night_wolf_choices"][player_id] = target_id
     check_night_actions_complete()
@@ -800,7 +810,6 @@ def handle_seer_choice(data):
         or game["game_state"] != "night"
         or game["seer_investigated"]
     ):
-        log_and_emit(f"seer_choice do nothing but return1")
         return
 
     target_id = data.get("target_id")
@@ -816,9 +825,9 @@ def handle_seer_choice(data):
             "seer_result",
             {
                 "username": game["players"][target_id].username,
-                "role": "wolf"
+                "role": "a wolf"
                 if game["players"][target_id].role == "wolf"
-                else "not wolf",
+                else "not a wolf",
             },
         )
     check_night_actions_complete()

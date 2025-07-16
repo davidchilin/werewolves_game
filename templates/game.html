@@ -1,8 +1,9 @@
-<!-- Version: 1.10.2 -->
+<!-- Version: 1.10.3b -->
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Werewolves - The Game</title>
     <style>
       body {
@@ -13,23 +14,25 @@
         justify-content: center;
         align-items: center;
         margin: 0;
-        height: 100vh;
+        min-height: 100vh;
         background-color: #121212;
         color: #e0e0e0;
       }
       .game-container {
-        width: 90%;
+        width: 95%;
         max-width: 800px;
         display: flex;
         gap: 20px;
       }
       .main-panel {
         flex-grow: 1;
+        min-width: 0; /* Prevents flexbox overflow */
       }
       .side-panel {
         width: 250px;
         border-left: 1px solid #444;
         padding-left: 20px;
+        flex-shrink: 0; /* Prevents side panel from shrinking */
         display: flex;
         flex-direction: column;
       }
@@ -162,11 +165,13 @@
         height: 100%;
         background-color: rgba(18, 18, 18, 0.95);
         z-index: 100;
+        overflow-y: auto; /* Allow scrolling on small screens */
       }
       .game-over-box {
         width: 90%;
         max-width: 500px;
-        padding: 30px;
+        padding: 20px;
+        margin: 20px 0;
         background-color: #1e1e1e;
         border: 1px solid #bb86fc; /* Purple highlight border */
         border-radius: 12px;
@@ -250,7 +255,27 @@
       }
       #admin-chat-toggle-btn {
         margin-top: 10px;
-        width: 100%;
+        width: 80%;
+      }
+
+      /* --- Mobile Responsive Styles --- */
+      @media (max-width: 768px) {
+        body {
+          align-items: flex-start; /* Align to top on mobile */
+          padding-top: 15px;
+        }
+        .game-container {
+          flex-direction: column;
+          gap: 0;
+        }
+        .side-panel {
+          width: 100%;
+          border-left: none;
+          border-top: 1px solid #444;
+          padding-left: 0;
+          padding-top: 20px;
+          margin-top: 20px;
+        }
       }
     </style>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
@@ -365,7 +390,7 @@
       function setChatMode(isAdminOnly) {
         const isChatDisabled = isAdminOnly && !isAdmin;
         const placeholder = isChatDisabled
-          ? "Chat is admin-only"
+          ? "Chat is restricted."
           : "Type a message...";
 
         gameChatSendBtn.disabled = isChatDisabled;
@@ -418,7 +443,7 @@
 
       function updateChatUI() {
         if (!isAlive) {
-          gameChatTitle.textContent = "Ghost Chat";
+          gameChatTitle.textContent = "Ghost Chat👻";
           gameChatInput.placeholder = "Whisper to the other side...";
         } else {
           gameChatTitle.textContent = "Living Chat";
@@ -430,7 +455,7 @@
         actionArea.innerHTML = "";
         if (!isAlive) {
           actionArea.innerHTML =
-            "<h3>You are dead. You can observe the game in silence.</h3>";
+            "<h3>You are dead 💀 You can observe the game in silence.</h3>";
           return;
         }
         if (phase === "night") {
@@ -457,11 +482,16 @@
               actionArea.innerHTML = `<p>You have seen all that you can see tonight.</p>`;
             };
           } else {
-            actionArea.innerHTML =
-              "<p>You are dreaming of yummy pupusas while the night creatures are stirring ...</p>";
+            actionArea.innerHTML = `<p>You are dreaming of yummy pupusas while the night
+              creatures are stirring ...  </p><h4>Who is acting quirky this night?</h4><select
+              id="action-select"></select> <button id="action-btn">Select</button>`;
+            populateSelect("action-select", livingPlayers, true);
+            document.getElementById("action-btn").onclick = () => {
+              actionArea.innerHTML = `<p>You have made your choice.</p>`;
+            };
           }
         } else if (phase === "accusation_phase") {
-          actionArea.innerHTML = `<h4>Who is the wolf? Time for discussion!</h4><select id="accuse-select"></select><button id="accuse-btn">Accuse</button><hr><h4>Ready for Night?</h4><button id="vote-end-day-btn" disabled>Vote to Sleep (30s)</button><div id="end-day-vote-counter"></div>`;
+          actionArea.innerHTML = `<h4>Who is the wolf? Time for discussion!</h4><select id="accuse-select"></select><button id="accuse-btn">Accuse</button><hr><h4>Ready for Night?</h4><button id="vote-end-day-btn" disabled>💤 Vote to Sleep (30s)</button><div id="end-day-vote-counter"></div>`;
           populateSelect("accuse-select", livingPlayers, true);
           document.getElementById("accuse-btn").onclick = () =>
             socket.emit("accuse_player", {
@@ -590,7 +620,7 @@
       });
 
       socket.on("seer_result", (data) => {
-        const msg = `Your vision reveals that <strong>${data.username}</strong> is a <strong>${data.role}</strong>.`;
+        const msg = `Your vision reveals that <strong>${data.username}</strong> is <strong>${data.role}</strong>.`;
         logMessage(msg);
         actionArea.innerHTML = `<p>${msg}</p>`;
       });
@@ -608,7 +638,7 @@
       socket.on("night_result_kill", (data) => {
         const { username, role, id } = data.killed_player;
         logMessage(
-          `Remnants of a body were found! <strong>${username}</strong> was killed. They were a <strong>${role}</strong>.`,
+          `🫀 Remnants of a body were found! <strong>${username}</strong> was killed. They were a <strong>${role}</strong> ⚰️`,
         );
         if (myPlayerId === id) {
           isAlive = false;
@@ -617,7 +647,7 @@
       });
 
       socket.on("night_result_no_kill", () =>
-        logMessage("The sun rises, and no one was killed."),
+        logMessage("🌞 The sun rises, and no one was killed."),
       );
 
       socket.on("error", (data) => {
@@ -691,6 +721,7 @@
           li.innerHTML = `<strong>${player.username}</strong> was a <strong>${player.role}</strong> ${isDead ? "💀" : ""}`;
           rolesList.appendChild(li);
         }
+
         gameOverScreen.style.display = "flex";
       });
       // listens for updates on the rematch vote count and
@@ -710,7 +741,7 @@
       });
       socket.on("force_relogin", (data) => {
         alert(
-          `The admin has set a new game code.\nYou will now be returned to the login screen.`,
+          `Admin has set a new game code.\nYou will now be returned to the login screen.`,
         );
         window.location.href = "/";
       });
