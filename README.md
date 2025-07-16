@@ -100,7 +100,7 @@ To run this project locally, follow these steps:
 3.  **Install the required dependencies:**
 
     ```bash
-    pip install Flask Flask-SocketIO python-uuid
+    pip install Flask Flask-SocketIO python-uuid python-dotenv
     ```
 
 4.  **Run the Flask application:**
