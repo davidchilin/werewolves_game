@@ -5,7 +5,7 @@
 FROM python:3.10-slim
 # Copy files to working directory in the container
 WORKDIR /werewolves_game
-COPY templates/ app.py favicon.ico requirements.txt /werewolves_game/
+COPY templates/ app.py favicon.ico requirements.txt .env.werewolves /werewolves_game/
 COPY templates/ /werewolves_game/templates/
 # Install any needed packages specified in requirements.txt
 RUN pip3 install --upgrade pip && pip install --no-cache-dir -r requirements.txt
