@@ -1,6 +1,6 @@
 # **Werewolves - A Flask-based Multiplayer Game**
 
-A self-hosted real-time multiplayer social deduction game inspired by Werewolves and Mafia. This web application is built primarily with Python, using the Flask framework and WebSockets for live player interaction. I made this to practice using an LLM.
+A self-hosted real-time multiplayer social deduction game inspired by Werewolves and Mafia. This web application is built primarily with Python, using the Flask framework and WebSockets for live player interaction. I made this game to practice using an LLM. [Install](#setup-and-running-the-project)
 
 ## **Description**
 
@@ -10,14 +10,14 @@ This project is a web-based implementation of the classic party game Werewolves.
 
 <img src="lobby.png" width="50%" align="right" />
 
-- **Secure Game Lobby:** Players join a single game instance using a shared, verbally communicated game code.
+- **Secure Game Lobby:** Players join a single game instance using a shared game code.
 - **Admin Controls:** The first player to join becomes the admin and has the ability to:
   - Exclude players from the lobby.
   - Start the game once enough players have joined (minimum of 4).
   - Set custom timer durations (in seconds) for the Night, Accusation, and Lynch Vote phases.
   - Set a new game code.
   - Set admin only chat.
-- **Persistent Sessions:** Players can refresh their browser or momentarily disconnect without losing their place in the game.
+- **Persistent Sessions:** Players can refresh their browser or momentarily disconnect without losing their place in the game (although timer might be incorrect)
 - **Dynamic Role Assignment:** At the start of the game, players are randomly and secretly assigned one of three roles:
   - **Villager:** Must work to find and eliminate the wolves.
   - **Wolf:** Must work with other wolves to eliminate villagers until they have the majority.
@@ -27,9 +27,8 @@ This project is a web-based implementation of the classic party game Werewolves.
   - **Villagers Win:** When all wolves have been eliminated.
   - **Wolves Win:** When the number of living wolves is equal to or greater than the number of living non-wolves.
 - **Game Over & Rematch System:**
-  - When a win condition is met, a "Game Over" screen is displayed to all players, showing the winning team, the reason for victory, and a list of all
-    players and their final roles.
-  - From the Game Over screen, players can vote to "Return to Lobby". Once a majority is reached, the game state is reset, and all players are automatically redirected to the lobby to start a fresh game with the same group.
+  - When a win condition is met, a "Game Over" screen is displayed to all players, showing the winning team, the reason for victory, and a list of all players and their final roles.
+  - From the Game Over screen, players can chat and vote to "Return to Lobby". Once a majority is reached, the game state is reset, and all players are automatically redirected to the lobby to start a fresh game with the same group.
 - **Dark Mode UI:** A clean, modern dark theme for comfortable gameplay.
 
 ## **Game Phases**
@@ -41,13 +40,14 @@ This project is a web-based implementation of the classic party game Werewolves.
   - Phase ends when either the timer runs out OR all Wolves and the Seer have submitted their actions.
   - **Wolves:** Secretly vote to kill a player. A kill only succeeds if all living wolves vote unanimously for the same player.
   - **Seer:** Investigates one player's role each night. The result is shown only to the seer.
+  - **Villagers:** Can subtly cast suspision on a player.
   - After the night's actions, the game checks if a winning condition has been met before proceeding.
 
 - **Accusation Phase (Timed):**
 
   - Phase ends when either the timer runs out OR all living players have made an accusation.
   - Living players vote to accuse one person.
-  - A live count of accusations is displayed next to each player's name.
+  - A live tally of accusations is displayed next to each player's name.
   - Tie-Breaking Logic: If there is a tie for the most accused player:
     - If the tie is between only two players, no lynch vote occurs.
     - If the tie is among more than two players, the accusation phase is
@@ -62,14 +62,13 @@ This project is a web-based implementation of the classic party game Werewolves.
   - A detailed summary of who voted "Yes" and "No" is displayed in the game log.
   - After the vote, the game checks if a winning condition has been met before proceeding to the night.
 
-- **General Day Phase Actions:** Living players can vote to end the day phase early and immediately start the accusation process. If a majority is reached, the game transitions.
+- **General Day Phase Actions:** Living players can vote to end the day phase early (minimum 30 seconds) and start the accusation process. If a majority choose sleep, the game transitions to night.
 
 <img src="game_screen.png" width="80%" align="center"/>
 
 ## **Tech Stack**
 
-- **Backend:** Python 3.10
-- **Framework:** Flask
+- **Backend:** Python 3.10 - Flask, gunicorn, gevent
 - **Real-time Communication:** Flask-SocketIO
 - **Frontend:** Jinja2 for server-side templating, with vanilla HTML, CSS, and JavaScript for client-side interactivity.
 
