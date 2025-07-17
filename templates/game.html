@@ -1,4 +1,4 @@
-<!-- Version: 1.10.5 -->
+<!-- Version: 1.10.10 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -15,8 +15,8 @@
         align-items: center;
         margin: 0;
         min-height: 100vh;
-        background-color: #121212;
-        color: #e0e0e0;
+        background-color: #111111;
+        color: #eeeecc;
       }
       .game-container {
         width: 95%;
@@ -97,7 +97,7 @@
       }
       .action-area select,
       .action-area button {
-        font-size: 1em;
+        font-size: 1.1em;
         margin: 10px 5px 0 0;
         padding: 8px;
         border-radius: 5px;
@@ -253,9 +253,12 @@
         color: #bb86fc;
         font-weight: bold;
       }
-      #admin-chat-toggle-btn {
-        margin-top: 5px;
-        width: 90%;
+      #admin-controls-ingame button {
+        margin-top: 10px;
+        width: 100%;
+      }
+      .btn-active {
+        background-color: #dd6655; !important;
       }
 
       /* --- Mobile Responsive Styles --- */
@@ -293,9 +296,10 @@
         <div id="role-display" class="role-display">
           Your Role: <strong id="my-role">Unknown</strong>
         </div>
-        <button id="admin-chat-toggle-btn" style="display: none">
-          Toggle Admin-Only Chat
-        </button>
+        <div id="admin-controls-ingame" style="display: none">
+          <button id="admin-next-phase-btn">Next Phase</button>
+          <button id="admin-chat-toggle-btn">Toggle Admin-Only Chat</button>
+        </div>
         <h3>Players</h3>
         <ul id="player-list" class="player-list"></ul>
         <div id="game-chat-container" class="chat-container">
@@ -349,7 +353,8 @@
         livingPlayers = [],
         allPlayers = [],
         isAdmin = false,
-        timerInterval;
+        timerInterval,
+        timersDisabled = false;
 
       // --- DOM Elements ---
       const phaseDisplay = document.getElementById("phase-display");
@@ -358,9 +363,13 @@
       const logPanel = document.getElementById("log-panel");
       const playerListEl = document.getElementById("player-list");
       const myRoleDisplay = document.getElementById("my-role");
+      const adminControlsIngame = document.getElementById(
+        "admin-controls-ingame",
+      );
       const adminChatToggleBtn = document.getElementById(
         "admin-chat-toggle-btn",
       );
+      const adminNextPhaseBtn = document.getElementById("admin-next-phase-btn");
 
       // Game Chat
       const gameChatTitle = document.getElementById("chat-title");
@@ -387,16 +396,38 @@
         logPanel.prepend(div);
       }
 
-      function setChatMode(isAdminOnly) {
-        const isChatDisabled = isAdminOnly && !isAdmin;
-        const placeholder = isChatDisabled
-          ? "Chat is restricted."
-          : "Type a message...";
+      function updateAdminControls() {
+        if (isAdmin) {
+          adminControlsIngame.style.display = "block";
+          adminNextPhaseBtn.style.display = "block";
+        } else {
+          adminControlsIngame.style.display = "none";
+        }
+      }
+
+      function setChatMode(isAdminOnly, phase) {
+        let isChatDisabled = isAdminOnly && !isAdmin;
+        let placeholder = "Chat is restricted.";
+
+        if (phase === "night" && !isAdmin) {
+          placeholder = "sleepy quiet time...zzz";
+          isChatDisabled = true;
+        } else if (!isChatDisabled) {
+          if (!isAlive) {
+            gameChatTitle.textContent = "Ghost Chat 👻";
+            placeholder = "Whisper to the other side...";
+          } else {
+            gameChatTitle.textContent = "Living Chat";
+            placeholder = "Type a message...";
+          }
+        }
 
         gameChatSendBtn.disabled = isChatDisabled;
         gameChatInput.placeholder = placeholder;
         gameOverChatSendBtn.disabled = isChatDisabled;
         gameOverChatInput.placeholder = placeholder;
+
+        adminChatToggleBtn.classList.toggle("btn-active", isAdminOnly);
       }
 
       function populateSelect(elementId, players, includeNobody = false) {
@@ -439,16 +470,6 @@
           }
           playerListEl.appendChild(li);
         });
-      }
-
-      function updateChatUI() {
-        if (!isAlive) {
-          gameChatTitle.textContent = "Ghost Chat👻";
-          gameChatInput.placeholder = "Whisper to the other side...";
-        } else {
-          gameChatTitle.textContent = "Living Chat";
-          gameChatInput.placeholder = "Type a message...";
-        }
       }
 
       function renderActionUI(phase) {
@@ -518,6 +539,10 @@
       function startTimer(duration) {
         if (timerInterval) clearInterval(timerInterval);
         timerDisplay.textContent = "";
+        if (timersDisabled) {
+          timerDisplay.textContent = "Timer ♾️";
+          return;
+        }
         if (duration > 0) {
           let timeLeft = duration;
           const update = () => {
@@ -536,21 +561,15 @@
         }
       }
 
-      // listener waits for 'game_over' message from server.
-      // Then hides main game area and displays results screen,
-      // populating it with the winner, reason, and list of roles from the server.
       function showGameOverScreen(data) {
         if (timerInterval) clearInterval(timerInterval);
-
-        // Hide the main game container
         document.querySelector(".game-container").style.display = "none";
-
-        // Get the game over screen elements
-        // Populate the screen with data from the server
         const rolesList = document.getElementById("final-roles-list");
+
         document.getElementById("game-over-title").textContent =
           `The ${data.winning_team} Win!`;
         document.getElementById("game-over-reason").textContent = data.reason;
+
         rolesList.innerHTML = "";
         for (const player of data.final_player_states) {
           const li = document.createElement("li");
@@ -580,10 +599,11 @@
         isAlive = data.is_alive;
         livingPlayers = data.living_players;
         allPlayers = data.all_players;
+        timersDisabled = data.timers_disabled;
 
         if (data.phase === "ended" && data.game_over_data) {
           showGameOverScreen(data.game_over_data);
-          updateChatUI();
+          setChatMode(data.admin_only_chat, data.phase);
           return;
         }
 
@@ -596,9 +616,10 @@
         phaseDisplay.textContent = data.phase.replace(/_/g, " ");
         renderActionUI(data.phase);
         updatePlayerListView();
-        updateChatUI();
-        setChatMode(data.admin_only_chat);
+        updateAdminControls();
+        setChatMode(data.admin_only_chat, data.phase);
         startTimer(data.duration);
+        adminChatToggleBtn.classList.toggle("btn-active", data.admin_only_chat);
       });
 
       socket.on("phase_change", (data) => {
@@ -607,10 +628,14 @@
         );
         livingPlayers = data.living_players;
         if (data.all_players) allPlayers = data.all_players;
+        timersDisabled = data.timers_disabled;
         phaseDisplay.textContent = data.phase.replace(/_/g, " ");
         renderActionUI(data.phase);
         updatePlayerListView();
+        updateAdminControls();
+        setChatMode(data.admin_only_chat, data.phase);
         startTimer(data.duration);
+        adminChatToggleBtn.classList.toggle("btn-active", data.admin_only_chat);
       });
 
       socket.on("message", (data) => logMessage(data.text));
@@ -640,7 +665,8 @@
       });
 
       socket.on("chat_mode_update", (data) => {
-        setChatMode(data.admin_only);
+        setChatMode(data.admin_only_chat, data.phase);
+        adminChatToggleBtn.classList.toggle("btn-active", data.admin_only_chat);
       });
 
       socket.on("lynch_vote_result", (data) => {
@@ -652,7 +678,7 @@
         if (data.killed_id) {
           if (myPlayerId === data.killed_id) {
             isAlive = false;
-            updateChatUI();
+            setChatMode(data.admin_only_chat, data.phase);
           }
         }
       });
@@ -680,7 +706,7 @@
         );
         if (myPlayerId === id) {
           isAlive = false;
-          updateChatUI();
+          setChatMode(data.admin_only_chat, data.phase);
         }
       });
 
@@ -765,6 +791,12 @@
       // --- Event Listeners ---
       adminChatToggleBtn.addEventListener("click", () => {
         socket.emit("admin_toggle_chat");
+        adminChatToggleBtn.classList.toggle("btn-active", data.admin_only_chat);
+      });
+
+      adminNextPhaseBtn.addEventListener("click", () => {
+        socket.emit("admin_next_phase");
+        adminChatToggleBtn.classList.toggle("btn-active", data.admin_only_chat);
       });
 
       gameChatForm.addEventListener("submit", (e) => {

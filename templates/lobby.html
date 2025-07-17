@@ -1,4 +1,4 @@
-<!-- Version: 1.10.3 -->
+<!-- Version: 1.10.10 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -47,7 +47,8 @@
       .you {
         font-weight: bold;
       }
-      input {
+      input[type="text"],
+      input[type="number"] {
         padding: 8px;
         border-radius: 5px;
         border: 1px solid #444;
@@ -112,6 +113,9 @@
         flex-grow: 1;
         margin-right: 10px;
       }
+      .timer-options {
+        display: block;
+      }
     </style>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   </head>
@@ -152,28 +156,38 @@
           <button id="toggle-chat-btn">Toggle Admin-Only Chat</button>
         </div>
         <div class="admin-controls">
-          <h5>Timer Settings (seconds)</h5>
+          <h4>Timer Settings</h4>
           <div class="timer-setting">
-            <label for="night-timer-input">Night Phase:</label>
-            <input type="number" id="night-timer-input" value="90" min="30" />
+            <label for="disable-timers-checkbox">Disable Timers</label>
+            <input type="checkbox" id="disable-timers-checkbox" />
           </div>
-          <div class="timer-setting">
-            <label for="accusation-timer-input">Accusation Phase:</label>
-            <input
-              type="number"
-              id="accusation-timer-input"
-              value="90"
-              min="30"
-            />
-          </div>
-          <div class="timer-setting">
-            <label for="lynch-vote-timer-input">Lynch Vote Phase:</label>
-            <input
-              type="number"
-              id="lynch-vote-timer-input"
-              value="60"
-              min="30"
-            />
+          <div id="timer-options" class="timer-options">
+            <div class="timer-setting">
+              <label for="night-timer-input">Night Phase (sec):</label>
+              <input type="number" id="night-timer-input" value="90" min="30" />
+            </div>
+            <div class="timer-setting">
+              <label for="accusation-timer-input"
+                >Accusation Phase (sec):</label
+              >
+              <input
+                type="number"
+                id="accusation-timer-input"
+                value="90"
+                min="30"
+              />
+            </div>
+            <div class="timer-setting">
+              <label for="lynch-vote-timer-input"
+                >Lynch Vote Phase (sec):</label
+              >
+              <input
+                type="number"
+                id="lynch-vote-timer-input"
+                value="60"
+                min="30"
+              />
+            </div>
           </div>
           <button id="set-timers-btn">Set Timers</button>
         </div>
@@ -189,6 +203,10 @@
       const chatForm = document.getElementById("chat-form");
       const chatInput = document.getElementById("chat-input");
       const chatSendBtn = document.getElementById("chat-send-btn");
+      const disableTimersCheckbox = document.getElementById(
+        "disable-timers-checkbox",
+      );
+      const timerOptionsDiv = document.getElementById("timer-options");
 
       function excludePlayer(playerId) {
         if (confirm("Exclude this player?")) {
@@ -298,6 +316,10 @@
         }
       });
 
+      disableTimersCheckbox.addEventListener("change", (e) => {
+        timerOptionsDiv.style.display = e.target.checked ? "none" : "block";
+      });
+
       document.getElementById("start-game-btn").onclick = () => {
         socket.emit("admin_start_game");
       };
@@ -316,6 +338,7 @@
       };
       document.getElementById("set-timers-btn").onclick = () => {
         const timers = {
+          timers_disabled: disableTimersCheckbox.checked,
           night: document.getElementById("night-timer-input").value,
           accusation: document.getElementById("accusation-timer-input").value,
           lynch_vote: document.getElementById("lynch-vote-timer-input").value,

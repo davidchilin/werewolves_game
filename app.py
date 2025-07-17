@@ -1,5 +1,4 @@
-# Version: 1.10.5
-# gemini final version phase 5
+# Version: 1.10.10
 import os
 from dotenv import load_dotenv, find_dotenv
 import random
@@ -45,6 +44,7 @@ game = {
     "game_state": "waiting",  # started night accusation_phase lynch_vote_phase ended
     "phase_start_time": None,  # timestamp for the current phase
     "game_over_data": None,  # Stores the final game over payload
+    "timers_disabled": False,  # Admin can disable timers for manual progression
     "players_ready_for_game": set(),  # ready player_ids
     "admin_sid": None,
     "game_code": "W",
@@ -122,7 +122,6 @@ def broadcast_player_list():
 
 
 def full_game_reset(new_code="W", admin_to_keep=None):
-    """Resets the entire game object, optionally preserving the admin."""
     global game
     print(f"Admin has reset the game with a new code.")
     game = {
@@ -130,6 +129,7 @@ def full_game_reset(new_code="W", admin_to_keep=None):
         "game_state": "waiting",
         "phase_start_time": None,
         "game_over_data": None,
+        "timers_disabled": False,
         "players_ready_for_game": set(),
         "admin_sid": None,
         "game_code": new_code,
@@ -161,6 +161,7 @@ def reset_game_state():
     game["game_state"] = "waiting"
     game["phase_start_time"] = None
     game["game_over_data"] = None
+    game["timers_disabled"] = False
     game["night_wolf_choices"] = {}
     game["night_seer_choice"] = None
     game["seer_investigated"] = False
@@ -235,7 +236,7 @@ def check_win_conditions():
         game["admin_only_chat"] = False  # reset chat mode
         socketio.emit(
             "chat_mode_update",
-            {"admin_only": game["admin_only_chat"]},
+            {"admin_only_chat": game["admin_only_chat"]},
             room=game["game_code"],
         )
 
@@ -269,21 +270,24 @@ def start_new_phase(phase_name):
     game["end_day_votes"] = set()
     game["lynch_target_id"], game["lynch_votes"] = None, {}
 
+    if not game.get("timers_disabled", False):
+        if phase_name == "accusation_phase":
+            game["accusation_timer"] = socketio.start_background_task(
+                target=accusation_timer_task, timer_id=current_timer_id
+            )
+        elif phase_name == "night":
+            game["night_timer"] = socketio.start_background_task(
+                target=night_timer_task, timer_id=current_timer_id
+            )
+
     if phase_name == "accusation_phase":
         game["admin_only_chat"] = False
         game["seer_investigated"] = False  # Reset seer flag during accusation_phase
         game["night_wolf_choices"], game["night_seer_choice"] = {}, None
         game["accusations"] = {}
-        game["accusation_timer"] = socketio.start_background_task(
-            target=accusation_timer_task, timer_id=current_timer_id
-        )
     elif phase_name == "night":
         game["admin_only_chat"] = True
         game["accusation_restarts"] = 0
-        # game["accusations"] = {}
-        game["night_timer"] = socketio.start_background_task(
-            target=night_timer_task, timer_id=current_timer_id
-        )
         all_wolves = get_living_players("wolf")
         wolf_names = [p.username for p in all_wolves]
         for wolf in all_wolves:
@@ -292,7 +296,7 @@ def start_new_phase(phase_name):
 
     socketio.emit(
         "chat_mode_update",
-        {"admin_only": game["admin_only_chat"]},
+        {"admin_only_chat": game["admin_only_chat"]},
         room=game["game_code"],
     )
 
@@ -308,6 +312,7 @@ def start_new_phase(phase_name):
                 {"id": p.id, "username": p.username} for p in game["players"].values()
             ],
             "duration": duration,
+            "timers_disabled": game.get("timers_disabled", False),
         },
         room=game["game_code"],
     )
@@ -326,9 +331,7 @@ def accusation_timer_task(timer_id):
             )
             tally_accusations(from_timer=True)
         else:
-            log_and_emit(
-                f"=================== Old accusation timer ({timer_id}) expired. Ignoring."
-            )
+            log_and_emit(f"===> Old accusation timer ({timer_id}) expired. Ignoring.")
 
 
 def lynch_vote_timer_task(timer_id):
@@ -342,9 +345,7 @@ def lynch_vote_timer_task(timer_id):
             log_and_emit(f"Lynch vote timer ({timer_id}) expired. Processing votes.")
             process_lynch_vote()
         else:
-            log_and_emit(
-                f"========= Old lynch vote timer ({timer_id}) expired. Ignoring."
-            )
+            log_and_emit(f"===> Old lynch vote timer ({timer_id}) expired. Ignoring.")
 
 
 def night_timer_task(timer_id):
@@ -355,9 +356,7 @@ def night_timer_task(timer_id):
             log_and_emit(f"Night timer ({timer_id}) expired. Processing night actions.")
             process_night_actions()
         else:
-            log_and_emit(
-                f"==================== Old night timer ({timer_id}) expired. Ignoring."
-            )
+            log_and_emit(f"===> Old night timer ({timer_id}) expired. Ignoring.")
 
 
 def check_night_actions_complete():
@@ -458,9 +457,10 @@ def tally_accusations(from_timer=False):
     game["lynch_target_id"] = target_id
     game["game_state"] = "lynch_vote_phase"
     game["current_timer_id"] += 1  # Invalidate the old accusation timer
-    game["lynch_vote_timer"] = socketio.start_background_task(
-        target=lynch_vote_timer_task, timer_id=game["current_timer_id"]
-    )
+    if not game.get("timers_disabled", False):
+        game["lynch_vote_timer"] = socketio.start_background_task(
+            target=lynch_vote_timer_task, timer_id=game["current_timer_id"]
+        )
     socketio.emit(
         "lynch_vote_started",
         {
@@ -648,6 +648,7 @@ def handle_connect(auth=None):
                 "duration": remaining_duration,
                 "admin_only_chat": game.get("admin_only_chat", False),
                 "game_over_data": game.get("game_over_data"),
+                "timers_disabled": game.get("timers_disabled", False),
             },
         )
 
@@ -711,12 +712,10 @@ def handle_admin_toggle_chat():
         return
 
     game["admin_only_chat"] = not game.get("admin_only_chat", False)
-    status = "Admin Only" if game["admin_only_chat"] else "All Players"
-    is_admin_only = game["admin_only_chat"]
 
     socketio.emit(
         "chat_mode_update",
-        {"admin_only": is_admin_only},
+        {"admin_only_chat": game["admin_only_chat"]},
         room=game["game_code"],
     )
 
@@ -725,19 +724,31 @@ def handle_admin_toggle_chat():
 def handle_admin_set_timers(data):
     if request.sid != game["admin_sid"] or game["game_state"] != "waiting":
         return
-    try:
-        night_duration = max(30, int(data.get("night")))
-        accusation_duration = max(30, int(data.get("accusation")))
-        lynch_duration = max(30, int(data.get("lynch_vote")))
 
-        game["timer_durations"]["night"] = night_duration
-        game["timer_durations"]["accusation"] = accusation_duration
-        game["timer_durations"]["lynch_vote"] = lynch_duration
+    game["timers_disabled"] = data.get("timers_disabled", False)
 
-        log_and_emit(f"Admin set new timer durations: {game['timer_durations']}")
-        emit("message", {"text": "Timer durations have been updated."})
-    except (ValueError, TypeError):
-        emit("error", {"message": "Invalid timer values."})
+    if game["timers_disabled"]:
+        # Set a very long duration (30 minutes) if timers are disabled
+        duration = 1800
+        game["timer_durations"]["night"] = duration
+        game["timer_durations"]["accusation"] = duration
+        game["timer_durations"]["lynch_vote"] = duration
+        log_and_emit("Admin has DISABLED phase timers.")
+        emit("message", {"text": "Phase timers have been disabled."})
+    else:
+        try:
+            night_duration = max(30, int(data.get("night")))
+            accusation_duration = max(30, int(data.get("accusation")))
+            lynch_duration = max(30, int(data.get("lynch_vote")))
+
+            game["timer_durations"]["night"] = night_duration
+            game["timer_durations"]["accusation"] = accusation_duration
+            game["timer_durations"]["lynch_vote"] = lynch_duration
+
+            log_and_emit(f"Admin set new timer durations: {game['timer_durations']}")
+            emit("message", {"text": "Timer durations have been updated."})
+        except (ValueError, TypeError):
+            emit("error", {"message": "Invalid timer values."})
 
 
 @socketio.on("admin_exclude_player")
@@ -764,6 +775,23 @@ def handle_admin_start_game():
     game["game_state"] = "started"
     game["players_ready_for_game"].clear()  # debug: is this still needed?
     socketio.emit("game_started", room=game["game_code"])
+
+
+@socketio.on("admin_next_phase")
+def handle_admin_next_phase():
+    player_id, p = get_player_by_sid(request.sid)
+    if not p or not p.is_admin:
+        return
+
+    current_phase = game["game_state"]
+    log_and_emit(f"Admin is advancing the phase from {current_phase}.")
+
+    if current_phase == "night":
+        process_night_actions()
+    elif current_phase == "accusation_phase":
+        tally_accusations(from_timer=True)
+    elif current_phase == "lynch_vote_phase":
+        process_lynch_vote()
 
 
 @socketio.on("admin_set_new_code")
