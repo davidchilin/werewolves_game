@@ -1,15 +1,15 @@
-<!-- Version: 1.10.10 -->
-<!doctype html>
+<!-- Version: 2.0.0 -->
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Werewolves - The Game</title>
     <style>
+      /* --- Base Styles --- */
       body {
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
-          Arial, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
         display: flex;
         justify-content: center;
         align-items: center;
@@ -36,6 +36,8 @@
         display: flex;
         flex-direction: column;
       }
+
+      /* --- UI Components --- */
       .player-list {
         padding-left: 0;
       }
@@ -85,6 +87,8 @@
         color: #fdd835;
         margin-bottom: 20px;
       }
+
+      /* --- Standard Action Area --- */
       .action-area {
         min-height: 100px;
         border: 1px dashed #555;
@@ -134,6 +138,84 @@
         border-color: #444;
         margin: 20px 0;
       }
+      /* --- Phase 4: Pass-and-Play Styles --- */
+      #game-interface {
+        display: none; /* Hidden by default */
+      }
+      .pnp-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .pnp-btn {
+        width: 100%;
+        padding: 15px;
+        background-color: #3f51b5;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1.1em;
+        cursor: pointer;
+        text-align: center;
+        transition: transform 0.1s;
+      }
+      .pnp-btn:active {
+        transform: scale(0.98);
+      }
+      .confirm-box {
+        border: 2px solid #fdd835;
+        padding: 20px;
+        text-align: center;
+        background: #222;
+        border-radius: 10px;
+        margin-top: 20px;
+      }
+      .confirm-box h3 {
+        margin-top: 0;
+        color: #fdd835;
+      }
+      .confirm-box button {
+        margin: 10px;
+        padding: 10px 20px;
+        font-size: 1.1em;
+        cursor: pointer;
+        border-radius: 5px;
+        border: none;
+      }
+      .confirm-box button:first-of-type {
+        background-color: #4caf50;
+        color: white;
+      }
+      .confirm-box button.cancel {
+        background-color: #f44336;
+        color: white;
+      }
+      .role-header {
+        text-align: center;
+        margin-bottom: 20px;
+        border-bottom: 1px solid #444;
+        padding-bottom: 10px;
+      }
+      .target-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+      }
+      .target-grid button {
+        padding: 12px 20px;
+        background-color: #444;
+        border: 1px solid #666;
+        color: white;
+        cursor: pointer;
+        border-radius: 6px;
+      }
+      .target-grid button:hover {
+        background-color: #666;
+      }
+
+      /* --- Chat & Logs --- */
       .log-panel {
         height: 200px;
         overflow-y: scroll;
@@ -153,6 +235,38 @@
         font-size: 0.9em;
         color: #aaa;
       }
+      .chat-container {
+        margin-top: 20px;
+        display: flex;
+        flex-direction: column;
+      }
+      .chat-messages {
+        height: 150px;
+        overflow-y: auto;
+        border: 1px solid #333;
+        padding: 10px;
+        background: #1e1e1e;
+        margin-bottom: 10px;
+        display: flex;
+        flex-direction: column-reverse;
+      }
+      .chat-form {
+        display: flex;
+      }
+      .chat-input {
+        flex-grow: 1;
+        margin-right: 10px;
+      }
+      .ghost-chat {
+        color: #a0a0ff;
+        font-style: italic;
+      }
+      .announcement {
+        color: #bb86fc;
+        font-weight: bold;
+      }
+
+      /* --- Game Over Overlay --- */
       #game-over-screen {
         display: none; /* Keep it hidden by default */
         flex-direction: column;
@@ -218,40 +332,10 @@
         color: #aaa;
         min-height: 20px;
       }
-      .chat-container {
-        margin-top: 20px;
-        display: flex;
-        flex-direction: column;
-      }
-      .chat-messages {
-        height: 150px;
-        overflow-y: auto;
-        border: 1px solid #333;
-        padding: 10px;
-        background: #1e1e1e;
-        margin-bottom: 10px;
-        display: flex;
-        flex-direction: column-reverse;
-      }
       .chat-messages div {
         padding-bottom: 5px;
         margin-bottom: 5px;
         border-bottom: 1px solid #333;
-      }
-      .chat-form {
-        display: flex;
-      }
-      .chat-input {
-        flex-grow: 1;
-        margin-right: 10px;
-      }
-      .ghost-chat {
-        color: #a0a0ff; /* Light blue for ghost chat */
-        font-style: italic;
-      }
-      .announcement {
-        color: #bb86fc;
-        font-weight: bold;
       }
       #admin-controls-ingame button {
         margin-top: 10px;
@@ -288,20 +372,30 @@
       <div class="main-panel">
         <div id="phase-display" class="phase-display">Loading...</div>
         <div id="timer-display" class="timer-display"></div>
+
         <div id="action-area" class="action-area"><p>Please wait...</p></div>
+
+        <div id="game-interface"></div>
+
         <h3>Game Log</h3>
         <div id="log-panel" class="log-panel"></div>
       </div>
-      <div class="side-panel">
+
+      <div class="side-panel" id="side-panel">
         <div id="role-display" class="role-display">
           Your Role: <strong id="my-role">Unknown</strong>
         </div>
+
         <div id="admin-controls-ingame" style="display: none">
-          <button id="admin-next-phase-btn">Next Phase</button>
-          <button id="admin-chat-toggle-btn">Toggle Admin-Only Chat</button>
+          <button id="admin-next-phase-btn"
+            style="width: 100%; margin-top: 5px"
+          >Next Phase</button>
+          <button id="admin-chat-toggle-btn" style="width: 100%; margin-top: 5px" >Toggle Admin Chat</button>
         </div>
+
         <h3>Players</h3>
         <ul id="player-list" class="player-list"></ul>
+
         <div id="game-chat-container" class="chat-container">
           <h4 id="chat-title">Living Chat</h4>
           <div id="game-chat-messages" class="chat-messages"></div>
@@ -328,6 +422,7 @@
         <ul id="final-roles-list"></ul>
         <button id="return-to-lobby-btn">Vote to Return to Lobby</button>
         <div id="rematch-vote-status"></div>
+
         <div id="game-over-chat-container" class="chat-container">
           <h4>Post-Game Chat</h4>
           <div id="game-over-chat-messages" class="chat-messages"></div>
@@ -347,22 +442,31 @@
 
     <script>
       const socket = io();
+      // Global State
       let myRole,
         myPlayerId = "{{ player_id }}",
-        isAlive = false,
-        livingPlayers = [],
+        isAlive = false;
+      let livingPlayers = [],
         allPlayers = [],
-        isAdmin = false,
-        timerInterval,
+        isAdmin = false;
+      let timerInterval,
         timersDisabled = false;
+
+      // Phase 4 State
+      let isPassAndPlay = false;
+      let hasActed = new Set();
 
       // --- DOM Elements ---
       const phaseDisplay = document.getElementById("phase-display");
       const timerDisplay = document.getElementById("timer-display");
       const actionArea = document.getElementById("action-area");
+      const gameInterface = document.getElementById("game-interface"); // PnP container
       const logPanel = document.getElementById("log-panel");
       const playerListEl = document.getElementById("player-list");
       const myRoleDisplay = document.getElementById("my-role");
+      const sidePanel = document.getElementById("side-panel");
+
+      // Admin
       const adminControlsIngame = document.getElementById(
         "admin-controls-ingame",
       );
@@ -429,6 +533,89 @@
 
         adminChatToggleBtn.classList.toggle("btn-active", isAdminOnly);
       }
+      function requestGameSync() {
+        // Asks server for current state (refreshes Hub in PnP)
+        socket.emit("client_ready_for_game");
+      }
+
+      // --- PHASE 4: Pass-and-Play Logic ---
+      function renderHub(allPlayers) {
+        gameInterface.innerHTML =
+         `<h2>Night Phase: Who are you?</h2><div class="pnp-grid">` +
+        allPlayers.map((p) => {
+          if (!p.is_alive) return "";
+              // Check local history 'hasActed' to gray out buttons
+          const disabled = hasActed.has(p.id)
+            ? 'disabled style="opacity:0.5"'
+            : "";
+          const label = hasActed.has(p.id)
+            ? `${p.username} (Done)`
+            : p.username;
+          return `<button class="pnp-btn" ${disabled} onclick="startConfirmFlow('${p.id}', '${p.username}')">${label}</button>`;
+            })
+            .join("") + `</div>`;
+      }
+
+      // 2. Confirmation Flow
+      function startConfirmFlow(pid, name) {
+        gameInterface.innerHTML = `
+        <div class="confirm-box">
+            <h3>Are you ${name}?</h3>
+            <button onclick="confirmLevel2('${pid}', '${name}')">Yes, I am ${name}</button>
+            <button class="cancel" onclick="requestGameSync()">No, go back</button>
+        </div>`;
+      }
+
+      function confirmLevel2(pid, name) {
+        // Level 2 Confirm (Double Check)
+        gameInterface.innerHTML = `
+        <div class="confirm-box" style="border-color: #f44336">
+            <h3 style="color:#f44336">CONFIRM IDENTITY</h3>
+            <p>Pass device to <strong>${name}</strong>.</p>
+            <p>You are about to see secret info.</p>
+            <button onclick="loadPrivateData('${pid}')">I am ready</button>
+            <button class="cancel" onclick="requestGameSync()">Cancel</button>
+        </div>`;
+      }
+
+      // 3. Load Data & Render Action
+      function loadPrivateData(pid) {
+        socket.emit("pnp_request_state", { player_id: pid });
+      }
+
+      // Response from server with role data
+      socket.on("pnp_state_received", (data) => {
+        // Render Role & Prompt (Silly or Serious)
+        let roleName = data.role_name.replace("role_", "").toUpperCase();
+        let html = `
+        <div class="role-header">
+            <h2>You are: ${roleName}</h2>
+            <p style="font-size:1.2em; color:#fdd835">${data.prompt}</p>
+        </div>
+        <div class="target-grid">`;
+
+        // Render targets (including self if returned by backend)
+        html += data.targets.map((t) =>
+           `<button onclick="submitPnPAction('${data.id}', '${t.id}')">${t.name}</button>`).join("");
+
+        // Add "Skip/No Action" button if applicable?
+        html += `</div>`;
+        gameInterface.innerHTML = html;
+      });
+
+      // 4. Submit & Return
+      function submitPnPAction(actorId, targetId) {
+        socket.emit("pnp_submit_action", {
+          actor_id: actorId,
+          target_id: targetId,
+        });
+        hasActed.add(actorId); // Mark local
+
+        gameInterface.innerHTML = `<div class="confirm-box"><h3>Action Recorded.</h3><p>Please pass the device.</p></div>`;
+        setTimeout(() => requestGameSync(), 2000);
+      }
+
+      // --- Standard UI Logic ---
 
       function populateSelect(elementId, players, includeNobody = false) {
         const select = document.getElementById(elementId);
@@ -448,50 +635,27 @@
         });
       }
 
-      function updatePlayerListView(accusationCounts = {}) {
-        playerListEl.innerHTML = "";
-        const livingIds = livingPlayers.map((p) => p.id);
-        allPlayers.forEach((p) => {
-          const li = document.createElement("li");
-          const nameSpan = document.createElement("span");
-          nameSpan.textContent =
-            p.username + (p.id === myPlayerId ? " (You)" : "");
-          li.appendChild(nameSpan);
-          const count = accusationCounts[p.id] || 0;
-          if (count > 0) {
-            const countBadge = document.createElement("span");
-            countBadge.className = "accusation-count";
-            countBadge.textContent = count;
-            li.appendChild(countBadge);
-          }
-          if (!livingIds.includes(p.id)) {
-            li.classList.add("dead");
-            nameSpan.textContent += " 💀";
-          }
-          playerListEl.appendChild(li);
-        });
-      }
-
       function renderActionUI(phase) {
         actionArea.innerHTML = "";
+
+        // DEAD VIEW
         if (!isAlive) {
-          actionArea.innerHTML =
-            "<h3>You are dead 💀 You can observe the game in silence.</h3>";
+          actionArea.innerHTML = "<h3>You are dead 💀 You can observe the game in silence.</h3>";
           return;
         }
+
+        // STANDARD NIGHT VIEW
         if (phase === "night") {
           if (myRole === "wolf") {
-            actionArea.innerHTML = `<h4>Wolf, who will you eat?</h4><select id="action-select"></select> <button id="action-btn">Select</button>`;
+            actionArea.innerHTML = `<h4>Wolf, who will you eat?</h4><select id="action-select"></select> <button id="action-btn">Kill</button>`;
             populateSelect("action-select", livingPlayers, true);
             document.getElementById("action-btn").onclick = () => {
-              const actionSelect = document.getElementById("action-select");
               socket.emit("wolf_choice", {
-                target_id: actionSelect.value,
+                target_id: document.getElementById("action-select").value,
               });
               const playerPicked =
                 actionSelect[actionSelect.options.selectedIndex].text;
-              actionArea.innerHTML = `<p>You are hungry for <span style="color:
-                #ff0000">${playerPicked}</span>. Waiting ...</p>`;
+              actionArea.innerHTML = `<p>You are hungry for <span style="color: #ff0000">${playerPicked}</span>. Waiting ...</p>`;
             };
           } else if (myRole === "seer") {
             actionArea.innerHTML = `<h4>Seer, whose role will you see?</h4><select id="action-select"></select> <button id="action-btn">Investigate</button>`;
@@ -511,7 +675,7 @@
             };
           }
         } else if (phase === "accusation_phase") {
-          actionArea.innerHTML = `<h4>Who is the wolf? Time for discussion!</h4><select id="accuse-select"></select><button id="accuse-btn">Accuse</button><hr><h4>Ready for Night?</h4><button id="vote-end-day-btn" disabled>💤 Vote to Sleep (30s)</button><div id="end-day-vote-counter"></div>`;
+          actionArea.innerHTML = `<h4>Who is the wolf? Time for discussion!</h4><select id="accuse-select"></select><button id="accuse-btn">Accuse</button><hr><h4>Ready for Night?</h4><button id="vote-end-day-btn" disabled>💤 Vote to Sleep (30s)</button><div id="end-day-vote-counter" style="margin-left:10px"></div>`;
           populateSelect("accuse-select", livingPlayers, true);
           document.getElementById("accuse-btn").onclick = () =>
             socket.emit("accuse_player", {
@@ -531,8 +695,10 @@
             this.disabled = true;
             this.textContent = "Voted";
           };
-        } else if (phase === "lynch_vote_phase") {
-          actionArea.innerHTML = `<p>The village is voting. Please wait...</p>`;
+        }
+        // LYNCH VIEW
+        else if (phase === "lynch_vote_phase") {
+          actionArea.innerHTML = `<p>Voting in progress...</p>`;
         }
       }
 
@@ -548,7 +714,8 @@
           const update = () => {
             const minutes = Math.floor(timeLeft / 60);
             const seconds = Math.floor(timeLeft % 60);
-            timerDisplay.textContent = `Time left: ${minutes}:${("0" + seconds).slice(-2)}`;
+            timerDisplay.textContent = `Time left: ${minutes}:${(
+              "0" + seconds).slice(-2)}`;
           };
           update();
           timerInterval = setInterval(() => {
@@ -563,22 +730,18 @@
 
       function showGameOverScreen(data) {
         if (timerInterval) clearInterval(timerInterval);
-        document.querySelector(".game-container").style.display = "none";
-        const rolesList = document.getElementById("final-roles-list");
 
-        document.getElementById("game-over-title").textContent =
-          `The ${data.winning_team} Win!`;
+        document.querySelector(".game-container").style.display = "none";
+        gameOverScreen.style.display = "flex";
+          // Populate game over data...
+        document.getElementById("game-over-title").textContent = `The ${data.winning_team} Win!`;
         document.getElementById("game-over-reason").textContent = data.reason;
 
+        const rolesList = document.getElementById("final-roles-list");
         rolesList.innerHTML = "";
-        for (const player of data.final_player_states) {
-          const li = document.createElement("li");
-          const isDead = !player.is_alive;
-          li.innerHTML = `<strong>${player.username}</strong> was a <strong>${player.role}</strong> ${isDead ? "💀" : ""}`;
-          rolesList.appendChild(li);
-        }
-
-        gameOverScreen.style.display = "flex";
+        data.final_player_states.forEach((p) => {
+            rolesList.innerHTML += `<li><strong>${p.username}</strong> was a ${p.role} ${p.is_alive ? "" : "💀"}</li>`;
+          });
 
         document.getElementById("return-to-lobby-btn").onclick = (event) => {
           socket.emit("vote_for_rematch");
@@ -587,12 +750,14 @@
         };
       }
 
-      // --- Socket Listeners ---
+      // --- Socket Events ---
+
       socket.on("connect", () => {
         console.log("[DEBUG] Client connected to /game page.");
         socket.emit("client_ready_for_game");
       });
 
+      // Unified State Update
       socket.on("game_state_sync", (data) => {
         myRole = data.your_role;
         isAdmin = data.is_admin;
@@ -601,20 +766,41 @@
         allPlayers = data.all_players;
         timersDisabled = data.timers_disabled;
 
+        // Determine Mode
+        isPassAndPlay = data.mode === "pass_and_play";
+
+        // Handle Game Over
         if (data.phase === "ended" && data.game_over_data) {
           showGameOverScreen(data.game_over_data);
           setChatMode(data.admin_only_chat, data.phase);
           return;
         }
 
-        myRoleDisplay.textContent =
-          myRole.charAt(0).toUpperCase() + myRole.slice(1);
-        if (isAdmin) {
-          myRoleDisplay.innerHTML += " 👑";
+        // PHASE 4 Logic: Toggle Interfaces
+        if (isPassAndPlay && data.phase === "night") {
+          // Hide Chat, Hide Standard Action
+          sidePanel.style.display = "none"; // Hide chat & player list
+          actionArea.style.display = "none";
+          gameInterface.style.display = "block";
+          phaseDisplay.textContent = "Night (Pass Device)";
+          renderHub(allPlayers);
+        } else {
+          // Standard Mode / Day Phase
+          sidePanel.style.display = "flex"; // Show chat
+          actionArea.style.display = "block";
+          gameInterface.style.display = "none";
+
+          myRoleDisplay.textContent = myRole + (isAdmin ? " 👑" : "");
+          phaseDisplay.textContent = data.phase.replace(/_/g, " ");
+          renderActionUI(data.phase);
           adminChatToggleBtn.style.display = "block";
+          // Clear local PnP history if phase changed to Day
+          if (data.phase !== "night") hasActed.clear();
         }
+
         phaseDisplay.textContent = data.phase.replace(/_/g, " ");
         renderActionUI(data.phase);
+
         updatePlayerListView();
         updateAdminControls();
         setChatMode(data.admin_only_chat, data.phase);
@@ -622,10 +808,10 @@
         adminChatToggleBtn.classList.toggle("btn-active", data.admin_only_chat);
       });
 
+      // Also listen for simple phase change updates
       socket.on("phase_change", (data) => {
-        logMessage(
-          `A new phase has begun: <strong>${data.phase.replace(/_/g, " ")}</strong>.`,
-        );
+        logMessage(`A new phase has begun: <strong>${data.phase.replace(/_/g, " ")}</strong>.`);
+
         livingPlayers = data.living_players;
         if (data.all_players) allPlayers = data.all_players;
         timersDisabled = data.timers_disabled;
@@ -636,10 +822,11 @@
         setChatMode(data.admin_only_chat, data.phase);
         startTimer(data.duration);
         adminChatToggleBtn.classList.toggle("btn-active", data.admin_only_chat);
+        socket.emit("client_ready_for_game"); // Trigger full sync to handle UI logic
       });
 
+      // Messages
       socket.on("message", (data) => logMessage(data.text));
-
       socket.on("new_message", (data) => {
         const messageEl = document.createElement("div");
         messageEl.innerHTML = data.text;
@@ -664,22 +851,20 @@
         }
       });
 
+      // Actions
+
       socket.on("chat_mode_update", (data) => {
         setChatMode(data.admin_only_chat, data.phase);
         adminChatToggleBtn.classList.toggle("btn-active", data.admin_only_chat);
       });
 
-      socket.on("lynch_vote_result", (data) => {
-        let fullMessage = data.message;
-        if (data.summary) {
-          fullMessage += `<div class="vote-summary">Voted Yes: ${data.summary.yes.join(", ") || "None"}<br>Voted No: ${data.summary.no.join(", ") || "None"}</div>`;
-        }
-        logMessage(fullMessage);
-        if (data.killed_id) {
-          if (myPlayerId === data.killed_id) {
-            isAlive = false;
-            setChatMode(data.admin_only_chat, data.phase);
-          }
+      socket.on("night_result_kill", (data) => {
+        const { username, role, id } = data.killed_player;
+        logMessage(
+          `🫀 Remnants of a body were found! <strong>${username}</strong> was killed. They were a <strong>${role}</strong> ⚰️`);
+        if (myPlayerId === id) {
+          isAlive = false;
+          setChatMode(data.admin_only_chat, data.phase);
         }
       });
 
@@ -689,34 +874,65 @@
         actionArea.innerHTML = `<p>${msg}</p>`;
       });
 
-      socket.on("wolf_team_info", (data) => {
-        if (data.teammates.length > 0) {
-          logMessage(
-            `You are a wolf. Your fellow wolves are: <strong>${data.teammates.join(", ")}</strong>.`,
-          );
-        } else {
-          logMessage(`You are the lone wolf.`);
-        }
-      });
-
-      socket.on("night_result_kill", (data) => {
-        const { username, role, id } = data.killed_player;
-        logMessage(
-          `🫀 Remnants of a body were found! <strong>${username}</strong> was killed. They were a <strong>${role}</strong> ⚰️`,
-        );
-        if (myPlayerId === id) {
-          isAlive = false;
-          setChatMode(data.admin_only_chat, data.phase);
-        }
-      });
-
       socket.on("night_result_no_kill", () =>
         logMessage("🌞 The sun rises, and no one was killed."),
       );
 
+      socket.on("wolf_team_info", (data) =>
+{
+        if (data.teammates.length > 0) {
+          logMessage(`You are a wolf. Your fellow wolves are: <strong>${data.teammates.join(", ")}</strong>.`);
+        } else {
+          logMessage(`You are the lone wolf.`);
+        }}
+      );
+
+      socket.on("lynch_vote_result", (data) => {
+        let fullMessage = data.message;
+        if (data.summary) {
+          fullMessage += `<div class="vote-summary">Voted Yes: ${
+            data.summary.yes.join(", ") || "None"
+          }<br>Voted No: ${data.summary.no.join(", ") || "None"}</div>`;
+        }
+        logMessage(fullMessage);
+        if (data.killed_id && data.killed_id === myPlayerId) {
+            isAlive = false;
+            setChatMode(data.admin_only_chat, data.phase);
+}
+      });
+
       socket.on("error", (data) => {
         alert("Error: " + data.message);
       });
+
+      socket.on("force_phase_update", () =>
+        socket.emit("client_ready_for_game"),
+      );
+
+      // Admin & Utils
+      function updatePlayerListView(accusationCounts = {}) {
+        playerListEl.innerHTML = "";
+        const livingIds = livingPlayers.map((p) => p.id);
+        allPlayers.forEach((p) => {
+          const li = document.createElement("li");
+          const nameSpan = document.createElement("span");
+          nameSpan.textContent =
+            p.username + (p.id === myPlayerId ? " (You)" : "");
+          li.appendChild(nameSpan);
+          const count = accusationCounts[p.id] || 0;
+          if (count > 0) {
+            const countBadge = document.createElement("span");
+            countBadge.className = "accusation-count";
+            countBadge.textContent = count;
+            li.appendChild(countBadge);
+          }
+          if (!livingIds.includes(p.id)) {
+            li.classList.add("dead");
+            nameSpan.textContent += " 💀";
+          }
+          playerListEl.appendChild(li);
+        });
+      }
 
       socket.on("accusation_made", (data) => {
         logMessage(
@@ -734,6 +950,7 @@
           }
         }
       });
+
       socket.on("accusation_update", (data) => updatePlayerListView(data));
       socket.on("end_day_vote_update", (data) => {
         const counter = document.getElementById("end-day-vote-counter");
@@ -766,6 +983,7 @@
       socket.on("game_over", (data) => {
         showGameOverScreen(data);
       });
+
       // listens for updates on the rematch vote count and
       // displays the status to the players.
       socket.on("rematch_vote_update", (data) => {
@@ -781,6 +999,7 @@
         logMessage("Majority vote reached! Returning to lobby...");
         window.location.href = "/lobby";
       });
+
       socket.on("force_relogin", (data) => {
         alert(
           `Admin has set a new game code.\nYou will now be returned to the login screen.`,
@@ -801,12 +1020,10 @@
 
       gameChatForm.addEventListener("submit", (e) => {
         e.preventDefault();
-        const message = gameChatInput.value.trim();
-        if (message) {
-          socket.emit("send_message", { message: message });
-          gameChatInput.value = "";
-        }
-      });
+        if (gameChatInput.value.trim())
+          socket.emit("send_message", { message: gameChatInput.value });
+        gameChatInput.value = "";
+      };
 
       gameOverChatForm.addEventListener("submit", (e) => {
         e.preventDefault();
@@ -816,12 +1033,6 @@
           gameOverChatInput.value = "";
         }
       });
-
-      document.getElementById("return-to-lobby-btn").onclick = (event) => {
-        socket.emit("vote_for_rematch");
-        event.target.disabled = true;
-        event.target.textContent = "Voted!";
-      };
     </script>
   </body>
 </html>

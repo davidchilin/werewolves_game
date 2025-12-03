@@ -791,7 +791,7 @@ def handle_admin_exclude_player(data):
     if player_id in game["players"]:
         sid = game["players"][player_id].sid
         del game["players"][player_id]
-        socketio.emit("force_kick", room=sid)
+        socketio.emit("force_kick", to=sid)
         leave_room(game["game_code"], sid=sid)
         broadcast_player_list()
 
@@ -853,6 +853,52 @@ def handle_admin_set_new_code(data):
     # Update the admin's lobby view
     broadcast_player_list()
 
+@socketio.on('pnp_request_state')
+def handle_pnp_request(data):
+    """
+    Called when a player confirms identity in Pass-and-Play.
+    Returns their specific role data and valid targets.
+    """
+    requested_pid = data.get('player_id')
+    player = game_instance.players.get(requested_pid)
+
+    if player and player.is_alive:
+        # Get valid targets (including self, per new default)
+        valid_targets = player.role.get_valid_targets(player, {'players': list(game_instance.players.values())})
+
+        response = {
+            "id": player.id,
+            "role_name": player.role.name_key,
+            "role_desc": player.role.description_key,
+            "prompt": player.role.night_prompt, # <--- The silly or serious prompt
+            "targets": [{"id": t.id, "name": t.name} for t in valid_targets]
+        }
+        emit('pnp_state_received', response)
+
+@socketio.on('pnp_submit_action')
+def handle_pnp_action(data):
+    """
+    Unified action handler for Pass-and-Play.
+    """
+    actor_id = data.get('actor_id')
+    target_id = data.get('target_id') # Can be None/Empty for dummy actions
+    metadata = data.get('metadata', {}) # e.g. Witch potion info
+
+    # Store in engine
+    # (If metadata exists, pass the dict, else pass ID)
+    action_payload = metadata if metadata else target_id
+    if metadata and target_id:
+        action_payload['target_id'] = target_id
+
+    result = game_instance.receive_night_action(actor_id, action_payload)
+
+    # Check if that triggered the end of the night
+    if result == "RESOLVED":
+        # Engine resolved internally, now we just notify frontend to switch phase
+        socketio.emit("force_phase_update", {"phase": game_instance.phase}, to=game_instance.game_id)
+    else:
+        # Just confirm receipt
+        emit('action_accepted', {'actor_id': actor_id})
 
 @socketio.on("client_ready_for_game")
 def handle_client_ready_for_game():

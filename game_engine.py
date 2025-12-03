@@ -34,12 +34,13 @@ class Player:
 class Game:
     def __init__(self, game_id, mode='standard'):
         self.game_id = game_id
-        self.mode = mode # 'standard' or 'pass_and_play'
+        self.isPassAndPlay = (mode == 'pass_and_play')
         self.phase = "LOBBY" # LOBBY, DAY, VOTE, NIGHT, RESOLUTION, GAME_OVER
         self.players = {} # Dict[session_id, Player]
         self.pending_actions = {} # Dict[player_id, target_id]
         self.night_log = [] # Logs for the frontend (e.g., "Seer saw a Wolf")
         self.winner = None
+        self.turn_history = set() # who acted this phase
 
     def add_player(self, session_id, name):
         if session_id not in self.players:
@@ -82,6 +83,7 @@ class Game:
         # Trigger cleanup or specific phase logic here
         if new_phase == "NIGHT":
             self.pending_actions = {}
+            self.turn_history = set() # Reset tracker
             self.night_log = []
             for p in self.players.values():
                 p.reset_night_status()
@@ -94,8 +96,28 @@ class Game:
         Store the player's intent. Process it later.
         Note: target_id can be a string ID or a Dict for complex actions (Witch).
         """
-        if self.phase == "NIGHT" and player_id in self.players:
+        if self.phase != "NIGHT":
+            return
+
+        if player_id in self.players:
             self.pending_actions[player_id] = target_id
+            self.turn_history.add(player_id)
+            print(f"Action received from {self.players[player_id].name}")
+
+        # 2. Check if we should resolve (Pass-and-Play Logic)
+        if self.isPassAndPlay:
+            living_count = len(self.get_living_players())
+            acted_count = len(self.turn_history)
+
+            print(f"PassAndPlay Status: {acted_count}/{living_count} have acted.")
+
+            if acted_count >= living_count:
+                print("All players acted. Resolving Night...")
+                self.resolve_night_phase()
+                # Auto-transition to next phase usually happens inside resolve or app.py
+                return "RESOLVED"
+
+        return "WAITING"
 
 
     def resolve_night_phase(self):

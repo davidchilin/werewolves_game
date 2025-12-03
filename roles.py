@@ -3,6 +3,7 @@ roles.py
 Version: 2.0.0
 Defines the behavior of all roles using a generic base class and specific subclasses.
 """
+import random
 
 # 1. Global Registry to keep track of all available roles
 AVAILABLE_ROLES = {}
@@ -43,6 +44,12 @@ class Role:
     def get_valid_targets(self, player_obj, game_context):
         """Returns a list of valid player IDs this role can target."""
         return [p for p in game_context["players"] if p.is_alive]
+
+    @property
+    def night_prompt(self) -> str:
+        """The text displayed to the user during the night."""
+        return "Select a target:"
+
 
     def night_action(self, player_obj, target_player_obj, game_context):
         """
@@ -89,6 +96,21 @@ class Villager(Role):
         self.team = "villager"
         self.is_night_active = False
 
+    @property
+    def night_prompt(self):
+        prompts = [
+            "Who has the cutest smile?",
+            "Who would die first in a zombie apocalypse?",
+            "Who is the most lightweight drinker?",
+            "Who looks the most suspicious right now?"
+            "Who is a finger licker?"
+        ]
+        return random.choice(prompts)
+
+    # todo: possibly not needed, as same as parent version.
+    def night_action(self, player_obj, target_player_obj, game_context):
+        # Dummy action: Do nothing, return empty
+        return {}
 
 @register_role
 class Werewolf(Role):
@@ -220,6 +242,12 @@ class Monster(Role):
         # This is checked by the Engine when calculating deaths
         player_obj.status_effects.append('immune_to_wolf')
 
+    @property
+    def night_prompt(self):
+        return "Who is a finger licker?"
+
+    def night_action(self, player_obj, target_player_obj, game_context):
+        return {} # Dummy action
 
 @register_role
 class AlphaWolf(Werewolf):  # Inherits from Werewolf!
