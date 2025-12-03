@@ -1,5 +1,5 @@
-<!-- Version: 1.10.10 -->
-<!doctype html>
+<!-- Version: 2.0 -->
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -7,16 +7,15 @@
     <title>Werewolves Lobby</title>
     <style>
       body {
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
-          Arial, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
         background-color: #121212;
         color: #e0e0e0;
         min-height: 100vh;
       }
       .lobby-container {
         width: 90%;
-        max-width: 600px;
+        max-width: 800px; /* Increased width for Role Grid */
         margin: 20px auto;
         padding: 20px;
         background-color: #1e1e1e;
@@ -82,6 +81,30 @@
       .timer-setting input {
         width: 80px;
       }
+      /* --- New Styles for Phase 3 --- */
+      .role-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .role-item {
+        padding: 8px;
+        background: #2c2c2c;
+        border: 1px solid #444;
+        border-radius: 4px;
+      }
+      .role-item label {
+        cursor: pointer;
+        display: block;
+        font-weight: bold;
+      }
+      .role-item small {
+        display: block;
+        color: #aaa;
+        font-size: 0.8em;
+        margin-top: 4px;
+      }
       .chat-container {
         margin-top: 20px;
         border-top: 1px solid #444;
@@ -144,17 +167,32 @@
 
       <div id="admin-panel" style="display: none">
         <hr />
-        <h4>Admin Controls</h4>
-        <button id="start-game-btn" disabled>Start Game</button>
-        <p><small>Need at least 4 players to start.</small></p>
-        <div class="admin-controls">
-          <label for="new-game-code">Set New Game Code:</label>
-          <input type="text" id="new-game-code-input" placeholder="New Code" />
-          <button id="set-code-btn">Set Code</button>
+        <h3>Admin Controls</h3>
+        <div style="margin-bottom: 20px">
+          <button id="start-game-btn" disabled>Start Game</button>
+          <p><small>Need at least 4 players to start.</small></p>
         </div>
+
         <div class="admin-controls">
-          <button id="toggle-chat-btn">Toggle Admin-Only Chat</button>
+          <h4>Game Mode</h4>
+          <label style="display: flex; align-items: center; gap: 10px">
+            <input type="checkbox" id="mode-pass-and-play" />
+            <div>
+              <strong>Pass-and-Play Mode</strong><br />
+              <small style="color: #aaa"
+                >Single device mode. Pauses between turns.</small
+              >
+            </div>
+          </label>
         </div>
+
+        <div class="admin-controls">
+          <h4>Roles</h4>
+          <div id="role-container" class="role-grid">
+            <p>Loading roles...</p>
+          </div>
+        </div>
+
         <div class="admin-controls">
           <h4>Timer Settings</h4>
           <div class="timer-setting">
@@ -163,13 +201,11 @@
           </div>
           <div id="timer-options" class="timer-options">
             <div class="timer-setting">
-              <label for="night-timer-input">Night Phase (sec):</label>
+              <label for="night-timer-input">Night (sec):</label>
               <input type="number" id="night-timer-input" value="90" min="30" />
             </div>
             <div class="timer-setting">
-              <label for="accusation-timer-input"
-                >Accusation Phase (sec):</label
-              >
+              <label for="accusation-timer-input">Accusation (sec):</label>
               <input
                 type="number"
                 id="accusation-timer-input"
@@ -178,9 +214,7 @@
               />
             </div>
             <div class="timer-setting">
-              <label for="lynch-vote-timer-input"
-                >Lynch Vote Phase (sec):</label
-              >
+              <label for="lynch-vote-timer-input">Lynch Vote (sec):</label>
               <input
                 type="number"
                 id="lynch-vote-timer-input"
@@ -191,14 +225,23 @@
           </div>
           <button id="set-timers-btn">Set Timers</button>
         </div>
+        <div class="admin-controls">
+          <label for="new-game-code">Set New Game Code:</label>
+          <input type="text" id="new-game-code-input" placeholder="New Code" />
+          <button id="set-code-btn">Set Code</button>
+          <button id="toggle-chat-btn" style="margin-left: 10px">
+            Toggle Admin Chat</button>
+        </div>
       </div>
     </div>
 
     <script>
       const socket = io();
+      // Ensure backend renders 'player_id' into the template
       let currentPlayerId = "{{ player_id }}";
       let isPlayerAdmin = false;
 
+      // Elements
       const chatMessages = document.getElementById("chat-messages");
       const chatForm = document.getElementById("chat-form");
       const chatInput = document.getElementById("chat-input");
@@ -207,7 +250,82 @@
         "disable-timers-checkbox",
       );
       const timerOptionsDiv = document.getElementById("timer-options");
+      const roleContainer = document.getElementById("role-container");
 
+      // --- 1. Phase 3: Role Loading ---
+      async function loadRoles() {
+        try {
+          const response = await fetch("/get_roles");
+          const roles = await response.json();
+          roleContainer.innerHTML = "";
+
+          roles.forEach((role) => {
+            const wrapper = document.createElement("div");
+            wrapper.className = "role-item";
+
+            const label = document.createElement("label");
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.name = "selected_roles";
+            checkbox.value = role.name_key; // e.g. "role_werewolf"
+
+            const displayName = role.name_key
+              .replace("role_", "")
+              .replace("_", " ")
+              .toUpperCase();
+
+            label.appendChild(checkbox);
+            label.appendChild(document.createTextNode(` ${displayName}`));
+
+            // Description mapping (could be moved to a util function later)
+            const desc = document.createElement("small");
+            desc.textContent = role.description_key;
+
+            wrapper.appendChild(label);
+            wrapper.appendChild(desc);
+            roleContainer.appendChild(wrapper);
+          });
+        } catch (err) {
+          console.error("Failed to load roles", err);
+          roleContainer.innerHTML =
+            '<p style="color:red">Error loading roles</p>';
+        }
+      }
+
+      // --- 2. Phase 3: Start Game Logic (Aggregates Data) ---
+      document.getElementById("start-game-btn").onclick = () => {
+        // A. Get Roles
+        const checkboxes = document.querySelectorAll(
+          'input[name="selected_roles"]:checked',
+        );
+        const selectedRoles = Array.from(checkboxes).map((cb) => cb.value);
+
+        // B. Get Mode
+        const passAndPlay =
+          document.getElementById("mode-pass-and-play").checked;
+
+        // C. Get Timers
+        const timers = {
+          timers_disabled: disableTimersCheckbox.checked,
+          night: document.getElementById("night-timer-input").value,
+          accusation: document.getElementById("accusation-timer-input").value,
+          lynch_vote: document.getElementById("lynch-vote-timer-input").value,
+        };
+
+        // D. Build Payload
+        const payload = {
+          roles: selectedRoles,
+          settings: {
+            mode: passAndPlay ? "pass_and_play" : "standard",
+            timers: timers,
+          },
+        };
+
+        console.log("Starting game with:", payload);
+        socket.emit("start_game", payload);
+      };
+
+      // --- 3. Original Logic Preserved ---
       function excludePlayer(playerId) {
         if (confirm("Exclude this player?")) {
           socket.emit("admin_exclude_player", { player_id: playerId });
@@ -225,16 +343,13 @@
       }
 
       socket.on("connect", () => {
-        console.log(
-          "[DEBUG] Connected to Lobby, server with session ID:",
-          currentPlayerId,
-        );
+        console.log("[DEBUG] Connected to Lobby, server with session ID:", currentPlayerId);
+        // Trigger role load on connect
+        loadRoles();
       });
 
       socket.on("game_started", () => {
-        console.log(
-          "[DEBUG] 'game_started' event received. Redirecting to /game page.",
-        );
+        console.log("[DEBUG] 'game_started' event received. Redirecting to /game page.");
         window.location.href = "/game";
       });
 
@@ -243,13 +358,21 @@
         const adminPanel = document.getElementById("admin-panel");
         const startGameBtn = document.getElementById("start-game-btn");
         const gameCodeArea = document.getElementById("game-code-area");
-        const gameCodeDisplay = document.getElementById("game-code-display");
+
         playerList.innerHTML = "";
         const me = data.players.find((p) => p.id === currentPlayerId);
-        isPlayerAdmin = me ? me.is_admin : false;
-        gameCodeArea.style.display = isPlayerAdmin ? "block" : "none";
-        if (isPlayerAdmin) {
-          gameCodeDisplay.textContent = data.game_code;
+
+        // Update Admin Status
+        if (me && me.is_admin) {
+          isPlayerAdmin = true;
+          adminPanel.style.display = "block";
+          gameCodeArea.style.display = "block";
+          document.getElementById("game-code-display").textContent =
+            data.game_code;
+        } else {
+          isPlayerAdmin = false;
+          adminPanel.style.display = "none";
+          gameCodeArea.style.display = "none";
         }
         data.players.forEach((player) => {
           const li = document.createElement("li");
@@ -258,9 +381,8 @@
             li.classList.add("you");
             li.textContent += " (You)";
           }
-          if (player.is_admin) {
-            li.textContent += " 👑";
-          }
+          if (player.is_admin) li.textContent += " 👑";
+
           if (isPlayerAdmin && player.id !== currentPlayerId) {
             const excludeBtn = document.createElement("span");
             excludeBtn.textContent = "Exclude";
@@ -270,24 +392,22 @@
           }
           playerList.appendChild(li);
         });
-        adminPanel.style.display = isPlayerAdmin ? "block" : "none";
+
+        // Enable start button if enough players
         startGameBtn.disabled = data.players.length < 4;
         setChatMode(data.admin_only_chat);
       });
 
+      // Events from original file
       socket.on("force_kick", () => {
         alert("You have been dropped from the lobby.");
         window.location.href = "/";
       });
       socket.on("force_relogin", (data) => {
-        alert(
-          `The admin has set a new game code.\nYou will now be returned to the login screen.`,
-        );
+        alert("New code set. Re-login required.");
         window.location.href = "/";
       });
-      socket.on("message", (data) => {
-        alert(data.text);
-      });
+      socket.on("message", (data) => alert(data.text));
       socket.on("error", (data) => {
         alert("Error: " + data.message);
       });
@@ -296,9 +416,8 @@
         if (data.channel === "lobby" || data.channel === "announcement") {
           const messageEl = document.createElement("div");
           messageEl.innerHTML = data.text;
-          if (data.channel === "announcement") {
+          if (data.channel === "announcement")
             messageEl.classList.add("announcement");
-          }
           chatMessages.prepend(messageEl);
         }
       });
@@ -320,16 +439,12 @@
         timerOptionsDiv.style.display = e.target.checked ? "none" : "block";
       });
 
-      document.getElementById("start-game-btn").onclick = () => {
-        socket.emit("admin_start_game");
-      };
+      // Admin Utils
       document.getElementById("set-code-btn").onclick = () => {
-        const newCodeInput = document.getElementById("new-game-code-input");
-        const newCode = newCodeInput.value.trim().toUpperCase();
-        if (newCode) {
-          socket.emit("admin_set_new_code", { new_code: newCode });
-          newCodeInput.value = "";
-        } else {
+        const newCode = document.getElementById("new-game-code-input")
+          .value.trim().toUpperCase();
+        if (newCode) socket.emit("admin_set_new_code", { new_code: newCode });
+        else {
           alert("Please enter a new code.");
         }
       };
@@ -337,22 +452,16 @@
         socket.emit("admin_toggle_chat");
       };
       document.getElementById("set-timers-btn").onclick = () => {
-        const timers = {
-          timers_disabled: disableTimersCheckbox.checked,
-          night: document.getElementById("night-timer-input").value,
-          accusation: document.getElementById("accusation-timer-input").value,
-          lynch_vote: document.getElementById("lynch-vote-timer-input").value,
-        };
+
         socket.emit("admin_set_timers", timers);
       };
+
+      // Handle Exclude Click
       document
         .getElementById("player-list")
         .addEventListener("click", function (e) {
           if (e.target && e.target.className === "exclude-btn") {
-            const playerId = e.target.dataset.playerId;
-            if (playerId) {
-              excludePlayer(playerId);
-            }
+            excludePlayer(e.target.dataset.playerId);
           }
         });
     </script>

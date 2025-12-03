@@ -1,7 +1,12 @@
-# Version: 1.10.10
+"""
+app.py
+Version: 2.0.0
+"""
 import os
 from dotenv import load_dotenv, find_dotenv
 import random
+from roles import AVAILABLE_ROLES
+from game_engine import Game
 import time
 from collections import Counter
 from flask import (
@@ -12,6 +17,7 @@ from flask import (
     redirect,
     url_for,
     send_from_directory,
+    jsonify
 )
 from flask_socketio import SocketIO, join_room, leave_room, emit
 import uuid
@@ -24,6 +30,8 @@ app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get(
     "FLASK_SECRET_KEY", "omiunhbybt7vr6c53wz3523c2r445ybF4y6jmo8o8p"
 )
+
+game_instance = Game("main_game_room")
 
 # Configure CORS for Socket.IO from environment variables
 # This is crucial for security in a production environment.
@@ -100,7 +108,7 @@ def get_living_players(roles=None):
 
 def log_and_emit(message):
     print(message)
-    socketio.emit("log_message", {"text": message}, room=game["game_code"])
+    socketio.emit("log_message", {"text": message}, to=game["game_code"])
 
 
 def broadcast_player_list():
@@ -117,7 +125,7 @@ def broadcast_player_list():
             "game_code": game["game_code"],
             "admin_only_chat": game.get("admin_only_chat", False),
         },
-        room=game["game_code"],
+        to=game["game_code"],
     )
 
 
@@ -237,7 +245,7 @@ def check_win_conditions():
         socketio.emit(
             "chat_mode_update",
             {"admin_only_chat": game["admin_only_chat"]},
-            room=game["game_code"],
+            to=game["game_code"],
         )
 
         final_player_states = [
@@ -252,7 +260,7 @@ def check_win_conditions():
         game["game_over_data"] = payload  # Store results for refreshes
         log_and_emit(f"Game over! The {winner} have won! {reason}")
         socketio.sleep(6)
-        socketio.emit("game_over", payload, room=game["game_code"])
+        socketio.emit("game_over", payload, to=game["game_code"])
 
         return True  # Game is over
     return False  # Game continues
@@ -292,12 +300,12 @@ def start_new_phase(phase_name):
         wolf_names = [p.username for p in all_wolves]
         for wolf in all_wolves:
             teammates = [name for name in wolf_names if name != wolf.username]
-            socketio.emit("wolf_team_info", {"teammates": teammates}, room=wolf.sid)
+            socketio.emit("wolf_team_info", {"teammates": teammates}, to=wolf.sid)
 
     socketio.emit(
         "chat_mode_update",
         {"admin_only_chat": game["admin_only_chat"]},
-        room=game["game_code"],
+        to=game["game_code"],
     )
 
     duration = game["timer_durations"].get(phase_name.replace("_phase", ""), 0)
@@ -314,7 +322,7 @@ def start_new_phase(phase_name):
             "duration": duration,
             "timers_disabled": game.get("timers_disabled", False),
         },
-        room=game["game_code"],
+        to=game["game_code"],
     )
 
 
@@ -397,10 +405,10 @@ def process_night_actions():
                     "role": killed_player.role,
                 }
             },
-            room=game["game_code"],
+            to=game["game_code"],
         )
     else:
-        socketio.emit("night_result_no_kill", {}, room=game["game_code"])
+        socketio.emit("night_result_no_kill", {}, to=game["game_code"])
 
     if not check_win_conditions():
         start_new_phase("accusation_phase")
@@ -468,7 +476,7 @@ def tally_accusations(from_timer=False):
             "target_name": game["players"][target_id].username,
             "duration": game["timer_durations"]["lynch_vote"],
         },
-        room=game["game_code"],
+        to=game["game_code"],
     )
 
 
@@ -487,14 +495,14 @@ def process_lynch_vote():
         socketio.emit(
             "lynch_vote_result",
             {"message": message, "killed_id": target_id, "summary": vote_summary},
-            room=game["game_code"],
+            to=game["game_code"],
         )
     else:
         message = f"The village has voted to spare {target_player.username}."
         socketio.emit(
             "lynch_vote_result",
             {"message": message, "summary": vote_summary},
-            room=game["game_code"],
+            to=game["game_code"],
         )
     socketio.sleep(5)
     if not check_win_conditions():
@@ -562,6 +570,16 @@ def favicon():
         mimetype="image/vnd.microsoft.icon",
     )
 
+@app.route('/get_roles')
+def get_roles():
+    """API to send available roles to the frontend to generate checkboxes."""
+    # Convert the Roles Registry into a list of dicts
+    role_list = []
+    for role_name, role_class in AVAILABLE_ROLES.items():
+        # Instantiate a temp object just to read metadata
+        temp_role = role_class()
+        role_list.append(temp_role.to_dict())
+    return jsonify(role_list)
 
 # no caching for flask app
 @app.after_request
@@ -662,6 +680,20 @@ def handle_disconnect():
         )
         game["players_ready_for_game"].discard(player_id)
 
+# In your Flask-SocketIO handler:
+@socketio.on('join_game')
+def on_join(data):
+    room = data['room']
+    join_room(room)
+    # Get current players from the Game Engine
+    # Assuming game_instance is retrieved based on room ID
+
+    if 'game_instance' in globals() and game_instance:
+        current_players = [p.name for p in game_instance.players.values()]
+    else:
+        current_players = []
+
+    emit('update_player_list', {'players': current_players}, to=room)
 
 @socketio.on("send_message")
 def handle_send_message(data):
@@ -701,7 +733,7 @@ def handle_send_message(data):
     socketio.emit(
         "new_message",
         {"text": formatted_message, "channel": channel},
-        room=game["game_code"],
+        to=game["game_code"],
     )
 
 
@@ -716,7 +748,7 @@ def handle_admin_toggle_chat():
     socketio.emit(
         "chat_mode_update",
         {"admin_only_chat": game["admin_only_chat"]},
-        room=game["game_code"],
+        to=game["game_code"],
     )
 
 
@@ -774,7 +806,7 @@ def handle_admin_start_game():
     assign_roles()
     game["game_state"] = "started"
     game["players_ready_for_game"].clear()  # debug: is this still needed?
-    socketio.emit("game_started", room=game["game_code"])
+    socketio.emit("game_started", to=game["game_code"])
 
 
 @socketio.on("admin_next_phase")
@@ -811,7 +843,7 @@ def handle_admin_set_new_code(data):
     socketio.emit(
         "force_relogin",
         {"new_code": new_code},
-        room=game["game_code"],
+        to=game["game_code"],
         skip_sid=request.sid,
     )
 
@@ -904,10 +936,10 @@ def handle_accuse_player(data):
     socketio.emit(
         "accusation_made",
         {"accuser_name": p.username, "accused_name": accused_name},
-        room=game["game_code"],
+        to=game["game_code"],
     )
     counts = Counter(v for v in game["accusations"].values() if v)
-    socketio.emit("accusation_update", counts, room=game["game_code"])
+    socketio.emit("accusation_update", counts, to=game["game_code"])
     # Check if all living players have accused
     if len(game["accusations"]) >= len(get_living_players()):
         tally_accusations()
@@ -938,7 +970,7 @@ def handle_vote_to_end_day():
         socketio.emit(
             "end_day_vote_update",
             {"count": num_votes, "total": num_living},
-            room=game["game_code"],
+            to=game["game_code"],
         )
         if num_votes > num_living / 2:
             tally_accusations(from_timer=True)
@@ -961,11 +993,11 @@ def handle_vote_for_rematch():
         # Check if a majority has been reached or admin forces
         if num_votes > total_players / 2 or p.is_admin:
             reset_game_state()
-            socketio.emit("redirect_to_lobby", {}, room=game["game_code"])
+            socketio.emit("redirect_to_lobby", {}, to=game["game_code"])
         else:
             # Broadcast the current vote count
             payload = {"count": num_votes, "total": total_players}
-            socketio.emit("rematch_vote_update", payload, room=game["game_code"])
+            socketio.emit("rematch_vote_update", payload, to=game["game_code"])
 
 
 if __name__ == "__main__":
