@@ -1,9 +1,11 @@
 """
 game_engine.py
-# Version: 2.0.1
+# Version: 4.2.0
 Manages the game flow, player states, complex role interactions, and phase transitions.
 """
 import random
+import time
+from collections import Counter
 from roles import AVAILABLE_ROLES
 import config
 
@@ -34,13 +36,41 @@ class Player:
 class Game:
     def __init__(self, game_id, mode='standard'):
         self.game_id = game_id
+        self.mode = mode
         self.isPassAndPlay = (mode == 'pass_and_play')
+
         self.phase = "LOBBY" # LOBBY, DAY, VOTE, NIGHT, RESOLUTION, GAME_OVER
+        self.phase_start_time = None
+
         self.players = {} # Dict[session_id, Player]
+
+        # Night Phase Data
         self.pending_actions = {} # Dict[player_id, target_id]
-        self.night_log = [] # Logs for the frontend (e.g., "Seer saw a Wolf")
-        self.winner = None
         self.turn_history = set() # who acted this phase
+        self.night_log = [] # Logs for the frontend (e.g., "Seer saw a Wolf")
+
+        # Day Phase Data
+        self.accusations = {} # accuser_id: target_id
+        self.accusations_restarts = 0
+        self.end_day_votes = set() # set of voter_id
+
+        self.lynch_target_id = None
+        self.lynch_votes = {} # voter_id: yes/no
+
+        # Admin/Meta Data
+        self.admin_only_chat = False
+        self.timers_disabled = False
+        self.timer_duration = {
+                "night": 90,
+                "accusation": 90,
+                "lynch_vote": 60
+                }
+        self.current_timer_id = 0 # increment id to invalidate old async timers
+
+        # End Game Data
+        self.winner = None
+        self.game_over_data = None
+        self.rematch_votes = set()
 
     def add_player(self, session_id, name):
         if session_id not in self.players:
@@ -69,27 +99,37 @@ class Game:
             self.players[pid].role = role_class()
             self.players[pid].role.on_assign(self.players[pid])
 
-        print(f"Roles assigned for Game {self.game_id}")
+        print(f"Roles assigned for Game {self.game_id} (Mode: {self.mode})")
 
-    def get_living_players(self, roles=None):
+    def get_living_players(self, role_team=None):
         living = [p for p in self.players.values() if p.is_alive]
-        if roles:
-            return [p for p in living if p.role.team == roles]
+        if role_team:
+            return [p for p in living if p.role.team == role_team]
         return living
 
     def set_phase(self, new_phase):
         self.phase = new_phase
+        self.phase_start_time = time.time()
+        self.current_timer_id += 1
+
         print(f"Phase changed to: {self.phase}")
         # Trigger cleanup or specific phase logic here
         if new_phase == "NIGHT":
             self.pending_actions = {}
             self.turn_history = set() # Reset tracker
             self.night_log = []
+            self.accusations_restarts = 0
             for p in self.players.values():
                 p.reset_night_status()
                 # trigger night hoooks
                 if p.role:
                     p.role.on_night_start(p, {'players': list(self.players.values())})
+        elif new_phase == "ACCUSATION_PHASE":
+            self.accusations = {}
+            self.end_day_votes = set()
+            self.lynch_target_id = None
+            self.lynch_votes ={}
+
 
     def receive_night_action(self, player_id, target_id):
         """

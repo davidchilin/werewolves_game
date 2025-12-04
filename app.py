@@ -2,13 +2,12 @@
 app.py
 Version: 2.0.1
 """
-import os
-from dotenv import load_dotenv, find_dotenv
-import random
-from roles import AVAILABLE_ROLES
-from game_engine import Game
-import time
 from collections import Counter
+from dotenv import load_dotenv, find_dotenv
+import os
+import random
+import time
+import uuid
 from flask import (
     Flask,
     render_template,
@@ -20,7 +19,8 @@ from flask import (
     jsonify
 )
 from flask_socketio import SocketIO, join_room, leave_room, emit
-import uuid
+from game_engine import Game
+from roles import AVAILABLE_ROLES
 
 # --- App Initialization ---
 load_dotenv(find_dotenv(filename=".env.werewolves"))

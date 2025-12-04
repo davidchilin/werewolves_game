@@ -83,9 +83,7 @@ class Role:
             "is_night_active": self.is_night_active,
         }
 
-
 # --- Specific Role Implementations ---
-
 
 @register_role
 class Villager(Role):
