@@ -6,6 +6,7 @@ Manages the game flow, player states, complex role interactions, and phase trans
 import random
 import time
 from collections import Counter
+from app import get_living_players
 from roles import AVAILABLE_ROLES
 import config
 
@@ -72,6 +73,7 @@ class Game:
         self.game_over_data = None
         self.rematch_votes = set()
 
+# --- game management
     def add_player(self, session_id, name):
         if session_id not in self.players:
             self.players[session_id] = Player(session_id, name)
@@ -98,7 +100,6 @@ class Game:
             role_class = AVAILABLE_ROLES.get(role_name, AVAILABLE_ROLES['Villager'])
             self.players[pid].role = role_class()
             self.players[pid].role.on_assign(self.players[pid])
-
         print(f"Roles assigned for Game {self.game_id} (Mode: {self.mode})")
 
     def get_living_players(self, role_team=None):
@@ -136,13 +137,12 @@ class Game:
         Store the player's intent. Process it later.
         Note: target_id can be a string ID or a Dict for complex actions (Witch).
         """
-        if self.phase != "NIGHT":
-            return
+        if self.phase != "NIGHT" or player_id not in self.players:
+            return "IGNORED"
 
-        if player_id in self.players:
-            self.pending_actions[player_id] = target_id
-            self.turn_history.add(player_id)
-            print(f"Action received from {self.players[player_id].name}")
+        self.pending_actions[player_id] = target_id
+        self.turn_history.add(player_id)
+        print(f"Action received from {self.players[player_id].name}")
 
         # 2. Check if we should resolve (Pass-and-Play Logic)
         if self.isPassAndPlay:
@@ -153,7 +153,6 @@ class Game:
 
             if acted_count >= living_count:
                 print("All players acted. Resolving Night...")
-                self.resolve_night_phase()
                 # Auto-transition to next phase usually happens inside resolve or app.py
                 return "RESOLVED"
 
@@ -191,12 +190,12 @@ class Game:
             # (If target_data is a dict, extract ID, otherwise assume string ID)
             # todo: might not need, just use status_effects
             if isinstance(target_data, dict):
-                target_id = target_data.get('target_id')
                 # Pass metadata to Role so Witch knows what to do
                 game_context['current_action_metadata'] = target_data
+                target_id = target_data.get('target_id')
             else:
-                target_id = target_data
                 game_context['current_action_metadata'] = {}
+                target_id = target_data
             target_player = self.players.get(target_id)
 
             if not target_player:
@@ -245,7 +244,7 @@ class Game:
                     print(f"Debug: Seer {player.name} investigated {target_player.name}: {result.get('result')}")
                     self.night_log.append({
                         "player_id": player.id,
-                        "message": f"Investigation Result: {result.get('result')}"
+                        "message": f"Seer Result: {result.get('result')}"
                     })
 
 
@@ -300,12 +299,105 @@ class Game:
 
         return list(final_deaths)
 
+# --- DAY LOGIC (Accusations & Voting) ---
+
+    def process_accusation(self, accuser_id, target_id):
+        """Returns True if this accusation triggered a majority/all-voted condition (optional optimization)."""
+        if self.phase != "ACCUSATION_PHASE": return False
+        if accuser_id in self.accusations: return False # Already accused
+
+        self.accusations[accuser_id] = target_id
+        return len(self.accusations) >= len(self.get_living_players())
+
+    def vote_to_sleep(self, player_id):
+        """Returns True if majority wants to sleep."""
+        if self.phase != "ACCUSATION_PHASE": return False
+        self.end_day_votes.add(player_id)
+
+        # Check Majority
+        living = len(self.get_living_players())
+        return len(self.end_day_votes) > (living / 2)
+
+    def tally_accusations(self):
+        """
+        Determines if we Lynch, Restart (Tie), or Sleep (No Accusations).
+        Returns a dict describing the result.
+        """
+        # 1. No Accusations -> Night
+        valid_votes = [v for v in self.accusations.values() if v]
+        if not valid_votes:
+            self.set_phase("NIGHT")
+            return {"result": "night", "message": "No accusations. Sleeping..."}
+
+        # 2. Count
+        counts = Counter(valid_votes)
+        most_common = counts.most_common(2)
+
+        # 3. if tie, restart accusations once
+        if len(most_common) > 1 and most_common[0][1] == most_common[1][1]:
+            if self.accusation_restarts == 0:
+                self.accusation_restarts += 1
+                self.accusations = {} # Reset
+                # Return 'restart' but DO NOT change phase yet, app.py handles notification
+                return {"result": "restart", "message": "Tie vote! Re-discuss."}
+            else:
+                self.set_phase("NIGHT")
+                return {"result": "night", "message": "Deadlock tie. No one lynched."}
+
+        # 4. Lynch Trial
+        self.lynch_target_id = most_common[0][0]
+        self.set_phase("LYNCH_VOTE_PHASE")
+        return {
+            "result": "trial",
+            "target_id": self.lynch_target_id,
+            "target_name": self.players[self.lynch_target_id].name
+        }
+
+    def cast_lynch_vote(self, voter_id, vote):
+        """Returns True if all players have voted."""
+        if self.phase != "LYNCH_VOTE_PHASE": return False
+        if vote not in ["yes", "no"]: return False
+
+        self.lynch_votes[voter_id] = vote
+        return len(self.lynch_votes) >= len(self.get_living_players())
+
+    def resolve_lynch_vote(self):
+        """
+        Calculates lynch result. Apply death if needed. Checks Win.
+        Returns result dict.
+        """
+        yes = list(self.lynch_votes.values()).count("yes")
+        total = len(self.lynch_votes)
+
+        result_data = {
+            "summary": {"yes": [], "no": []},
+            "killed_id": None,
+            "game_over": False
+        }
+
+        # Populate summary names
+        for pid, v in self.lynch_votes.items():
+            result_data["summary"][v].append(self.players[pid].name)
+
+        # Majority YES required (> 50%)
+        if yes > (total / 2):
+            self.players[self.lynch_target_id].is_alive = False
+            result_data["killed_id"] = self.lynch_target_id
+
+            if self.check_game_over():
+                result_data["game_over"] = True
+                return result_data
+
+        # Reset to Night (unless game over)
+        self.set_phase("NIGHT")
+        return result_data
+
     def check_game_over(self):
         """
         Checks all win conditions.
         Priority: 1. Solo Roles (Alpha Wolf, Fool) 2. Teams
         """
-        active_players = [p for p in self.players.values() if p.is_alive]
+        active_players = get_living_players()
         game_context = {'players': list(self.players.values())}
 
         # 1. Check Solo Win Conditions
@@ -316,18 +408,18 @@ class Game:
                 return True
 
         # 2. Check Team Win Conditions
-        wolves = [p for p in active_players if p.role.team == 'wolf']
+        wolves = get_living_players("wolf")
         non_wolves_count = len(active_players) - len(wolves)
-
-        # Wolves win if they outnumber villagers (or equal)
-        if len(wolves) >= non_wolves_count and len(wolves) > 0:
-            self.winner = "Werewolves"
-            self.phase = "GAME_OVER"
-            return True
 
         # Villagers win if no wolves left
         if len(wolves) == 0:
             self.winner = "Villagers"
+            self.phase = "GAME_OVER"
+            return True
+
+        # Wolves win if they outnumber villagers (or equal)
+        if len(wolves) >= non_wolves_count:
+            self.winner = "Werewolves"
             self.phase = "GAME_OVER"
             return True
 
