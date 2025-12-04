@@ -1,6 +1,6 @@
 """
 app.py
-Version: 2.0.0
+Version: 2.0.1
 """
 import os
 from dotenv import load_dotenv, find_dotenv
@@ -796,17 +796,40 @@ def handle_admin_exclude_player(data):
         broadcast_player_list()
 
 
-@socketio.on("admin_start_game")
-def handle_admin_start_game():
-    if request.sid != game["admin_sid"] or game["game_state"] != "waiting":
-        return
+@socketio.on("start_game")
+def handle_start_game():
+    if request.sid != game.get("admin_sid"):
+        return emit("error", {"message": "Only the admin can start the game."})
     if len(game["players"]) < 4:
         return emit("error", {"message": "Cannot start with fewer than 4 players."})
+    if game.get("game_state") != "waiting":
+        return emit("error", {"message": "Game is already in progress."})
+
     log_and_emit("===> Admin started game. Assigning roles.")
-    assign_roles()
+
+    selected_roles = game.get("roles", [])
+    settings = game.get("settings", {})
+    game_mode = settings.get("mode", "standard")
+    game_instance.mode = game_mode
+
+    # Pass the Timer settings if present (optional, based on your config logic)
+    # timers = settings.get("timers", {})
+    # config.GAME_DEFAULTS.update(timers) # If you want to overwrite defaults
+
+    # We must copy players from the App's connection list to the Engine's logic list
+    game_instance.players = {} # Clear old state
+    for pid, p_obj in game["players"].items():
+        # Add to engine (id, name)
+        game_instance.add_player(pid, p_obj.username)
+
+    game_instance.assign_roles(selected_roles)
+
     game["game_state"] = "started"
-    game["players_ready_for_game"].clear()  # debug: is this still needed?
+    game["players_ready_for_game"] = set()
+
+    log_and_emit(f"===> Game Started! Mode: {game_mode}")
     socketio.emit("game_started", to=game["game_code"])
+    start_new_phase("night")
 
 
 @socketio.on("admin_next_phase")

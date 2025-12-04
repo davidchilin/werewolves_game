@@ -1,4 +1,4 @@
-<!-- Version: 2.0 -->
+<!-- Version: 2.0.1 -->
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -230,7 +230,8 @@
           <input type="text" id="new-game-code-input" placeholder="New Code" />
           <button id="set-code-btn">Set Code</button>
           <button id="toggle-chat-btn" style="margin-left: 10px">
-            Toggle Admin Chat</button>
+            Toggle Admin Chat
+          </button>
         </div>
       </div>
     </div>
@@ -268,6 +269,11 @@
             checkbox.type = "checkbox";
             checkbox.name = "selected_roles";
             checkbox.value = role.name_key; // e.g. "role_werewolf"
+
+            const defaults = ["role_villager", "role_werewolf", "role_seer"];
+            if (defaults.includes(role.name_key)) {
+              checkbox.checked = true;
+            }
 
             const displayName = role.name_key
               .replace("role_", "")
@@ -343,13 +349,18 @@
       }
 
       socket.on("connect", () => {
-        console.log("[DEBUG] Connected to Lobby, server with session ID:", currentPlayerId);
+        console.log(
+          "[DEBUG] Connected to Lobby, server with session ID:",
+          currentPlayerId,
+        );
         // Trigger role load on connect
         loadRoles();
       });
 
       socket.on("game_started", () => {
-        console.log("[DEBUG] 'game_started' event received. Redirecting to /game page.");
+        console.log(
+          "[DEBUG] 'game_started' event received. Redirecting to /game page.",
+        );
         window.location.href = "/game";
       });
 
@@ -441,8 +452,10 @@
 
       // Admin Utils
       document.getElementById("set-code-btn").onclick = () => {
-        const newCode = document.getElementById("new-game-code-input")
-          .value.trim().toUpperCase();
+        const newCode = document
+          .getElementById("new-game-code-input")
+          .value.trim()
+          .toUpperCase();
         if (newCode) socket.emit("admin_set_new_code", { new_code: newCode });
         else {
           alert("Please enter a new code.");
@@ -452,7 +465,6 @@
         socket.emit("admin_toggle_chat");
       };
       document.getElementById("set-timers-btn").onclick = () => {
-
         socket.emit("admin_set_timers", timers);
       };
 
