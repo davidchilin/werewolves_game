@@ -8,7 +8,6 @@ import time
 from collections import Counter
 from app import get_living_players
 from roles import AVAILABLE_ROLES
-import config
 
 class Player:
     def __init__(self, session_id, name):
