@@ -387,10 +387,18 @@
         </div>
 
         <div id="admin-controls-ingame" style="display: none">
-          <button id="admin-next-phase-btn"
+          <button
+            id="admin-next-phase-btn"
             style="width: 100%; margin-top: 5px"
-          >Next Phase</button>
-          <button id="admin-chat-toggle-btn" style="width: 100%; margin-top: 5px" >Toggle Admin Chat</button>
+          >
+            Next Phase
+          </button>
+          <button
+            id="admin-chat-toggle-btn"
+            style="width: 100%; margin-top: 5px"
+          >
+            Toggle Admin Chat
+          </button>
         </div>
 
         <h3>Players</h3>
@@ -541,41 +549,43 @@
       // --- PHASE 4: Pass-and-Play Logic ---
       function renderHub(allPlayers) {
         gameInterface.innerHTML =
-         `<h2>Night Phase: Who are you?</h2><div class="pnp-grid">` +
-        allPlayers.map((p) => {
-          if (!p.is_alive) return "";
+          `<h2>Night Phase: Who are you?</h2><div class="pnp-grid">` +
+          allPlayers
+            .map((p) => {
+              if (!p.is_alive) return "";
               // Check local history 'hasActed' to gray out buttons
-          const disabled = hasActed.has(p.id)
-            ? 'disabled style="opacity:0.5"'
-            : "";
-          const label = hasActed.has(p.id)
-            ? `${p.username} (Done)`
-            : p.username;
-          return `<button class="pnp-btn" ${disabled} onclick="startConfirmFlow('${p.id}', '${p.username}')">${label}</button>`;
+              const disabled = hasActed.has(p.id)
+                ? 'disabled style="opacity:0.5"'
+                : "";
+              const label = hasActed.has(p.id)
+                ? `${p.username} (Done)`
+                : p.username;
+              return `<button class="pnp-btn" ${disabled} onclick="startConfirmFlow('${p.id}', '${p.username}')">${label}</button>`;
             })
-            .join("") + `</div>`;
+            .join("") +
+          `</div>`;
       }
 
       // 2. Confirmation Flow
       function startConfirmFlow(pid, name) {
         gameInterface.innerHTML = `
-        <div class="confirm-box">
-            <h3>Are you ${name}?</h3>
-            <button onclick="confirmLevel2('${pid}', '${name}')">Yes, I am ${name}</button>
-            <button class="cancel" onclick="requestGameSync()">No, go back</button>
-        </div>`;
+              <div class="confirm-box">
+                  <h3>Are you ${name}?</h3>
+                  <button onclick="confirmLevel2('${pid}', '${name}')">Yes, I am ${name}</button>
+                  <button class="cancel" onclick="requestGameSync()">No, go back</button>
+              </div>`;
       }
 
       function confirmLevel2(pid, name) {
         // Level 2 Confirm (Double Check)
         gameInterface.innerHTML = `
-        <div class="confirm-box" style="border-color: #f44336">
-            <h3 style="color:#f44336">CONFIRM IDENTITY</h3>
-            <p>Pass device to <strong>${name}</strong>.</p>
-            <p>You are about to see secret info.</p>
-            <button onclick="loadPrivateData('${pid}')">I am ready</button>
-            <button class="cancel" onclick="requestGameSync()">Cancel</button>
-        </div>`;
+              <div class="confirm-box" style="border-color: #f44336">
+                  <h3 style="color:#f44336">CONFIRM IDENTITY</h3>
+                  <p>Pass device to <strong>${name}</strong>.</p>
+                  <p>You are about to see secret info.</p>
+                  <button onclick="loadPrivateData('${pid}')">I am ready</button>
+                  <button class="cancel" onclick="requestGameSync()">Cancel</button>
+              </div>`;
       }
 
       // 3. Load Data & Render Action
@@ -588,15 +598,19 @@
         // Render Role & Prompt (Silly or Serious)
         let roleName = data.role_name.replace("role_", "").toUpperCase();
         let html = `
-        <div class="role-header">
-            <h2>You are: ${roleName}</h2>
-            <p style="font-size:1.2em; color:#fdd835">${data.prompt}</p>
-        </div>
-        <div class="target-grid">`;
+              <div class="role-header">
+                  <h2>You are: ${roleName}</h2>
+                  <p style="font-size:1.2em; color:#fdd835">${data.prompt}</p>
+              </div>
+              <div class="target-grid">`;
 
         // Render targets (including self if returned by backend)
-        html += data.targets.map((t) =>
-           `<button onclick="submitPnPAction('${data.id}', '${t.id}')">${t.name}</button>`).join("");
+        html += data.targets
+          .map(
+            (t) =>
+              `<button onclick="submitPnPAction('${data.id}', '${t.id}')">${t.name}</button>`,
+          )
+          .join("");
 
         // Add "Skip/No Action" button if applicable?
         html += `</div>`;
@@ -640,7 +654,8 @@
 
         // DEAD VIEW
         if (!isAlive) {
-          actionArea.innerHTML = "<h3>You are dead 💀 You can observe the game in silence.</h3>";
+          actionArea.innerHTML =
+            "<h3>You are dead 💀 You can observe the game in silence.</h3>";
           return;
         }
 
@@ -668,7 +683,7 @@
             };
           } else {
             actionArea.innerHTML = `<p>You are dreaming of yummy pupusas while the night creatures are stirring ...  </p><h4>Who is acting quirky this night?</h4><select
-              id="action-select"></select> <button id="action-btn">Select</button>`;
+                    id="action-select"></select> <button id="action-btn">Select</button>`;
             populateSelect("action-select", livingPlayers, true);
             document.getElementById("action-btn").onclick = () => {
               actionArea.innerHTML = `<p>You have made your choice.</p>`;
@@ -676,6 +691,7 @@
           }
         } else if (phase === "accusation_phase") {
           actionArea.innerHTML = `<h4>Who is the wolf? Time for discussion!</h4><select id="accuse-select"></select><button id="accuse-btn">Accuse</button><hr><h4>Ready for Night?</h4><button id="vote-end-day-btn" disabled>💤 Vote to Sleep (30s)</button><div id="end-day-vote-counter" style="margin-left:10px"></div>`;
+
           populateSelect("accuse-select", livingPlayers, true);
           document.getElementById("accuse-btn").onclick = () =>
             socket.emit("accuse_player", {
@@ -715,7 +731,8 @@
             const minutes = Math.floor(timeLeft / 60);
             const seconds = Math.floor(timeLeft % 60);
             timerDisplay.textContent = `Time left: ${minutes}:${(
-              "0" + seconds).slice(-2)}`;
+              "0" + seconds
+            ).slice(-2)}`;
           };
           update();
           timerInterval = setInterval(() => {
@@ -733,15 +750,19 @@
 
         document.querySelector(".game-container").style.display = "none";
         gameOverScreen.style.display = "flex";
-          // Populate game over data...
-        document.getElementById("game-over-title").textContent = `The ${data.winning_team} Win!`;
+        // Populate game over data...
+        document.getElementById(
+          "game-over-title",
+        ).textContent = `The ${data.winning_team} Win!`;
         document.getElementById("game-over-reason").textContent = data.reason;
 
         const rolesList = document.getElementById("final-roles-list");
         rolesList.innerHTML = "";
         data.final_player_states.forEach((p) => {
-            rolesList.innerHTML += `<li><strong>${p.username}</strong> was a ${p.role} ${p.is_alive ? "" : "💀"}</li>`;
-          });
+          rolesList.innerHTML += `<li><strong>${p.username}</strong> was a ${
+            p.role
+          } ${p.is_alive ? "" : "💀"}</li>`;
+        });
 
         document.getElementById("return-to-lobby-btn").onclick = (event) => {
           socket.emit("vote_for_rematch");
@@ -790,8 +811,10 @@
           actionArea.style.display = "block";
           gameInterface.style.display = "none";
 
-          myRoleDisplay.textContent = myRole + (isAdmin ? " 👑" : "");
-          phaseDisplay.textContent = data.phase.replace(/_/g, " ");
+          myRoleDisplay.textContent =
+            (myRole || "Unknown") + (isAdmin ? " 👑" : "");
+          if (data.phase)
+            phaseDisplay.textContent = data.phase.replace(/_/g, " ");
           renderActionUI(data.phase);
           adminChatToggleBtn.style.display = "block";
           // Clear local PnP history if phase changed to Day
@@ -810,7 +833,12 @@
 
       // Also listen for simple phase change updates
       socket.on("phase_change", (data) => {
-        logMessage(`A new phase has begun: <strong>${data.phase.replace(/_/g, " ")}</strong>.`);
+        logMessage(
+          `A new phase has begun: <strong>${data.phase.replace(
+            /_/g,
+            " ",
+          )}</strong>.`,
+        );
 
         livingPlayers = data.living_players;
         if (data.all_players) allPlayers = data.all_players;
@@ -861,7 +889,8 @@
       socket.on("night_result_kill", (data) => {
         const { username, role, id } = data.killed_player;
         logMessage(
-          `🫀 Remnants of a body were found! <strong>${username}</strong> was killed. They were a <strong>${role}</strong> ⚰️`);
+          `🫀 Remnants of a body were found! <strong>${username}</strong> was killed. They were a <strong>${role}</strong> ⚰️`,
+        );
         if (myPlayerId === id) {
           isAlive = false;
           setChatMode(data.admin_only_chat, data.phase);
@@ -878,14 +907,17 @@
         logMessage("🌞 The sun rises, and no one was killed."),
       );
 
-      socket.on("wolf_team_info", (data) =>
-{
+      socket.on("wolf_team_info", (data) => {
         if (data.teammates.length > 0) {
-          logMessage(`You are a wolf. Your fellow wolves are: <strong>${data.teammates.join(", ")}</strong>.`);
+          logMessage(
+            `You are a wolf. Your fellow wolves are: <strong>${data.teammates.join(
+              ", ",
+            )}</strong>.`,
+          );
         } else {
           logMessage(`You are the lone wolf.`);
-        }}
-      );
+        }
+      });
 
       socket.on("lynch_vote_result", (data) => {
         let fullMessage = data.message;
@@ -896,9 +928,9 @@
         }
         logMessage(fullMessage);
         if (data.killed_id && data.killed_id === myPlayerId) {
-            isAlive = false;
-            setChatMode(data.admin_only_chat, data.phase);
-}
+          isAlive = false;
+          setChatMode(data.admin_only_chat, data.phase);
+        }
       });
 
       socket.on("error", (data) => {
@@ -1023,7 +1055,7 @@
         if (gameChatInput.value.trim())
           socket.emit("send_message", { message: gameChatInput.value });
         gameChatInput.value = "";
-      };
+      });
 
       gameOverChatForm.addEventListener("submit", (e) => {
         e.preventDefault();
