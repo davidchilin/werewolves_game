@@ -6,7 +6,6 @@ Manages the game flow, player states, complex role interactions, and phase trans
 import random
 import time
 from collections import Counter
-from app import get_living_players
 from roles import AVAILABLE_ROLES
 
 class Player:
@@ -60,7 +59,7 @@ class Game:
         # Admin/Meta Data
         self.admin_only_chat = False
         self.timers_disabled = False
-        self.timer_duration = {
+        self.timer_durations = {
                 "night": 90,
                 "accusation": 90,
                 "lynch_vote": 60
@@ -396,7 +395,7 @@ class Game:
         Checks all win conditions.
         Priority: 1. Solo Roles (Alpha Wolf, Fool) 2. Teams
         """
-        active_players = get_living_players()
+        active_players = self.get_living_players()
         game_context = {'players': list(self.players.values())}
 
         # 1. Check Solo Win Conditions
@@ -407,7 +406,7 @@ class Game:
                 return True
 
         # 2. Check Team Win Conditions
-        wolves = get_living_players("wolf")
+        wolves = self.get_living_players("wolf")
         non_wolves_count = len(active_players) - len(wolves)
 
         # Villagers win if no wolves left

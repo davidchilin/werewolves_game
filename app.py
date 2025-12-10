@@ -605,8 +605,14 @@ def game_page():
     if game["game_state"] == "waiting":
         return redirect(url_for("lobby"))
     # returning player send to game
+    role_str = "unknown"
+    if player_id in game_instance.players:
+        p = game_instance.players[player_id]
+        if p.role:
+            role_str = p.role.name_key.replace("role_", "")
+            if role_str == "werewolf": role_str = "wolf"
     return render_template(
-        "game.html", player_role=game["players"][player_id].role, player_id=player_id
+        "game.html", player_role=role_str, player_id=player_id
     )
 
 
@@ -659,11 +665,11 @@ def handle_connect():
             new_player.is_admin = True
             game["admin_sid"] = request.sid
             log_and_emit(
-                f"===> +++ New player Admin {new_player.username} added to game. id: {new_player.id} +++"
+                f"===> +++ New player Admin {new_player.username} added to game. id: {new_player} +++"
             )
         game["players"][player_id] = new_player
         log_and_emit(
-            f"===> +++ New player {new_player.username} added to game. id: {new_player.id} +++"
+            f"===> +++ New player {new_player.username} added to game. id: {new_player} +++"
         )
     # reconnecting player
     else:
@@ -695,7 +701,6 @@ def handle_disconnect():
         log_and_emit(
             f"==== Player {game['players'][player_id].username} disconnected ===="
         )
-        game["players_ready_for_game"].discard(player_id)
 
 # In your Flask-SocketIO handler:
 @socketio.on('join_game')
@@ -1052,6 +1057,7 @@ def handle_vote_to_end_day():
 # majority , resets game state and redirects all to lobby
 @socketio.on("vote_for_rematch")
 def handle_vote_for_rematch():
+    global game_instance
     player_id, p = get_player_by_sid(request.sid)
     if not p or game["game_state"] != "ended":
         return
@@ -1064,7 +1070,6 @@ def handle_vote_for_rematch():
 
         # Check if a majority has been reached or admin forces
         if num_votes > total_players / 2 or p.is_admin:
-            global game_instance
             old_mode = game_instance.mode
             game_instance = Game("main_game", mode=old_mode)
             game["game_state"] = "waiting"
