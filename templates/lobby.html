@@ -194,7 +194,7 @@
         </div>
 
         <div class="admin-controls">
-          <h4>Timer Settings</h4>
+          <h4>Timer Settings ( >30 seconds)</h4>
           <div class="timer-setting">
             <label for="disable-timers-checkbox">Disable Timers</label>
             <input type="checkbox" id="disable-timers-checkbox" />
@@ -251,6 +251,8 @@
         "disable-timers-checkbox",
       );
       const timerOptionsDiv = document.getElementById("timer-options");
+      const setTimersButton = document.getElementById("set-timers-btn");
+
       const roleContainer = document.getElementById("role-container");
 
       // --- 1. Phase 3: Role Loading ---
@@ -414,6 +416,25 @@
         alert("You have been dropped from the lobby.");
         window.location.href = "/";
       });
+
+      socket.on("admin_timers_updated", (data) => {
+        const timers = data.timers;
+
+        // Update the input fields with the values returned by the server.
+        // If the admin entered '25', the server returned '30', which updates here.
+        if (timers.night) {
+          document.getElementById("night-timer-input").value = timers.night;
+        }
+        if (timers.accusation) {
+          document.getElementById("accusation-timer-input").value =
+            timers.accusation;
+        }
+        if (timers.lynch_vote) {
+          document.getElementById("lynch-vote-timer-input").value =
+            timers.lynch_vote;
+        }
+      });
+
       socket.on("force_relogin", (data) => {
         alert("New code set. Re-login required.");
         window.location.href = "/";
@@ -447,7 +468,16 @@
       });
 
       disableTimersCheckbox.addEventListener("change", (e) => {
-        timerOptionsDiv.style.display = e.target.checked ? "none" : "block";
+        const isDisabled = e.target.checked;
+
+        timerOptionsDiv.style.display = isDisabled ? "none" : "block";
+        setTimersButton.style.display = isDisabled ? "none" : "block";
+
+        // We send the flag to the server right now so it takes effect instantly.
+        console.log("Auto-updating timers_disabled:", isDisabled);
+        socket.emit("admin_set_timers", {
+          timers_disabled: isDisabled,
+        });
       });
 
       // Admin Utils
@@ -464,8 +494,19 @@
       document.getElementById("toggle-chat-btn").onclick = () => {
         socket.emit("admin_toggle_chat");
       };
+
       document.getElementById("set-timers-btn").onclick = () => {
-        socket.emit("admin_set_timers", timers);
+        const timersPayload = {
+          timers_disabled: document.getElementById("disable-timers-checkbox")
+            .checked,
+          night: document.getElementById("night-timer-input").value,
+          accusation: document.getElementById("accusation-timer-input").value,
+          lynch_vote: document.getElementById("lynch-vote-timer-input").value,
+        };
+
+        // 2. Send to server
+        console.log("Setting timers:", timersPayload);
+        socket.emit("admin_set_timers", timersPayload);
       };
 
       // Handle Exclude Click

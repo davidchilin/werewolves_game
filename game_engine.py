@@ -50,7 +50,7 @@ class Game:
 
         # Day Phase Data
         self.accusations = {} # accuser_id: target_id
-        self.accusations_restarts = 0
+        self.accusation_restarts = 0
         self.end_day_votes = set() # set of voter_id
 
         self.lynch_target_id = None
@@ -80,24 +80,38 @@ class Game:
         if session_id in self.players:
             del self.players[session_id]
 
-    def assign_roles(self, selected_role_names):
+    def assign_roles(self, selected_role_keys):
         """
         selected_role_names: list of strings matching Role Class names from Lobby.
         e.g. ['Werewolf', 'Seer', 'Villager', 'Villager']
         """
+        print("DEBUG: Starting role assignment process...")
+
+        key_to_class_map = {}
+        for role_name, role_cls in AVAILABLE_ROLES.items():
+            # Create a temporary instance to read its 'name_key'
+            temp_obj = role_cls()
+            key_to_class_map[temp_obj.name_key] = role_cls
+
+        print(f"DEBUG: Available Map Keys (from roles.py): {list(key_to_class_map.keys())}")
+
         player_ids = list(self.players.keys())
         random.shuffle(player_ids)
 
         # fill special roles, then fill remainder with Villager if needed
-        while len(selected_role_names) < len(player_ids):
-            selected_role_names.append("Villager")
+        while len(selected_role_keys) < len(player_ids):
+            selected_role_keys.append("Villager")
+
+        print(f"DEBUG: Final List of Role Keys to Assign: {selected_role_keys}")
 
         # assign roles
-        for pid, role_name in zip(player_ids, selected_role_names):
+        for pid, role_key in zip(player_ids, selected_role_keys):
             # Instantiate the Role class from the Registry
-            role_class = AVAILABLE_ROLES.get(role_name, AVAILABLE_ROLES['Villager'])
+            role_class = key_to_class_map.get(role_key, AVAILABLE_ROLES['Villager'])
+
             self.players[pid].role = role_class()
             self.players[pid].role.on_assign(self.players[pid])
+            print(f"DEBUG: Assigned {role_class.__name__} to Player ID: {pid}") # Final check
         print(f"Roles assigned for Game {self.game_id} (Mode: {self.mode})")
 
     def get_living_players(self, role_team=None):
@@ -105,6 +119,10 @@ class Game:
         if role_team:
             return [p for p in living if p.role.team == role_team]
         return living
+
+    def has_player_voted_to_sleep(self, player_id):
+        """Returns True if the player is in the set of sleep voters."""
+        return player_id in self.end_day_votes
 
     def set_phase(self, new_phase):
         self.phase = new_phase
@@ -117,7 +135,7 @@ class Game:
             self.pending_actions = {}
             self.turn_history = set() # Reset tracker
             self.night_log = []
-            self.accusations_restarts = 0
+            self.accusation_restarts = 0
             for p in self.players.values():
                 p.reset_night_status()
                 # trigger night hoooks
@@ -138,6 +156,9 @@ class Game:
         if self.phase != "NIGHT" or player_id not in self.players:
             return "IGNORED"
 
+        if player_id in self.pending_actions:
+            return "ALREADY_ACTED"
+
         self.pending_actions[player_id] = target_id
         self.turn_history.add(player_id)
         print(f"Action received from {self.players[player_id].name}")
@@ -155,6 +176,22 @@ class Game:
                 return "RESOLVED"
 
         return "WAITING"
+
+    def get_player_night_choice(self, player_id):
+        """Returns the target ID the player submitted, or None."""
+        choice = self.pending_actions.get(player_id)
+        # if dict (Witch), extract target_id
+        if isinstance(choice, dict):
+            return choice.get('target_id')
+        return choice
+
+    def get_player_accusation(self, player_id):
+        """Returns the ID of the player this user accused."""
+        return self.accusations.get(player_id)
+
+    def get_player_lynch_vote(self, player_id):
+        """Returns 'yes' or 'no' if the player has voted."""
+        return self.lynch_votes.get(player_id)
 
 
     def resolve_night_phase(self):
@@ -398,12 +435,13 @@ class Game:
         active_players = self.get_living_players()
         game_context = {'players': list(self.players.values())}
 
+        self.winner = None
+        reason = ""
         # 1. Check Solo Win Conditions
         for p in active_players:
             if p.role and p.role.check_win_condition(p, game_context):
                 self.winner = p.name
-                self.phase = "GAME_OVER"
-                return True
+                reason = f"Solo Winner {self.winner} has met their goals!"
 
         # 2. Check Team Win Conditions
         wolves = self.get_living_players("wolf")
@@ -412,15 +450,24 @@ class Game:
         # Villagers win if no wolves left
         if len(wolves) == 0:
             self.winner = "Villagers"
-            self.phase = "GAME_OVER"
-            return True
+            reason = "All of the wolves have been eradicated."
 
         # Wolves win if they outnumber villagers (or equal)
         if len(wolves) >= non_wolves_count:
             self.winner = "Werewolves"
-            self.phase = "GAME_OVER"
-            return True
+            reason = "The wolves have taken over the village."
 
+
+        if self.winner:
+            self.phase = "GAME_OVER"
+
+            # CRITICAL: You must populate this data or the frontend will ignore the screen!
+            self.game_over_data = {
+                "winning_team": self.winner,
+                "reason": reason, # Or specific reason
+                "final_player_states": [p.to_dict() for p in self.players.values()]
+            }
+            return True
         return False
 
     def get_game_state(self):
