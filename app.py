@@ -9,15 +9,15 @@ import time
 import uuid
 from flask import (
     Flask,
+    jsonify,
+    redirect,
     render_template,
     request,
-    session,
-    redirect,
-    url_for,
     send_from_directory,
-    jsonify
+    session,
+    url_for,
 )
-from flask_socketio import SocketIO, join_room, leave_room, emit
+from flask_socketio import SocketIO, join_room, emit
 from game_engine import Game
 from roles import AVAILABLE_ROLES
 
@@ -48,31 +48,11 @@ else:
 
 # --- Game State ---
 game = {
-    "players": {},  # dictionary mapping player_id (UUID string) to Player objects
-    "game_state": "waiting",  # started night accusation_phase lynch_vote_phase ended
-    #    "phase_start_time": None,  # timestamp for the current phase
-    #    "game_over_data": None,  # Stores the final game over payload
-    #"timers_disabled": False,  # Admin can disable timers for manual progression
-    #"players_ready_for_game": set(),  # ready player_ids
-    "game_code": "W",
-    "admin_sid": None,
     "admin_only_chat": False,
-    #"night_wolf_choices": {},  # dictionary wolf player_ids to chosen target_id kill
-    #"night_seer_choice": None,
-    #"seer_investigated": False,
-    #"accusations": {},  # dictionary player_ids to accused target_id for lynch_vote
-    #"accusation_restarts": 0,
-    #"end_day_votes": set(),  # set player_ids
-    #"lynch_target_id": None,
-    #"lynch_votes": {},  # dictionary player_ids to yes/no
-    #"accusation_timer": None,
-    #"lynch_vote_timer": None,
-    #"night_timer": None,
-    # dictionary storing duration (in seconds) for each game phase timer
-    #"timer_durations": {"night": 90, "accusation": 90, "lynch_vote": 60},
-    # A unique, incrementing ID for each timer instance to prevent old timers from firing.
-    #"current_timer_id": 0,
-    #"rematch_votes": set(),  # set player_ids for game_over rematch
+    "admin_sid": None,
+    "game_code": "W",
+    "game_state": "waiting",  # started night accusation_phase lynch_vote_phase ended
+    "players": {},  # dictionary mapping player_id (UUID string) to Player objects
 }
 
 class PlayerWrapper:
@@ -80,19 +60,6 @@ class PlayerWrapper:
         self.username = username
         self.sid = sid
         self.is_admin = False
-
-# --- Player Class ---
-#class Player:
-#    def __init__(self, username, sid):
-#        # unique, persistent identifier for the player, stored in session
-#        self.id = session.get("player_id")
-#        self.username = username
-#        # player's current SocketIO session ID. Changes on reconnect
-#        self.sid = sid
-#        self.role = None  # 'villager', 'wolf', 'seer'
-#        self.is_alive = True
-#        self.is_admin = False
-
 
 # --- Helper Functions ---
 def get_player_by_sid(sid):
@@ -158,8 +125,6 @@ def broadcast_game_state():
             elapsed = time.time() - game_instance.phase_start_time
             remaining = max(0, game_instance.timer_durations[key] - elapsed)
 
-    print(f"DEBUG: Timer calculated: {remaining}s")
-
     lynch_target_name = None
     if game_instance.lynch_target_id:
         t = game_instance.players.get(game_instance.lynch_target_id)
@@ -203,33 +168,32 @@ def broadcast_game_state():
         rematch_count = len(game_instance.rematch_votes)
 
         payload = {
-            "phase": game_instance.phase.lower(),
-            "your_role": role_str,
-            "mode": game_instance.mode, # Standard or pass_and_play
-            "is_alive": is_alive,
-            "is_admin": conn.is_admin,
-            "living_players": [{"id": p.id, "username": p.name} for p in game_instance.get_living_players()],
+            "accusation_counts": accusation_counts,
+            "admin_only_chat": game["admin_only_chat"],
             "all_players": all_players,
             "duration": remaining,
-            "admin_only_chat": game["admin_only_chat"],
-            "timers_disabled": game_instance.timers_disabled,
             "game_over_data": game_instance.game_over_data,
-            "my_rematch_vote": my_rematch_vote,
-            "rematch_vote_count": rematch_count,
-            "my_night_target_id": my_night_target,
-            "my_night_target_name": my_night_target_name,
-            "my_accusation_id": my_accusation,
-            "my_accusation_name": my_accusation_name,
+            "is_admin": conn.is_admin,
+            "is_alive": is_alive,
+            "living_players": [{"id": p.id, "username": p.name} for p in game_instance.get_living_players()],
             "lynch_target_id": game_instance.lynch_target_id,
             "lynch_target_name": lynch_target_name,
+            "mode": game_instance.mode, # Standard or pass_and_play
+            "my_accusation_id": my_accusation,
+            "my_accusation_name": my_accusation_name,
             "my_lynch_vote": my_lynch_vote,
-            "accusation_counts": accusation_counts,
+            "my_night_target_id": my_night_target,
+            "my_night_target_name": my_night_target_name,
+            "my_rematch_vote": my_rematch_vote,
             "my_sleep_vote": my_sleep_vote,
+            "phase": game_instance.phase.lower(),
+            "rematch_vote_count": rematch_count,
             "sleep_vote_count": len(game_instance.end_day_votes),
+            "timers_disabled": game_instance.timers_disabled,
             "total_accusation_duration": game_instance.timer_durations.get("accusation", 90),
+            "your_role": role_str,
         }
 
-        #print(f"DEBUG: Sending to {conn.username}: {payload}") # Uncomment if needed
         socketio.emit("game_state_sync", payload, to=conn.sid)
 
     print("DEBUG: Broadcast complete.")
@@ -267,290 +231,6 @@ def timer_task(phase, duration, tid):
             elif phase == "LYNCH_VOTE_PHASE":
                 resolve_lynch()
 
-#def full_game_reset(new_code="W", admin_to_keep=None):
-#    global game
-#    print(f"Admin has reset the game with a new code.")
-#    game = {
-#        "players": {},
-#        "game_state": "waiting",
-#        "phase_start_time": None,
-#        "game_over_data": None,
-#        "timers_disabled": False,
-#        "players_ready_for_game": set(),
-#        "admin_sid": None,
-#        "game_code": new_code,
-#        "admin_only_chat": False,
-#        "night_wolf_choices": {},
-#        "night_seer_choice": None,
-#        "seer_investigated": False,
-#        "accusations": {},
-#        "accusation_restarts": 0,
-#        "end_day_votes": set(),
-#        "lynch_target_id": None,
-#        "lynch_votes": {},
-#        "accusation_timer": None,
-#        "lynch_vote_timer": None,
-#        "night_timer": None,
-#        "timer_durations": {"night": 90, "accusation": 90, "lynch_vote": 60},
-#        "current_timer_id": 0,
-#        "rematch_votes": set(),
-#    }
-#    if admin_to_keep:
-#        game["players"] = {admin_to_keep.id: admin_to_keep}
-#        game["admin_sid"] = admin_to_keep.sid
-#
-#
-## --- Game Logic ---
-## Resets game to initial state, clearing temporary data. does NOT remove players.
-#def reset_game_state():
-#    log_and_emit("A majority voted for a new match. Get Ready!")
-#    game["game_state"] = "waiting"
-#    game["phase_start_time"] = None
-#    game["game_over_data"] = None
-#    game["timers_disabled"] = False
-#    game["night_wolf_choices"] = {}
-#    game["night_seer_choice"] = None
-#    game["seer_investigated"] = False
-#    game["accusations"] = {}
-#    game["end_day_votes"] = set()
-#    game["lynch_target_id"] = None
-#    game["lynch_votes"] = {}
-#    game["rematch_votes"] = set()
-#    game["admin_only_chat"] = False  # Also reset chat mode
-#
-#    # Reset individual player states
-#    for player in game["players"].values():
-#        player.role = None
-#        player.is_alive = True
-
-
-#def assign_roles():
-#    player_ids = list(game["players"].keys())
-#    random.shuffle(player_ids)
-#    num_players = len(player_ids)
-#    if 4 <= num_players <= 6:
-#        num_wolves = 1
-#    elif 7 <= num_players <= 8:
-#        num_wolves = 2
-#    elif 9 <= num_players <= 11:
-#        num_wolves = 3
-#    elif 12 <= num_players <= 16:
-#        num_wolves = 4
-#    else:
-#        num_wolves = int(num_players * 0.25)
-#    num_seer = 1 if num_players >= 4 else 0
-#    for i, player_id in enumerate(player_ids):
-#        player = game["players"][player_id]
-#        player.is_alive = True
-#        if i < num_wolves:
-#            player.role = "wolf"
-#        elif i < num_wolves + num_seer:
-#            player.role = "seer"
-#        else:
-#            player.role = "villager"
-#    log_and_emit("Roles have been assigned.")
-
-
-# Check for win condition. Calculates number living players for
-# each faction and checks win condition. If a winner found, changes game state to "ended", and emits 'game_over' event.
-#def check_win_conditions():
-#    # Don't check for wins if the game isn't in a state where players can die.
-#    log_and_emit(f"checking win conditions, current game_state: {game['game_state']}")
-#    if game["game_state"] in [
-#        "waiting",
-#        "ended",
-#    ]:
-#        return False
-#
-#    num_living_wolves = len(get_living_players("wolf"))
-#    num_living_non_wolves = len(get_living_players()) - num_living_wolves
-#
-#    winner = None
-#    reason = ""
-#
-#    # Villager Win: No wolves left alive.
-#    if num_living_wolves == 0 and num_living_non_wolves > 0:
-#        winner = "Villagers"
-#        reason = "All of the wolves have been eradicated."
-#    # Wolf Win: number of wolves >= non-wolves.
-#    elif num_living_wolves >= num_living_non_wolves and num_living_wolves > 0:
-#        winner = "Wolves"
-#        reason = "The wolves have taken over the village."
-#
-#    if winner:
-#        game["game_state"] = "ended"
-#        game["admin_only_chat"] = False  # reset chat mode
-#        socketio.emit(
-#            "chat_mode_update",
-#            {"admin_only_chat": game["admin_only_chat"]},
-#            to=game["game_code"],
-#        )
-#
-#        final_player_states = [
-#            {"username": p.username, "role": p.role, "is_alive": p.is_alive}
-#            for p in game["players"].values()
-#        ]
-#        payload = {
-#            "winning_team": winner,
-#            "reason": reason,
-#            "final_player_states": final_player_states,
-#        }
-#        game["game_over_data"] = payload  # Store results for refreshes
-#        log_and_emit(f"Game over! The {winner} have won! {reason}")
-#        socketio.sleep(6)
-#        socketio.emit("game_over", payload, to=game["game_code"])
-#
-#        return True  # Game is over
-#    return False  # Game continues
-
-
-# need to fix/reorganize phase Initialization resets
-#def start_new_phase(phase_name):
-#    log_and_emit(f">>> Starting New Phase: {phase_name.upper()} <<<")
-#    if game["game_state"] != phase_name or phase_name == "accusation_phase":
-#        game["current_timer_id"] += 1
-#    current_timer_id = game["current_timer_id"]
-#
-#    game["game_state"] = phase_name
-#    game["phase_start_time"] = time.time()  # Record when the phase starts
-#    game["end_day_votes"] = set()
-#    game["lynch_target_id"], game["lynch_votes"] = None, {}
-#
-#    if not game.get("timers_disabled", False):
-#        if phase_name == "accusation_phase":
-#            game["accusation_timer"] = socketio.start_background_task(
-#                target=accusation_timer_task, timer_id=current_timer_id
-#            )
-#        elif phase_name == "night":
-#            game["night_timer"] = socketio.start_background_task(
-#                target=night_timer_task, timer_id=current_timer_id
-#            )
-#
-#    if phase_name == "accusation_phase":
-#        game["admin_only_chat"] = False
-#        game["seer_investigated"] = False  # Reset seer flag during accusation_phase
-#        game["night_wolf_choices"], game["night_seer_choice"] = {}, None
-#        game["accusations"] = {}
-#    elif phase_name == "night":
-#        game["admin_only_chat"] = True
-#        game["accusation_restarts"] = 0
-#        all_wolves = get_living_players("wolf")
-#        wolf_names = [p.username for p in all_wolves]
-#        for wolf in all_wolves:
-#            teammates = [name for name in wolf_names if name != wolf.username]
-#            socketio.emit("wolf_team_info", {"teammates": teammates}, to=wolf.sid)
-#
-#    socketio.emit(
-#        "chat_mode_update",
-#        {"admin_only_chat": game["admin_only_chat"]},
-#        to=game["game_code"],
-#    )
-#
-#    duration = game["timer_durations"].get(phase_name.replace("_phase", ""), 0)
-#    socketio.emit(
-#        "phase_change",
-#        {
-#            "phase": phase_name,
-#            "living_players": [
-#                {"id": p.id, "username": p.username} for p in get_living_players()
-#            ],
-#            "all_players": [
-#                {"id": p.id, "username": p.username} for p in game["players"].values()
-#            ],
-#            "duration": duration,
-#            "timers_disabled": game.get("timers_disabled", False),
-#        },
-#        to=game["game_code"],
-#    )
-
-#
-#def accusation_timer_task(timer_id):
-#    duration = game["timer_durations"]["accusation"]
-#    socketio.sleep(duration)
-#    with app.app_context():
-#        if (
-#            game["game_state"] == "accusation_phase"
-#            and timer_id == game["current_timer_id"]
-#        ):
-#            log_and_emit(
-#                f"Accusation timer ({timer_id}) expired. Tallying accusations."
-#            )
-#            tally_accusations(from_timer=True)
-#        else:
-#            log_and_emit(f"===> Old accusation timer ({timer_id}) expired. Ignoring.")
-
-
-#def lynch_vote_timer_task(timer_id):
-#    duration = game["timer_durations"]["lynch_vote"]
-#    socketio.sleep(duration)
-#    with app.app_context():
-#        if (
-#            game["game_state"] == "lynch_vote_phase"
-#            and timer_id == game["current_timer_id"]
-#        ):
-#            log_and_emit(f"Lynch vote timer ({timer_id}) expired. Processing votes.")
-#            process_lynch_vote()
-#        else:
-#            log_and_emit(f"===> Old lynch vote timer ({timer_id}) expired. Ignoring.")
-
-#
-#def night_timer_task(timer_id):
-#    duration = game["timer_durations"]["night"]
-#    socketio.sleep(duration)
-#    with app.app_context():
-#        if game["game_state"] == "night" and timer_id == game["current_timer_id"]:
-#            log_and_emit(f"Night timer ({timer_id}) expired. Processing night actions.")
-#            process_night_actions()
-#        else:
-#            log_and_emit(f"===> Old night timer ({timer_id}) expired. Ignoring.")
-#
-#
-#def check_night_actions_complete():
-#    living_wolves, living_seer = get_living_players("wolf"), get_living_players("seer")
-#    wolves_done = all(wolf.id in game["night_wolf_choices"] for wolf in living_wolves)
-#    seer_done = (
-#        not living_seer
-#        or game["night_seer_choice"] is not None
-#        or game["seer_investigated"]
-#    )
-#    if wolves_done and seer_done:
-#        log_and_emit("All players have completed night actions.")
-#        process_night_actions()
-#    else:
-#        log_and_emit("check night actions -> night Not done yet")
-
-
-#def process_night_actions():
-#    killed_player = None
-#    choices = list(game["night_wolf_choices"].values())
-#    if (
-#        choices
-#        and len(choices) == len(get_living_players("wolf"))
-#        and choices[0]
-#        and all(c == choices[0] for c in choices)
-#    ):
-#        target_id = choices[0]
-#        if target_id in game["players"] and game["players"][target_id].is_alive:
-#            game["players"][target_id].is_alive = False
-#            killed_player = game["players"][target_id]
-#    if killed_player:
-#        socketio.emit(
-#            "night_result_kill",
-#            {
-#                "killed_player": {
-#                    "id": killed_player.id,
-#                    "username": killed_player.username,
-#                    "role": killed_player.role,
-#                }
-#            },
-#            to=game["game_code"],
-#        )
-#    else:
-#        socketio.emit("night_result_no_kill", {}, to=game["game_code"])
-#
-#    if not check_win_conditions():
-#        start_new_phase("accusation_phase")
-
 
 def perform_tally_accusations():
     # 1. Engine Calculation
@@ -583,33 +263,6 @@ def perform_tally_accusations():
         start_phase_timer("NIGHT")
         broadcast_game_state()
 
-#def process_lynch_vote():
-#    for p in get_living_players():
-#        if p.id not in game["lynch_votes"]:
-#            game["lynch_votes"][p.id] = "no"
-#    votes, target_id = list(game["lynch_votes"].values()), game["lynch_target_id"]
-#    yes_votes, target_player = votes.count("yes"), game["players"][target_id]
-#    vote_summary = {"yes": [], "no": []}
-#    for voter_id, vote in game["lynch_votes"].items():
-#        vote_summary[vote].append(game["players"][voter_id].username)
-#    if yes_votes > len(votes) / 2:
-#        target_player.is_alive = False
-#        message = f"🔪 {target_player.username} has been lynched! They were a {target_player.role} ⚰️"
-#        socketio.emit(
-#            "lynch_vote_result",
-#            {"message": message, "killed_id": target_id, "summary": vote_summary},
-#            to=game["game_code"],
-#        )
-#    else:
-#        message = f"The village has voted to spare {target_player.username}."
-#        socketio.emit(
-#            "lynch_vote_result",
-#            {"message": message, "summary": vote_summary},
-#            to=game["game_code"],
-#        )
-#    socketio.sleep(5)
-#    if not check_win_conditions():
-#        start_new_phase("night")
 
 # --- HTTP Routes ---
 @app.route("/", methods=["GET", "POST"])
