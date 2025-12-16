@@ -406,6 +406,12 @@
             Next Phase
           </button>
           <button
+            id="admin-pause-timer-btn"
+            style="width: 100%; margin-top: 5px"
+          >
+            Pause Timers ⏸️
+          </button>
+          <button
             id="admin-chat-toggle-btn"
             style="width: 100%; margin-top: 5px"
           >
@@ -531,6 +537,17 @@
         if (isAdmin) {
           adminControlsIngame.style.display = "block";
           adminNextPhaseBtn.style.display = "block";
+
+          const pauseBtn = document.getElementById("admin-pause-timer-btn");
+          if (pauseBtn) {
+            if (timersDisabled) {
+              pauseBtn.textContent = "Resume Timers ▶️";
+              pauseBtn.style.backgroundColor = "#ff9800"; // Orange warning color
+            } else {
+              pauseBtn.textContent = "Pause Timers ⏸️";
+              pauseBtn.style.backgroundColor = ""; // Default color
+            }
+          }
         } else {
           adminControlsIngame.style.display = "none";
         }
@@ -901,6 +918,15 @@
         if (statusEl && rematchInfo.count !== undefined) {
           statusEl.textContent = `${rematchInfo.count} / ${rematchInfo.total} players have voted to return.`;
         }
+
+        const chatContainer = document.getElementById(
+          "game-over-chat-container",
+        );
+        if (isPassAndPlay) {
+          if (chatContainer) chatContainer.style.display = "none";
+        } else {
+          if (chatContainer) chatContainer.style.display = "flex";
+        }
       }
 
       // --- Socket Events ---
@@ -1211,6 +1237,15 @@
         socket.emit("admin_next_phase");
         adminChatToggleBtn.classList.toggle("btn-active", data.admin_only_chat);
       });
+
+      const adminPauseBtn = document.getElementById("admin-pause-timer-btn");
+      if (adminPauseBtn) {
+        adminPauseBtn.addEventListener("click", () => {
+          // Toggle the current state
+          const newState = !timersDisabled;
+          socket.emit("admin_set_timers", { timers_disabled: newState });
+        });
+      }
 
       gameChatForm.addEventListener("submit", (e) => {
         e.preventDefault();

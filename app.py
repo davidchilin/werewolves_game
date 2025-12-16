@@ -841,28 +841,35 @@ def handle_admin_toggle_chat():
 
 @socketio.on("admin_set_timers")
 def handle_admin_set_timers(data):
-    if request.sid != game["admin_sid"] or game["game_state"] != "waiting":
+    if request.sid != game["admin_sid"]:
         return
 
-    updated_timers = {}
+    if "timers_disabled" in data:
+        game_instance.timers_disabled = data["timers_disabled"]
+        status = "Paused" if game_instance.timers_disabled else "Resumed"
+        log_and_emit(f"Admin has {status} the timers.")
 
-    game_instance.timers_disabled = data.get("timers_disabled", False)
+        # Broadcast the new state so UI updates immediately
+        broadcast_game_state()
+
+# The numeric duration settings should generally only be changed in Lobby/Waiting
+    if game["game_state"] == "waiting":
+        updated_timers = {}
+        for key in ["night", "accusation", "lynch_vote"]:
+            val = data.get(key)
+            if val:
+                try:
+                    new_duration = int(val)
+                    final_duration = max(30, new_duration)
+                    game_instance.timer_durations[key] = final_duration
+                    updated_timers[key] = final_duration
+                except ValueError:
+                    pass
+
     # Update durations
-    for key in ["night", "accusation", "lynch_vote"]:
-        val = data.get(key)
-        if val:
-            try:
-                new_duration = int(val)
-                final_duration = max(30, new_duration)
-                game_instance.timer_durations[key] = final_duration
-                updated_timers[key] = final_duration # Store the corrected value
-            except ValueError:
-                pass # ignore invalid numbers
-
-    emit("message", {"text": "Timer settings updated."})
-    if updated_timers:
-        emit("admin_timers_updated", {"timers": updated_timers})
-    log_and_emit(f"Admin set new timer durations: {game_instance.timer_durations}")
+        if updated_timers:
+            emit("admin_timers_updated", {"timers": updated_timers})
+            log_and_emit(f"Admin set new timer durations: {game_instance.timer_durations}")
 
 
 @socketio.on("admin_exclude_player")
