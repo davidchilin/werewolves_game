@@ -1,4 +1,4 @@
-<!-- Version: 2.0.0 -->
+<!-- Version: 4.4.5 -->
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -480,6 +480,8 @@
         myLynchVote = null,
         currentLynchTargetName = "Unkown",
         mySleepVote = false;
+      let totalAccusationDuration = 90,
+        sleepButtonTimeout = null; // To clear old timers prevents bugs
 
       // --- DOM Elements ---
       const phaseDisplay = document.getElementById("phase-display");
@@ -586,23 +588,23 @@
       // 2. Confirmation Flow
       function startConfirmFlow(pid, name) {
         gameInterface.innerHTML = `
-              <div class="confirm-box">
-                  <h3>Are you ${name}?</h3>
-                  <button onclick="confirmLevel2('${pid}', '${name}')">Yes, I am ${name}</button>
-                  <button class="cancel" onclick="requestGameSync()">No, go back</button>
-              </div>`;
+                    <div class="confirm-box">
+                        <h3>Are you ${name}?</h3>
+                        <button onclick="confirmLevel2('${pid}', '${name}')">Yes, I am ${name}</button>
+                        <button class="cancel" onclick="requestGameSync()">No, go back</button>
+                    </div>`;
       }
 
       function confirmLevel2(pid, name) {
         // Level 2 Confirm (Double Check)
         gameInterface.innerHTML = `
-              <div class="confirm-box" style="border-color: #f44336">
-                  <h3 style="color:#f44336">CONFIRM IDENTITY</h3>
-                  <p>Pass device to <strong>${name}</strong>.</p>
-                  <p>You are about to see secret info.</p>
-                  <button onclick="loadPrivateData('${pid}')">I am ready</button>
-                  <button class="cancel" onclick="requestGameSync()">Cancel</button>
-              </div>`;
+                    <div class="confirm-box" style="border-color: #f44336">
+                        <h3 style="color:#f44336">CONFIRM IDENTITY</h3>
+                        <p>Pass device to <strong>${name}</strong>.</p>
+                        <p>You are about to see secret info.</p>
+                        <button onclick="loadPrivateData('${pid}')">I am ready</button>
+                        <button class="cancel" onclick="requestGameSync()">Cancel</button>
+                    </div>`;
       }
 
       // 3. Load Data & Render Action
@@ -615,11 +617,11 @@
         // Render Role & Prompt (Silly or Serious)
         let roleName = data.role_name.replace("role_", "").toUpperCase();
         let html = `
-              <div class="role-header">
-                  <h2>You are: ${roleName}</h2>
-                  <p style="font-size:1.2em; color:#fdd835">${data.prompt}</p>
-              </div>
-              <div class="target-grid">`;
+                    <div class="role-header">
+                        <h2>You are: ${roleName}</h2>
+                        <p style="font-size:1.2em; color:#fdd835">${data.prompt}</p>
+                    </div>
+                    <div class="target-grid">`;
 
         // Render targets (including self if returned by backend)
         html += data.targets
@@ -677,7 +679,7 @@
         });
       }
 
-      function renderActionUI(phase) {
+      function renderActionUI(phase, currentDuration = 0) {
         actionArea.innerHTML = "";
 
         // DEAD VIEW
@@ -687,7 +689,7 @@
           return;
         }
 
-        // STANDARD NIGHT VIEW
+        // NIGHT PHASE --------------------------------
         if (phase === "night") {
           if (myRole === "wolf") {
             if (myNightTargetId === null) {
@@ -706,7 +708,7 @@
               const target = allPlayers.find((p) => p.id === myNightTargetId);
               const targetName = target ? target.username : "Nobody";
               actionArea.innerHTML = `<p>You are hungry for <span style="color:
-                #ff0000">${targetName}</span>. Waiting ...</p>`;
+                      #ff0000">${targetName}</span>. Waiting ...</p>`;
               return;
             }
           } else if (myRole === "seer") {
@@ -726,7 +728,7 @@
           } else {
             if (myNightTargetId === null) {
               actionArea.innerHTML = `<p>You are dreaming of yummy pupusas while the night creatures are stirring ...  </p><h4>Who is acting quirky this night?</h4><select
-                    id="action-select"></select> <button id="action-btn">Select</button>`;
+                          id="action-select"></select> <button id="action-btn">Select</button>`;
               populateSelect("action-select", livingPlayers, true);
               document.getElementById("action-btn").onclick = () => {
                 actionArea.innerHTML = `<p>You have made your choice.</p>`;
@@ -736,7 +738,10 @@
               return;
             }
           }
+          // ACCUSATION_PHASE --------------------------------
         } else if (phase === "accusation_phase") {
+          if (sleepButtonTimeout) clearTimeout(sleepButtonTimeout);
+
           let accusationHTML = "";
           // Check if already accused (considering "Nobody" as a valid accusation)
           if (myAccusationId !== null) {
@@ -745,33 +750,48 @@
             accusationHTML = `<h3>You have accused <span style="color:#ff5252">${targetName}</span>.</h3><p>Waiting for others...</p>`;
           } else {
             accusationHTML = `
-                  <h4>Who is the wolf? Time for discussion!</h4>
-                  <select id="accuse-select"></select>
-                  <button id="accuse-btn">Accuse</button>`;
-            //                  <hr><h4>Ready for Night?</h4><button id="vote-end-day-btn" disabled>💤 Vote to Sleep (30s)</button><div id="end-day-vote-counter" style="margin-left:10px"></div>`;
+                        <h4>Who is the wolf? Time for discussion!</h4>
+                        <select id="accuse-select"></select>
+                        <button id="accuse-btn">Accuse</button>`;
           }
-          // Check if already voted to sleep
-          let sleepBtnState = "";
-          let sleepBtnText = "💤 Vote to Sleep (30s)";
 
+          // Check if already voted to sleep
+          let sleepBtnState = "disabled";
+          let sleepBtnText = "💤 Vote to Sleep (30s)";
           if (mySleepVote) {
-            sleepBtnState = "disabled";
             sleepBtnText = "Voted to Sleep 💤";
           } else {
-            // If not voted, button starts disabled and enables after timeout
-            sleepBtnState = "disabled"; // Initially disabled
+            const timeToEnable =
+              (currentDuration || totalAccusationDuration) -
+              (totalAccusationDuration - 30);
+            if (timeToEnable <= 0) {
+              // Time has passed, enable immediately
+              sleepBtnState = "";
+            } else {
+              // Must wait for timeout
+              sleepBtnText = `Vote to Sleep (${timeToEnable.toFixed(1)}s)`;
+
+              // Set timer to enable it automatically
+              sleepButtonTimeout = setTimeout(() => {
+                const btn = document.getElementById("vote-end-day-btn");
+                if (btn) {
+                  btn.disabled = false;
+                  btn.textContent = "💤 Vote to Sleep";
+                }
+              }, timeToEnable * 1000);
+            }
           }
 
           // Combine Sections
           actionArea.innerHTML = `
-             <div id="accusation-section">${accusationHTML}</div>
-             <hr style="border-color: #444; margin: 15px 0;">
-             <div id="sleep-section">
-                <h4>Ready for Night?</h4>
-                <button id="vote-end-day-btn" ${sleepBtnState}>${sleepBtnText}</button>
-                <span id="end-day-vote-counter" style="margin-left:10px; font-size:0.9em; color:#aaa"></span>
-             </div>
-          `;
+                   <div id="accusation-section">${accusationHTML}</div>
+                   <hr style="border-color: #444; margin: 15px 0;">
+                   <div id="sleep-section">
+                      <h4>Ready for Night?</h4>
+                      <button id="vote-end-day-btn" ${sleepBtnState}>${sleepBtnText}</button>
+                      <span id="end-day-vote-counter" style="margin-left:10px; font-size:0.9em; color:#aaa"></span>
+                   </div>
+                `;
 
           // --- SECTION C: Event Listeners ---
 
@@ -786,25 +806,16 @@
           }
           // 2. Sleep Button Logic
           // Only attach logic if we haven't voted yet
-          if (!mySleepVote) {
-            const voteBtn = document.getElementById("vote-end-day-btn");
-
-            // Enable button after 30 seconds
-            setTimeout(() => {
-              if (voteBtn) {
-                voteBtn.disabled = false;
-                voteBtn.textContent = "Vote to Sleep";
-              }
-            }, 30000); // 30,000 milliseconds = 30 seconds
-
+          const voteBtn = document.getElementById("vote-end-day-btn");
+          if (voteBtn && !mySleepVote) {
             voteBtn.onclick = function () {
               socket.emit("vote_to_end_day");
-              // Local Immediate Update
               this.disabled = true;
               this.textContent = "Voted to Sleep 💤";
-              mySleepVote = true; // Prevent re-enabling
+              mySleepVote = true;
             };
           }
+          // LYNCH_VOTE_PHASE ----------------------------------
         } else if (phase === "lynch_vote_phase") {
           const voted = myLynchVote === "yes" || myLynchVote === "no";
           if (voted) {
@@ -816,10 +827,10 @@
 
           // If not voted, SHOW BUTTONS (Moved from lynch_vote_started)
           actionArea.innerHTML = `
-             <h4>Will you lynch <span style="color:#bb86fc">${currentLynchTargetName}</span>?</h4>
-             <button id="vote-yes-btn" onclick="submitLynchVote('yes')" class="vote-btn-yes">YES</button>
-             <button id="vote-no-btn" onclick="submitLynchVote('no')" class="vote-btn-no">NO</button>
-           `;
+                   <h4>Will you lynch <span style="color:#bb86fc">${currentLynchTargetName}</span>?</h4>
+                   <button id="vote-yes-btn" onclick="submitLynchVote('yes')" class="vote-btn-yes">YES</button>
+                   <button id="vote-no-btn" onclick="submitLynchVote('no')" class="vote-btn-no">NO</button>
+                 `;
         }
       }
 
@@ -850,7 +861,7 @@
         }
       }
 
-      function showGameOverScreen(data) {
+      function showGameOverScreen(data, rematchInfo = {}) {
         if (timerInterval) clearInterval(timerInterval);
 
         document.querySelector(".game-container").style.display = "none";
@@ -869,11 +880,27 @@
           } ${p.is_alive ? "" : "💀"}</li>`;
         });
 
-        document.getElementById("return-to-lobby-btn").onclick = (event) => {
+        const returnBtn = document.getElementById("return-to-lobby-btn");
+
+        returnBtn.onclick = (event) => {
           socket.emit("vote_for_rematch");
           event.target.disabled = true;
           event.target.textContent = "Voted!";
         };
+
+        if (rematchInfo.hasVoted) {
+          returnBtn.disabled = true;
+          returnBtn.textContent = "Voted!";
+        } else {
+          returnBtn.disabled = false;
+          returnBtn.textContent = "Vote to Return to Lobby";
+        }
+
+        // --- FIX: Handle Count Text ---
+        const statusEl = document.getElementById("rematch-vote-status");
+        if (statusEl && rematchInfo.count !== undefined) {
+          statusEl.textContent = `${rematchInfo.count} / ${rematchInfo.total} players have voted to return.`;
+        }
       }
 
       // --- Socket Events ---
@@ -897,6 +924,10 @@
         myLynchVote = data.my_lynch_vote;
         currentLynchTargetName = data.lynch_target_name || "Unknown";
 
+        if (data.total_accusation_duration) {
+          totalAccusationDuration = data.total_accusation_duration;
+        }
+
         // Determine Mode
         isPassAndPlay = data.mode === "pass_and_play";
 
@@ -905,7 +936,11 @@
           (data.phase === "ended" || data.phase === "game_over") &&
           data.game_over_data
         ) {
-          showGameOverScreen(data.game_over_data);
+          showGameOverScreen(data.game_over_data, {
+            hasVoted: data.my_rematch_vote,
+            count: data.rematch_vote_count,
+            total: data.all_players.length,
+          });
           setChatMode(data.admin_only_chat, data.phase);
           return;
         }
@@ -929,7 +964,7 @@
           if (data.phase)
             phaseDisplay.textContent = data.phase.replace(/_/g, " ");
 
-          renderActionUI(data.phase);
+          renderActionUI(data.phase, data.duration);
 
           adminChatToggleBtn.style.display = "block";
           // Clear local PnP history if phase changed to Day
@@ -937,7 +972,20 @@
         }
 
         phaseDisplay.textContent = data.phase.replace(/_/g, " ");
-        renderActionUI(data.phase);
+        renderActionUI(data.phase, data.duration);
+
+        if (data.phase === "accusation_phase") {
+          const counter = document.getElementById("end-day-vote-counter");
+          const currentVotes = data.sleep_vote_count || 0;
+          const totalLiving = data.living_players.length;
+
+          // Formula: (Living / 2) + 1 - CurrentVotes
+          const needed = 1 + Math.floor(totalLiving / 2) - currentVotes;
+
+          if (counter && needed > 0) {
+            counter.innerHTML = `<strong>${needed}</strong> more votes needed to sleep!`;
+          }
+        }
 
         updatePlayerListView(data.accusation_counts || {});
         updateAdminControls();
@@ -955,11 +1003,14 @@
           )}</strong>.`,
         );
 
+        if (data.phase === "accusation_phase") {
+          totalAccusationDuration = data.duration;
+        }
         livingPlayers = data.living_players;
         if (data.all_players) allPlayers = data.all_players;
         timersDisabled = data.timers_disabled;
         phaseDisplay.textContent = data.phase.replace(/_/g, " ");
-        renderActionUI(data.phase);
+        renderActionUI(data.phase, data.duration);
         updatePlayerListView();
         updateAdminControls();
         setChatMode(data.admin_only_chat, data.phase);
@@ -1099,6 +1150,7 @@
       });
 
       socket.on("accusation_update", (data) => updatePlayerListView(data));
+
       socket.on("end_day_vote_update", (data) => {
         const counter = document.getElementById("end-day-vote-counter");
         if (counter)

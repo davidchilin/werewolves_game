@@ -1,6 +1,6 @@
 """
 app.py
-Version: 4.4.0
+Version: 4.4.5
 """
 from collections import Counter
 from dotenv import load_dotenv, find_dotenv
@@ -140,7 +140,10 @@ def broadcast_game_state():
     print("DEBUG: Starting broadcast_game_state...")
     try:
         all_players = [{"id": p.id, "username": p.name} for p in game_instance.players.values()]
-        accusation_counts = dict(Counter(game_instance.accusations.values()))
+        if game_instance.phase == "ACCUSATION_PHASE":
+            accusation_counts = dict(Counter(game_instance.accusations.values()))
+        else:
+            accusation_counts = {}
     except Exception as e:
         print(f"DEBUG ERROR in Public Data: {e}")
         return
@@ -196,6 +199,9 @@ def broadcast_game_state():
             t = game_instance.players.get(my_accusation)
             if t: my_accusation_name = t.name
 
+        my_rematch_vote = pid in game_instance.rematch_votes
+        rematch_count = len(game_instance.rematch_votes)
+
         payload = {
             "phase": game_instance.phase.lower(),
             "your_role": role_str,
@@ -208,6 +214,8 @@ def broadcast_game_state():
             "admin_only_chat": game["admin_only_chat"],
             "timers_disabled": game_instance.timers_disabled,
             "game_over_data": game_instance.game_over_data,
+            "my_rematch_vote": my_rematch_vote,
+            "rematch_vote_count": rematch_count,
             "my_night_target_id": my_night_target,
             "my_night_target_name": my_night_target_name,
             "my_accusation_id": my_accusation,
@@ -217,6 +225,8 @@ def broadcast_game_state():
             "my_lynch_vote": my_lynch_vote,
             "accusation_counts": accusation_counts,
             "my_sleep_vote": my_sleep_vote,
+            "sleep_vote_count": len(game_instance.end_day_votes),
+            "total_accusation_duration": game_instance.timer_durations.get("accusation", 90),
         }
 
         #print(f"DEBUG: Sending to {conn.username}: {payload}") # Uncomment if needed
