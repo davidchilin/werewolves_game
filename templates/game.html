@@ -465,13 +465,21 @@
     </div>
 
     <script>
+      const PHASE_LOBBY = "Lobby";
       const PHASE_NIGHT = "Night";
       const PHASE_ACCUSATION = "Accusation";
       const PHASE_LYNCH = "Lynch_Vote";
       const PHASE_GAME_OVER = "Game_Over";
 
+      // Role Keys
       const ROLE_WEREWOLF = "Werewolf";
       const ROLE_SEER = "Seer";
+      const ROLE_VILLAGER = "Villager";
+      const ROLE_BODYGUARD = "Bodyguard";
+      const ROLE_WITCH = "Witch";
+      const ROLE_CUPID = "Cupid";
+      const ROLE_MONSTER = "Monster";
+      const ROLE_ALPHA_WEREWOLF = "Alpha_Werewolf";
 
       const socket = io();
       // Global State
@@ -681,7 +689,7 @@
         myLynchVote = vote;
 
         // 3. Re-render UI to show the "You voted" message
-        renderActionUI("lynch_vote_phase");
+        renderActionUI(PHASE_LYNCH);
       }
 
       function populateSelect(elementId, players, includeNobody = false) {
@@ -708,12 +716,16 @@
             actionArea.innerHTML = `<h4>Wolf, who will you eat?</h4><select id="action-select"></select> <button id="action-btn">Kill</button>`;
             populateSelect("action-select", livingPlayers, true);
             document.getElementById("action-btn").onclick = () => {
+              const select = document.getElementById("action-select");
+
               socket.emit("wolf_choice", {
-                target_id: document.getElementById("action-select").value,
+                target_id: select.value,
               });
-              const playerPicked =
-                "Nobody" ||
-                actionSelect[actionSelect.options.selectedIndex].text;
+
+              const playerPicked = select.options[select.selectedIndex]
+                ? select.options[select.selectedIndex].text
+                : "Nobody";
+
               actionArea.innerHTML = `<p>You are hungry for <span style="color: #ff0000">${playerPicked}</span>. Waiting ...</p>`;
             };
           } else {
@@ -1209,9 +1221,9 @@
         currentLynchTargetName = data.target_name;
         phaseDisplay.textContent = "Lynch Vote";
 
-        renderActionUI("lynch_vote_phase");
+        renderActionUI(PHASE_LYNCH);
 
-        startTimer(data.duration);
+        startTimer(data.phase_end_time);
       });
 
       // listener waits for 'game_over' message from server.
@@ -1247,12 +1259,12 @@
       // --- Event Listeners ---
       adminChatToggleBtn.addEventListener("click", () => {
         socket.emit("admin_toggle_chat");
-        adminChatToggleBtn.classList.toggle("btn-active", data.admin_only_chat);
+        //adminChatToggleBtn.classList.toggle("btn-active", data.admin_only_chat);
       });
 
       adminNextPhaseBtn.addEventListener("click", () => {
         socket.emit("admin_next_phase");
-        adminChatToggleBtn.classList.toggle("btn-active", data.admin_only_chat);
+        //adminChatToggleBtn.classList.toggle("btn-active", data.admin_only_chat);
       });
 
       const adminPauseBtn = document.getElementById("admin-pause-timer-btn");

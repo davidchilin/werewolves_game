@@ -224,7 +224,7 @@ class Game:
         Note: target_id can be a string ID or a Dict for complex actions (Witch).
         """
         with self.lock:
-            if self.phase != "NIGHT" or player_id not in self.players:
+            if self.phase != PHASE_NIGHT or player_id not in self.players:
                 return "IGNORED"
 
             if player_id in self.pending_actions:
@@ -276,7 +276,7 @@ class Game:
         # Bodyguard (0) goes before Werewolf (50)
         active_players.sort(key=lambda p: p.role.priority)
 
-        wolf_votes = []
+        werewolf_votes = []
         protected_ids = set()
         kill_list = set()
 
@@ -330,7 +330,7 @@ class Game:
 
                 elif action_type == "kill_vote":
                     # must be Unanimous
-                    wolf_votes.append(target_player.id)
+                    werewolf_votes.append(target_player.id)
 
                 elif action_type == "witch_magic":
                     # Check Status Effects to know what happened
@@ -361,15 +361,15 @@ class Game:
 
         # 4. Resolve Wolf Votes
         # Unanimous vote kills, else no kill
-        living_wolves = self.get_living_players("wolf")
+        living_werewolves = self.get_living_players("werewolf")
         if (
-            wolf_votes
-            and len(wolf_votes) == len(living_wolves)
-            and len(set(wolf_votes)) == 1
+            werewolf_votes
+            and len(werewolf_votes) == len(living_werewolves)
+            and len(set(werewolf_votes)) == 1
         ):
-            target_id = wolf_votes[0]
+            target_id = werewolf_votes[0]
             target_name = self.players[target_id].name
-            print(f"Wolves selected: {target_name}")
+            print(f"Werewolves selected: {target_name}")
 
             # Check Protection
             # todo: possible unnest from previous if
@@ -415,7 +415,7 @@ class Game:
     def process_accusation(self, accuser_id, target_id):
         """Returns True if this accusation triggered a majority/all-voted condition (optional optimization)."""
         with self.lock:
-            if self.phase != "ACCUSATION_PHASE":
+            if self.phase != PHASE_ACCUSATION:
                 return False
             if accuser_id in self.accusations:
                 return False  # Already accused
@@ -426,7 +426,7 @@ class Game:
     def vote_to_sleep(self, player_id):
         """Returns True if majority wants to sleep."""
         with self.lock:
-            if self.phase != "ACCUSATION_PHASE":
+            if self.phase != PHASE_ACCUSATION:
                 return False
             self.end_day_votes.add(player_id)
 
@@ -442,7 +442,7 @@ class Game:
         # 1. No Accusations -> Night
         valid_votes = [v for v in self.accusations.values() if v]
         if not valid_votes:
-            self.set_phase("NIGHT")
+            self.set_phase(PHASE_NIGHT)
             return {"result": "night", "message": "No accusations. Sleeping..."}
 
         # 2. Count
@@ -457,12 +457,12 @@ class Game:
                 # Return 'restart' but DO NOT change phase yet, app.py handles notification
                 return {"result": "restart", "message": "Tie vote! Re-discuss."}
             else:
-                self.set_phase("NIGHT")
+                self.set_phase(PHASE_NIGHT)
                 return {"result": "night", "message": "Deadlock tie. No one lynched."}
 
         # 4. Lynch Trial
         self.lynch_target_id = most_common[0][0]
-        self.set_phase("LYNCH_VOTE_PHASE")
+        self.set_phase(PHASE_LYNCH)
         return {
             "result": "trial",
             "target_id": self.lynch_target_id,
@@ -472,7 +472,7 @@ class Game:
     def cast_lynch_vote(self, voter_id, vote):
         """Returns True if all players have voted."""
         with self.lock:
-            if self.phase != "LYNCH_VOTE_PHASE":
+            if self.phase != PHASE_LYNCH:
                 return False
             if vote not in ["yes", "no"]:
                 return False
@@ -508,7 +508,7 @@ class Game:
                 return result_data
 
         # Reset to Night (unless game over)
-        self.set_phase("NIGHT")
+        self.set_phase(PHASE_NIGHT)
         return result_data
 
     def check_game_over(self):

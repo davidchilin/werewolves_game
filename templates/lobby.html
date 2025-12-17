@@ -238,6 +238,22 @@
     </div>
 
     <script>
+      const PHASE_LOBBY = "Lobby";
+      const PHASE_NIGHT = "Night";
+      const PHASE_ACCUSATION = "Accusation";
+      const PHASE_LYNCH = "Lynch_Vote";
+      const PHASE_GAME_OVER = "Game_Over";
+
+      // Role Keys
+      const ROLE_WEREWOLF = "Werewolf";
+      const ROLE_SEER = "Seer";
+      const ROLE_VILLAGER = "Villager";
+      const ROLE_BODYGUARD = "Bodyguard";
+      const ROLE_WITCH = "Witch";
+      const ROLE_CUPID = "Cupid";
+      const ROLE_MONSTER = "Monster";
+      const ROLE_ALPHA_WEREWOLF = "Alpha_Werewolf";
+
       const socket = io();
       // Ensure backend renders 'player_id' into the template
       let currentPlayerId = "{{ player_id }}";

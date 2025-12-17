@@ -123,13 +123,7 @@ def broadcast_game_state():
     # 2. Timer Calculation
     remaining = 0
     if game_instance.phase_start_time and not game_instance.timers_disabled:
-        # Map Engine Phase to Config Key
-        p_map = {
-            "NIGHT": "night",
-            "ACCUSATION_PHASE": "accusation",
-            "LYNCH_VOTE_PHASE": "lynch_vote",
-        }
-        key = p_map.get(game_instance.phase)
+        key = game_instance.phase
         if key and key in game_instance.timer_durations:
             elapsed = time.time() - game_instance.phase_start_time
             remaining = max(0, game_instance.timer_durations[key] - elapsed)
@@ -204,7 +198,7 @@ def broadcast_game_state():
             "sleep_vote_count": len(game_instance.end_day_votes),
             "timers_disabled": game_instance.timers_disabled,
             "total_accusation_duration": game_instance.timer_durations.get(
-                "accusation", 90
+                PHASE_ACCUSATION, 90
             ),
             "your_role": role_str,
         }
@@ -257,7 +251,7 @@ def perform_tally_accusations():
             {
                 "target_id": outcome["target_id"],
                 "target_name": outcome["target_name"],
-                "duration": game_instance.timer_durations[PHASE_LYNCH],
+                "phase_end_time": game_instance.phase_end_time,
             },
             to=game["game_code"],
         )
@@ -540,9 +534,9 @@ def handle_admin_set_timers(data):
         updated_timers = {}
 
         key_map = {
-            "timer_day": PHASE_ACCUSATION,  # Day = Accusation Phase
-            "timer_night": PHASE_NIGHT,  # Night = Night Phase
-            "timer_vote": PHASE_LYNCH,  # Vote = Lynch Phase
+            "accusation": PHASE_ACCUSATION,  # Day = Accusation Phase
+            "night": PHASE_NIGHT,  # Night = Night Phase
+            "lynch_vote": PHASE_LYNCH,  # Vote = Lynch Phase
         }
 
         for frontend_key, engine_phase_key in key_map.items():
@@ -551,8 +545,9 @@ def handle_admin_set_timers(data):
                 try:
                     new_duration = int(val)
                     final_duration = max(10, new_duration)
+
                     game_instance.timer_durations[engine_phase_key] = final_duration
-                    updated_timers[engine_phase_key] = final_duration
+                    updated_timers[frontend_key] = final_duration
                 except ValueError:
                     pass
 
@@ -774,6 +769,8 @@ def handle_wolf_choice(data):
     if result == "ALREADY_ACTED":
         # refresh the UI and show their previous choice.
         return broadcast_game_state()
+    if result == "IGNORED":
+        return emit("error", {"message": "Action ignored (Wrong phase?)"})
     if result == "RESOLVED":
         resolve_night()
 
@@ -789,7 +786,8 @@ def handle_seer_choice(data):
 
     if result == "ALREADY_ACTED":
         return broadcast_game_state()
-
+    if result == "IGNORED":
+        return emit("error", {"message": "Action ignored."})
     # Immediate Seer Feedback (Standard Mode Feature)
     if result != "RESOLVED":
         target = game_instance.players.get(target_id)
@@ -905,11 +903,18 @@ def handle_vote_for_rematch():
         # Check if a majority has been reached or admin forces
         if num_votes > total_players / 2 or p.is_admin:
             old_mode = game_instance.mode
+
             game_instance = Game("main_game", mode=old_mode)
-            game["game_state"] = PHASE_GAME_OVER
+
+            game_instance.players = {}
+            for pid, obj in game["players"].items():
+                game_instance.add_player(pid, obj.username)
+
+            game["game_state"] = PHASE_LOBBY
             game["game_over_data"] = None
 
             socketio.emit("redirect_to_lobby", {}, to=game["game_code"])
+            broadcast_player_list()
         else:
             # Broadcast the current vote count
             payload = {"count": num_votes, "total": total_players}
