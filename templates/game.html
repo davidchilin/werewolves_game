@@ -1,5 +1,5 @@
 <!-- Version: 4.4.5 -->
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -438,8 +438,6 @@
         </div>
       </div>
     </div>
-
-    <!-- This container is hidden by default. JavaScript will show it when 'game_over' event triggered. It holds the final results. -->
     <div id="game-over-screen">
       <div class="game-over-box">
         <h1 id="game-over-title"></h1>
@@ -467,6 +465,14 @@
     </div>
 
     <script>
+      const PHASE_NIGHT = "Night";
+      const PHASE_ACCUSATION = "Accusation";
+      const PHASE_LYNCH = "Lynch_Vote";
+      const PHASE_GAME_OVER = "Game_Over";
+
+      const ROLE_WEREWOLF = "Werewolf";
+      const ROLE_SEER = "Seer";
+
       const socket = io();
       // Global State
       let myRole,
@@ -696,6 +702,148 @@
         });
       }
 
+      function renderNightUI() {
+        if (myRole === ROLE_WEREWOLF) {
+          if (myNightTargetId === null) {
+            actionArea.innerHTML = `<h4>Wolf, who will you eat?</h4><select id="action-select"></select> <button id="action-btn">Kill</button>`;
+            populateSelect("action-select", livingPlayers, true);
+            document.getElementById("action-btn").onclick = () => {
+              socket.emit("wolf_choice", {
+                target_id: document.getElementById("action-select").value,
+              });
+              const playerPicked =
+                "Nobody" ||
+                actionSelect[actionSelect.options.selectedIndex].text;
+              actionArea.innerHTML = `<p>You are hungry for <span style="color: #ff0000">${playerPicked}</span>. Waiting ...</p>`;
+            };
+          } else {
+            const target = allPlayers.find((p) => p.id === myNightTargetId);
+            const targetName = target ? target.username : "Nobody";
+            actionArea.innerHTML = `<p>You are hungry for <span style="color:
+                      #ff0000">${targetName}</span>. Waiting ...</p>`;
+          }
+        } else if (myRole === ROLE_SEER) {
+          if (myNightTargetId === null) {
+            actionArea.innerHTML = `<h4>Seer, whose role will you see?</h4><select id="action-select"></select> <button id="action-btn">Investigate</button>`;
+            populateSelect("action-select", livingPlayers, true);
+            document.getElementById("action-btn").onclick = () => {
+              socket.emit("seer_choice", {
+                target_id: document.getElementById("action-select").value,
+              });
+              actionArea.innerHTML = `<p>You have seen all that you can see tonight.</p>`;
+            };
+          } else {
+            actionArea.innerHTML = `<p>You have seen all that you can see tonight.</p>`;
+          }
+        } else {
+          if (myNightTargetId === null) {
+            actionArea.innerHTML = `<p>You are dreaming of yummy pupusas while the night creatures are stirring ...  </p><h4>Who is acting quirky this night?</h4><select
+                          id="action-select"></select> <button id="action-btn">Select</button>`;
+            populateSelect("action-select", livingPlayers, true);
+            document.getElementById("action-btn").onclick = () => {
+              actionArea.innerHTML = `<p>You have made your choice.</p>`;
+            };
+          } else {
+            actionArea.innerHTML = `<p>You have made your choice.</p>`;
+          }
+        }
+      }
+
+      function renderAccusationUI(currentDuration) {
+        if (sleepButtonTimeout) clearTimeout(sleepButtonTimeout);
+
+        let accusationHTML = "";
+        // Check if already accused (considering "Nobody" as a valid accusation)
+        if (myAccusationId !== null) {
+          const target = allPlayers.find((p) => p.id === myAccusationId);
+          const targetName = target ? target.username : "Nobody";
+          accusationHTML = `<h3>You have accused <span style="color:#ff5252">${targetName}</span>.</h3><p>Waiting for others...</p>`;
+        } else {
+          accusationHTML = `
+                        <h4>Who is the wolf? Time for discussion!</h4>
+                        <select id="accuse-select"></select>
+                        <button id="accuse-btn">Accuse</button>`;
+        }
+
+        // Check if already voted to sleep
+        let sleepBtnState = "disabled";
+        let sleepBtnText = "💤 Vote to Sleep (30s)";
+        if (mySleepVote) {
+          sleepBtnText = "Voted to Sleep 💤";
+        } else {
+          const timeToEnable =
+            (currentDuration || totalAccusationDuration) -
+            (totalAccusationDuration - 30);
+          if (timeToEnable <= 0) {
+            // Time has passed, enable immediately
+            sleepBtnState = "";
+          } else {
+            // Must wait for timeout
+            sleepBtnText = `Vote to Sleep (${timeToEnable.toFixed(1)}s)`;
+
+            // Set timer to enable it automatically
+            sleepButtonTimeout = setTimeout(() => {
+              const btn = document.getElementById("vote-end-day-btn");
+              if (btn) {
+                btn.disabled = false;
+                btn.textContent = "💤 Vote to Sleep";
+              }
+            }, timeToEnable * 1000);
+          }
+        }
+
+        // Combine Sections
+        actionArea.innerHTML = `
+                   <div id="accusation-section">${accusationHTML}</div>
+                   <hr style="border-color: #444; margin: 15px 0;">
+                   <div id="sleep-section">
+                      <h4>Ready for Night?</h4>
+                      <button id="vote-end-day-btn" ${sleepBtnState}>${sleepBtnText}</button>
+                      <span id="end-day-vote-counter" style="margin-left:10px; font-size:0.9em; color:#aaa"></span>
+                   </div>
+                `;
+
+        // --- SECTION C: Event Listeners ---
+
+        // 1. Accusation Logic (Only if dropdown exists)
+        if (myAccusationId === null) {
+          populateSelect("accuse-select", livingPlayers, true);
+          document.getElementById("accuse-btn").onclick = () => {
+            const select = document.getElementById("accuse-select");
+            if (select)
+              socket.emit("accuse_player", { target_id: select.value });
+          };
+        }
+
+        // 2. Sleep Button Logic
+        // Only attach logic if we haven't voted yet
+        const voteBtn = document.getElementById("vote-end-day-btn");
+        if (voteBtn && !mySleepVote) {
+          voteBtn.onclick = function () {
+            socket.emit("vote_to_end_day");
+            this.disabled = true;
+            this.textContent = "Voted to Sleep 💤";
+            mySleepVote = true;
+          };
+        }
+      }
+
+      function renderLynchVoteUI() {
+        const voted = myLynchVote === "yes" || myLynchVote === "no";
+        if (voted) {
+          const voteText = myLynchVote === "yes" ? "YES" : "NO";
+          const color = myLynchVote === "yes" ? "red" : "green";
+          actionArea.innerHTML = `<h3>You voted: <span style="color:${color}">${voteText}</span></h3><p>Waiting for result...</p>`;
+        } else {
+          // If not voted, SHOW BUTTONS (Moved from lynch_vote_started)
+          actionArea.innerHTML = `
+                   <h4>Will you lynch <span style="color:#bb86fc">${currentLynchTargetName}</span>?</h4>
+                   <button id="vote-yes-btn" onclick="submitLynchVote('yes')" class="vote-btn-yes">YES</button>
+                   <button id="vote-no-btn" onclick="submitLynchVote('no')" class="vote-btn-no">NO</button>
+                 `;
+        }
+      }
+
       function renderActionUI(phase, currentDuration = 0) {
         actionArea.innerHTML = "";
 
@@ -706,176 +854,49 @@
           return;
         }
 
-        // NIGHT PHASE --------------------------------
-        if (phase === "night") {
-          if (myRole === "wolf") {
-            if (myNightTargetId === null) {
-              actionArea.innerHTML = `<h4>Wolf, who will you eat?</h4><select id="action-select"></select> <button id="action-btn">Kill</button>`;
-              populateSelect("action-select", livingPlayers, true);
-              document.getElementById("action-btn").onclick = () => {
-                socket.emit("wolf_choice", {
-                  target_id: document.getElementById("action-select").value,
-                });
-                const playerPicked =
-                  "Nobody" ||
-                  actionSelect[actionSelect.options.selectedIndex].text;
-                actionArea.innerHTML = `<p>You are hungry for <span style="color: #ff0000">${playerPicked}</span>. Waiting ...</p>`;
-              };
-            } else {
-              const target = allPlayers.find((p) => p.id === myNightTargetId);
-              const targetName = target ? target.username : "Nobody";
-              actionArea.innerHTML = `<p>You are hungry for <span style="color:
-                      #ff0000">${targetName}</span>. Waiting ...</p>`;
-              return;
-            }
-          } else if (myRole === "seer") {
-            if (myNightTargetId === null) {
-              actionArea.innerHTML = `<h4>Seer, whose role will you see?</h4><select id="action-select"></select> <button id="action-btn">Investigate</button>`;
-              populateSelect("action-select", livingPlayers, true);
-              document.getElementById("action-btn").onclick = () => {
-                socket.emit("seer_choice", {
-                  target_id: document.getElementById("action-select").value,
-                });
-                actionArea.innerHTML = `<p>You have seen all that you can see tonight.</p>`;
-              };
-            } else {
-              actionArea.innerHTML = `<p>You have seen all that you can see tonight.</p>`;
-              return;
-            }
-          } else {
-            if (myNightTargetId === null) {
-              actionArea.innerHTML = `<p>You are dreaming of yummy pupusas while the night creatures are stirring ...  </p><h4>Who is acting quirky this night?</h4><select
-                          id="action-select"></select> <button id="action-btn">Select</button>`;
-              populateSelect("action-select", livingPlayers, true);
-              document.getElementById("action-btn").onclick = () => {
-                actionArea.innerHTML = `<p>You have made your choice.</p>`;
-              };
-            } else {
-              actionArea.innerHTML = `<p>You have made your choice.</p>`;
-              return;
-            }
-          }
-          // ACCUSATION_PHASE --------------------------------
-        } else if (phase === "accusation_phase") {
-          if (sleepButtonTimeout) clearTimeout(sleepButtonTimeout);
-
-          let accusationHTML = "";
-          // Check if already accused (considering "Nobody" as a valid accusation)
-          if (myAccusationId !== null) {
-            const target = allPlayers.find((p) => p.id === myAccusationId);
-            const targetName = target ? target.username : "Nobody";
-            accusationHTML = `<h3>You have accused <span style="color:#ff5252">${targetName}</span>.</h3><p>Waiting for others...</p>`;
-          } else {
-            accusationHTML = `
-                        <h4>Who is the wolf? Time for discussion!</h4>
-                        <select id="accuse-select"></select>
-                        <button id="accuse-btn">Accuse</button>`;
-          }
-
-          // Check if already voted to sleep
-          let sleepBtnState = "disabled";
-          let sleepBtnText = "💤 Vote to Sleep (30s)";
-          if (mySleepVote) {
-            sleepBtnText = "Voted to Sleep 💤";
-          } else {
-            const timeToEnable =
-              (currentDuration || totalAccusationDuration) -
-              (totalAccusationDuration - 30);
-            if (timeToEnable <= 0) {
-              // Time has passed, enable immediately
-              sleepBtnState = "";
-            } else {
-              // Must wait for timeout
-              sleepBtnText = `Vote to Sleep (${timeToEnable.toFixed(1)}s)`;
-
-              // Set timer to enable it automatically
-              sleepButtonTimeout = setTimeout(() => {
-                const btn = document.getElementById("vote-end-day-btn");
-                if (btn) {
-                  btn.disabled = false;
-                  btn.textContent = "💤 Vote to Sleep";
-                }
-              }, timeToEnable * 1000);
-            }
-          }
-
-          // Combine Sections
-          actionArea.innerHTML = `
-                   <div id="accusation-section">${accusationHTML}</div>
-                   <hr style="border-color: #444; margin: 15px 0;">
-                   <div id="sleep-section">
-                      <h4>Ready for Night?</h4>
-                      <button id="vote-end-day-btn" ${sleepBtnState}>${sleepBtnText}</button>
-                      <span id="end-day-vote-counter" style="margin-left:10px; font-size:0.9em; color:#aaa"></span>
-                   </div>
-                `;
-
-          // --- SECTION C: Event Listeners ---
-
-          // 1. Accusation Logic (Only if dropdown exists)
-          if (myAccusationId === null) {
-            populateSelect("accuse-select", livingPlayers, true);
-            document.getElementById("accuse-btn").onclick = () => {
-              const select = document.getElementById("accuse-select");
-              if (select)
-                socket.emit("accuse_player", { target_id: select.value });
-            };
-          }
-          // 2. Sleep Button Logic
-          // Only attach logic if we haven't voted yet
-          const voteBtn = document.getElementById("vote-end-day-btn");
-          if (voteBtn && !mySleepVote) {
-            voteBtn.onclick = function () {
-              socket.emit("vote_to_end_day");
-              this.disabled = true;
-              this.textContent = "Voted to Sleep 💤";
-              mySleepVote = true;
-            };
-          }
-          // LYNCH_VOTE_PHASE ----------------------------------
-        } else if (phase === "lynch_vote_phase") {
-          const voted = myLynchVote === "yes" || myLynchVote === "no";
-          if (voted) {
-            const voteText = myLynchVote === "yes" ? "YES" : "NO";
-            const color = myLynchVote === "yes" ? "red" : "green";
-            actionArea.innerHTML = `<h3>You voted: <span style="color:${color}">${voteText}</span></h3><p>Waiting for result...</p>`;
-            return;
-          }
-
-          // If not voted, SHOW BUTTONS (Moved from lynch_vote_started)
-          actionArea.innerHTML = `
-                   <h4>Will you lynch <span style="color:#bb86fc">${currentLynchTargetName}</span>?</h4>
-                   <button id="vote-yes-btn" onclick="submitLynchVote('yes')" class="vote-btn-yes">YES</button>
-                   <button id="vote-no-btn" onclick="submitLynchVote('no')" class="vote-btn-no">NO</button>
-                 `;
+        switch (phase) {
+          case PHASE_NIGHT:
+            renderNightUI();
+            break;
+          case PHASE_ACCUSATION:
+            renderAccusationUI(currentDuration);
+            break;
+          case PHASE_LYNCH:
+            renderLynchVoteUI();
+            break;
+          default:
+            actionArea.innerHTML = "<p>Please wait...</p>";
         }
       }
 
-      function startTimer(duration) {
+      function startTimer(endTimeStamp) {
         if (timerInterval) clearInterval(timerInterval);
         timerDisplay.textContent = "";
         if (timersDisabled) {
           timerDisplay.textContent = "Timer ♾️";
           return;
         }
-        if (duration > 0) {
-          let timeLeft = duration;
-          const update = () => {
-            const minutes = Math.floor(timeLeft / 60);
-            const seconds = Math.floor(timeLeft % 60);
-            timerDisplay.textContent = `Time left: ${minutes}:${(
-              "0" + seconds
-            ).slice(-2)}`;
-          };
-          update();
-          timerInterval = setInterval(() => {
-            if (--timeLeft >= 0) update();
-            else {
-              clearInterval(timerInterval);
-              timerDisplay.textContent = "Time's up!";
-            }
-          }, 1000);
-        }
+
+        if (!endTimeStamp) return;
+
+        const update = () => {
+          // Calculate remaining seconds: (Target - Now)
+          const now = Date.now() / 1000; // Convert ms to seconds
+          const timeLeft = Math.max(0, Math.ceil(endTimeStamp - now));
+
+          const minutes = Math.floor(timeLeft / 60);
+          const seconds = Math.floor(timeLeft % 60);
+          timerDisplay.textContent = `Time left: ${minutes}:${(
+            "0" + seconds
+          ).slice(-2)}`;
+
+          if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            timerDisplay.textContent = "Time's up!";
+          }
+        };
+        update();
+        timerInterval = setInterval(update, 1000);
       }
 
       function showGameOverScreen(data, rematchInfo = {}) {
@@ -884,9 +905,8 @@
         document.querySelector(".game-container").style.display = "none";
         gameOverScreen.style.display = "flex";
         // Populate game over data...
-        document.getElementById(
-          "game-over-title",
-        ).textContent = `The ${data.winning_team} Win!`;
+        document.getElementById("game-over-title").textContent =
+          `The ${data.winning_team} Win!`;
         document.getElementById("game-over-reason").textContent = data.reason;
 
         const rolesList = document.getElementById("final-roles-list");
@@ -958,10 +978,7 @@
         isPassAndPlay = data.mode === "pass_and_play";
 
         // Handle Game Over
-        if (
-          (data.phase === "ended" || data.phase === "game_over") &&
-          data.game_over_data
-        ) {
+        if (data.phase === PHASE_GAME_OVER && data.game_over_data) {
           showGameOverScreen(data.game_over_data, {
             hasVoted: data.my_rematch_vote,
             count: data.rematch_vote_count,
@@ -972,7 +989,7 @@
         }
 
         // PHASE 4 Logic: Toggle Interfaces
-        if (isPassAndPlay && data.phase === "night") {
+        if (isPassAndPlay && data.phase === PHASE_NIGHT) {
           // Hide Chat, Hide Standard Action
           sidePanel.style.display = "none"; // Hide chat & player list
           actionArea.style.display = "none";
@@ -994,13 +1011,13 @@
 
           adminChatToggleBtn.style.display = "block";
           // Clear local PnP history if phase changed to Day
-          if (data.phase !== "night") hasActed.clear();
+          if (data.phase !== PHASE_NIGHT) hasActed.clear();
         }
 
         phaseDisplay.textContent = data.phase.replace(/_/g, " ");
         renderActionUI(data.phase, data.duration);
 
-        if (data.phase === "accusation_phase") {
+        if (data.phase === PHASE_ACCUSATION) {
           const counter = document.getElementById("end-day-vote-counter");
           const currentVotes = data.sleep_vote_count || 0;
           const totalLiving = data.living_players.length;
@@ -1016,7 +1033,7 @@
         updatePlayerListView(data.accusation_counts || {});
         updateAdminControls();
         setChatMode(data.admin_only_chat, data.phase);
-        startTimer(data.duration);
+        startTimer(data.phase_end_time);
         adminChatToggleBtn.classList.toggle("btn-active", data.admin_only_chat);
       });
 
@@ -1029,7 +1046,7 @@
           )}</strong>.`,
         );
 
-        if (data.phase === "accusation_phase") {
+        if (data.phase === PHASE_ACCUSATION) {
           totalAccusationDuration = data.duration;
         }
         livingPlayers = data.living_players;
@@ -1040,7 +1057,7 @@
         updatePlayerListView();
         updateAdminControls();
         setChatMode(data.admin_only_chat, data.phase);
-        startTimer(data.duration);
+        startTimer(data.phase_end_time);
         adminChatToggleBtn.classList.toggle("btn-active", data.admin_only_chat);
         socket.emit("client_ready_for_game"); // Trigger full sync to handle UI logic
       });

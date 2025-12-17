@@ -15,3 +15,21 @@ GAME_DEFAULTS = {
     # Feature Flags
     "ENABLE_PASS_AND_PLAY": False,
 }
+
+# --- Phases ---
+PHASE_LOBBY = "Lobby"
+PHASE_NIGHT = "Night"
+PHASE_ACCUSATION = "Accusation"
+PHASE_LYNCH = "Lynch_Vote"
+PHASE_GAME_OVER = "Game_Over"
+
+# --- Roles ---
+# Simplified keys as requested
+ROLE_WEREWOLF = "Werewolf"
+ROLE_SEER = "Seer"
+ROLE_VILLAGER = "Villager"
+ROLE_BODYGUARD = "Bodyguard"
+ROLE_WITCH = "Witch"
+ROLE_CUPID = "Cupid"
+ROLE_MONSTER = "Monster"
+ROLE_ALPHA_WEREWOLF = "Alpha_Werewolf"

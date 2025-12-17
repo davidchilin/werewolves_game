@@ -4,6 +4,7 @@ Version: 2.0.0
 Defines the behavior of all roles using a generic base class and specific subclasses.
 """
 import random
+from config import *
 
 # 1. Global Registry to keep track of all available roles
 AVAILABLE_ROLES = {}
@@ -19,7 +20,7 @@ def register_role(cls):
 class Role:
     def __init__(self):
         # Basic Metadata
-        self.name_key = "role_generic"
+        self.name_key = "Unknown"
         self.description_key = "desc_generic"
         self.team = "neutral"  # villager, wolf, solo
 
@@ -49,7 +50,6 @@ class Role:
     def night_prompt(self) -> str:
         """The text displayed to the user during the night."""
         return "Select a target:"
-
 
     def night_action(self, player_obj, target_player_obj, game_context):
         """
@@ -83,13 +83,15 @@ class Role:
             "is_night_active": self.is_night_active,
         }
 
+
 # --- Specific Role Implementations ---
+
 
 @register_role
 class Villager(Role):
     def __init__(self):
         super().__init__()
-        self.name_key = "role_villager"
+        self.name_key = ROLE_VILLAGER
         self.description_key = "desc_villager"
         self.team = "villager"
         self.is_night_active = False
@@ -100,8 +102,8 @@ class Villager(Role):
             "Who has the cutest smile?",
             "Who would die first in a zombie apocalypse?",
             "Who is the most lightweight drinker?",
-            "Who looks the most suspicious right now?"
-            "Who is a finger licker?"
+            "Who looks the most suspicious right now?",
+            "Who is a finger licker?",
         ]
         return random.choice(prompts)
 
@@ -110,13 +112,14 @@ class Villager(Role):
         # Dummy action: Do nothing, return empty
         return {}
 
+
 @register_role
 class Werewolf(Role):
     def __init__(self):
         super().__init__()
-        self.name_key = "role_werewolf"
+        self.name_key = ROLE_WEREWOLF
         self.description_key = "desc_werewolf"
-        self.team = "wolf"
+        self.team = "werewolf"
         self.priority = 50  # Wolves attack after defensive roles
         self.is_night_active = True
 
@@ -129,7 +132,7 @@ class Werewolf(Role):
 class Seer(Role):
     def __init__(self):
         super().__init__()
-        self.name_key = "role_seer"
+        self.name_key = ROLE_SEER
         self.description_key = "desc_seer"
         self.team = "villager"
         self.priority = 10  # Seer acts early
@@ -137,8 +140,14 @@ class Seer(Role):
 
     def night_action(self, player_obj, target_player_obj, game_context):
         # Return the information immediately to the engine to send back to user
-        result = "wolf" if (target_player_obj.role.team == "wolf" or
-        target_player_obj.role.team == "monster") else "villager"
+        result = (
+            "werewolf"
+            if (
+                target_player_obj.role.team == "werewolf"
+                or target_player_obj.role.team == "monster"
+            )
+            else "villager"
+        )
         return {
             "action": "investigate",
             "target": target_player_obj.id,
@@ -150,7 +159,7 @@ class Seer(Role):
 class Bodyguard(Role):
     def __init__(self):
         super().__init__()
-        self.name_key = "role_bodyguard"
+        self.name_key = ROLE_BODYGUARD
         self.description_key = "desc_bodyguard"
         self.team = "villager"
         self.priority = 0  # Priority 0: PROTECT BEFORE ATTACK
@@ -167,7 +176,7 @@ class Bodyguard(Role):
 class Cupid(Role):
     def __init__(self):
         super().__init__()
-        self.name_key = "role_cupid"
+        self.name_key = ROLE_CUPID
         self.team = "villager"
         self.priority = 1  # Very early, before wolves
         self.is_night_active = True
@@ -188,7 +197,7 @@ class Cupid(Role):
 class Witch(Role):
     def __init__(self):
         super().__init__()
-        self.name_key = "role_witch"
+        self.name_key = ROLE_WITCH
         self.team = "villager"
         self.priority = 15  # After Seer, Before Wolves to set heal
         self.is_night_active = True
@@ -204,54 +213,59 @@ class Witch(Role):
             return {}
 
         # 1. Get Potion Type from Metadata (provided by Engine)
-        metadata = game_context.get('current_action_metadata', {})
-        potion = metadata.get('potion') # 'heal' or 'kill'
+        metadata = game_context.get("current_action_metadata", {})
+        potion = metadata.get("potion")  # 'heal' or 'kill'
 
         # 2. Process Heal
-        if potion == 'heal':
+        if potion == "heal":
             if self.has_heal_potion:
                 self.has_heal_potion = False
-                player_obj.status_effects.append('used_heal')
-                return {"action": "witch_magic", "target": target_player_obj.id if target_player_obj else None}
+                player_obj.status_effects.append("used_heal")
+                return {
+                    "action": "witch_magic",
+                    "target": target_player_obj.id if target_player_obj else None,
+                }
             else:
                 # Cheating/Error check
                 return {}
 
         # 3. Process Kill
-        elif potion == 'kill':
+        elif potion == "kill":
             if self.has_kill_potion and target_player_obj:
                 self.has_kill_potion = False
-                player_obj.status_effects.append('used_poison')
+                player_obj.status_effects.append("used_poison")
                 return {"action": "witch_magic", "target": target_player_obj.id}
             else:
                 return {}
 
         return {}
 
+
 @register_role
 class Monster(Role):
-# seen as wolf, but cannot be killed by wolfs
+    # seen as wolf, but cannot be killed by wolfs
     def __init__(self):
         super().__init__()
-        self.name_key = "role_monster"
+        self.name_key = ROLE_MONSTER
         self.team = "monster"
 
     def on_assign(self, player_obj):
         # This is checked by the Engine when calculating deaths
-        player_obj.status_effects.append('immune_to_wolf')
+        player_obj.status_effects.append("immune_to_wolf")
 
     @property
     def night_prompt(self):
         return "Who is a finger licker?"
 
     def night_action(self, player_obj, target_player_obj, game_context):
-        return {} # Dummy action
+        return {}  # Dummy action
+
 
 @register_role
-class AlphaWolf(Werewolf):  # Inherits from Werewolf!
+class AlphaWerewolf(Werewolf):  # Inherits from Werewolf!
     def __init__(self):
         super().__init__()
-        self.name_key = "role_alpha_wolf"
+        self.name_key = ROLE_ALPHA_WEREWOLF
 
     def check_win_condition(self, player_obj, game_context):
         # Wins if is the ONLY one left alive
