@@ -271,7 +271,6 @@ def perform_tally_accusations():
             "lynch_vote_result", {"message": outcome["message"]}, to=game["game_code"]
         )
         socketio.sleep(3)
-        game_instance.set_phase(PHASE_NIGHT)
         broadcast_game_state()
 
 
@@ -658,20 +657,10 @@ def check_game_over_or_next_phase():
             game["game_over_data"] = data
             winner = data.get("winning_team", "Unknown")
             log_and_emit(f"Game Over! The {winner} have won.")
-        broadcast_game_state()  # Will send game_over_data present in Engine
     else:
-        # Check engine's current phase to determine next step.
-        # Actually, Engine `resolve_lynch` sets phase to NIGHT automatically.
-        # Engine `resolve_night` does NOT set phase to Day automatically in our design (it returns deaths).
+        game_instance.advance_phase()
 
-        if game_instance.phase == PHASE_NIGHT:
-            # Night just finished -> Day
-            game_instance.set_phase(PHASE_ACCUSATION)
-            broadcast_game_state()
-        elif game_instance.phase == PHASE_LYNCH:
-            # Lynch just finished -> Engine already set phase to NIGHT
-            game_instance.set_phase(PHASE_NIGHT)
-            broadcast_game_state()
+    broadcast_game_state()
 
 
 @socketio.on("admin_set_new_code")
@@ -707,6 +696,25 @@ def handle_admin_set_new_code(data):
     # Update the admin's lobby view
     join_room(new_code)
     broadcast_player_list()
+
+
+@socketio.on("hero_night_action")
+def handle_hero_night_action(data):
+    player_id = session.get("player_id")
+
+    if data.get("target_id") == "NOBODY":
+        result = game_instance.receive_night_action(player_id, "Nobody")
+    else:
+        result = game_instance.receive_night_action(player_id, data)
+
+    if result == "ALREADY_ACTED":
+        broadcast_game_state()
+        return
+    if result == "IGNORED":
+        emit("error", {"message": "Action ignored."})
+        return
+
+    broadcast_game_state()
 
 
 @socketio.on("pnp_request_state")
@@ -762,8 +770,8 @@ def handle_client_ready_for_game():
     broadcast_game_state()
 
 
-@socketio.on("wolf_choice")
-def handle_wolf_choice(data):
+@socketio.on("werewolf_choice")
+def handle_werewolf_choice(data):
     player_id = session.get("player_id")
     result = game_instance.receive_night_action(player_id, data.get("target_id"))
     if result == "ALREADY_ACTED":

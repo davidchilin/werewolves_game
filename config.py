@@ -12,7 +12,6 @@ GAME_DEFAULTS = {
     # Game Settings
     "MIN_PLAYERS": 4,
     "DEFAULT_LANGUAGE": "en",
-    # Feature Flags
     "ENABLE_PASS_AND_PLAY": False,
 }
 

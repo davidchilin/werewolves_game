@@ -692,13 +692,18 @@
         renderActionUI(PHASE_LYNCH);
       }
 
-      function populateSelect(elementId, players, includeNobody = false) {
+      function populateSelect(
+        elementId,
+        players,
+        includeNobody = false,
+        includeSelf = true,
+      ) {
         const select = document.getElementById(elementId);
         if (!select) return;
         select.innerHTML = "";
+
         if (includeNobody) {
-          let optionText = "Nobody";
-          select.innerHTML += `<option value="">${optionText}</option>`;
+          select.innerHTML += `<option value="">Nobody</option>`;
         }
 
         // shuffle player dropdown for less bias
@@ -706,6 +711,9 @@
         shuffledPlayers.sort(() => 0.5 - Math.random());
 
         shuffledPlayers.forEach((p) => {
+          if (!includeSelf && p.id === socket.id) {
+            return;
+          }
           select.innerHTML += `<option value="${p.id}">${p.username}</option>`;
         });
       }
@@ -714,11 +722,11 @@
         if (myRole === ROLE_WEREWOLF) {
           if (myNightTargetId === null) {
             actionArea.innerHTML = `<h4>Wolf, who will you eat?</h4><select id="action-select"></select> <button id="action-btn">Kill</button>`;
-            populateSelect("action-select", livingPlayers, true);
+            populateSelect("action-select", livingPlayers, true, true);
             document.getElementById("action-btn").onclick = () => {
               const select = document.getElementById("action-select");
 
-              socket.emit("wolf_choice", {
+              socket.emit("werewolf_choice", {
                 target_id: select.value,
               });
 
@@ -737,7 +745,7 @@
         } else if (myRole === ROLE_SEER) {
           if (myNightTargetId === null) {
             actionArea.innerHTML = `<h4>Seer, whose role will you see?</h4><select id="action-select"></select> <button id="action-btn">Investigate</button>`;
-            populateSelect("action-select", livingPlayers, true);
+            populateSelect("action-select", livingPlayers, true, true);
             document.getElementById("action-btn").onclick = () => {
               socket.emit("seer_choice", {
                 target_id: document.getElementById("action-select").value,
@@ -747,11 +755,62 @@
           } else {
             actionArea.innerHTML = `<p>You have seen all that you can see tonight.</p>`;
           }
+        } else if (myRole === ROLE_CUPID) {
+          if (myNightTargetId === null) {
+            actionArea.innerHTML = `
+                    <h4>Select your lover:</h4>
+                    <p class="role-desc">You and the selected player are fataly in love. If one
+                    dies, the other dies of heartache.</p>
+                    <select id="action-select"></select>
+                    <button id="action-btn">Shoot Arrow</button>
+                `;
+            // Populate: Exclude Self (false for 'nobody', then manual filter)
+            // Assuming livingPlayers is available in scope
+            populateSelect("action-select", livingPlayers, false, false);
+
+            document.getElementById("action-btn").onclick = () => {
+              const target = document.getElementById("action-select").value;
+              if (!target) return;
+
+              socket.emit("hero_night_action", { target_id: target });
+              actionArea.innerHTML = "<p>Love is in the air...</p>";
+            };
+          } else {
+            actionArea.innerHTML = "<p>You have chosen your partner.</p>";
+          }
+        } else if (myRole === ROLE_BODYGUARD) {
+          if (myNightTargetId === null) {
+            // 1. Render Input
+            actionArea.innerHTML = `
+                <h4>Bodyguard, who will you protect?</h4>
+                <select id="action-select"></select>
+                <button id="action-btn">Protect</button>
+            `;
+
+            // 2. Populate Dropdown (True = include 'Nobody' option)
+            populateSelect("action-select", livingPlayers, true, true);
+
+            // 3. Attach Event
+            document.getElementById("action-btn").onclick = () => {
+              const select = document.getElementById("action-select");
+              socket.emit("hero_night_action", {
+                target_id: select.value,
+              });
+
+              // Immediate Feedback
+              actionArea.innerHTML = `<p>Sending protection orders...</p>`;
+            };
+          } else {
+            // 4. Render Status (Already acted)
+            const target = allPlayers.find((p) => p.id === myNightTargetId);
+            const targetName = target ? target.username : "Nobody";
+            actionArea.innerHTML = `<p>You are protecting <span style="color:#4caf50">${targetName}</span> tonight.</p>`;
+          }
         } else {
           if (myNightTargetId === null) {
             actionArea.innerHTML = `<p>You are dreaming of yummy pupusas while the night creatures are stirring ...  </p><h4>Who is acting quirky this night?</h4><select
                           id="action-select"></select> <button id="action-btn">Select</button>`;
-            populateSelect("action-select", livingPlayers, true);
+            populateSelect("action-select", livingPlayers, true, true);
             document.getElementById("action-btn").onclick = () => {
               actionArea.innerHTML = `<p>You have made your choice.</p>`;
             };
@@ -772,7 +831,7 @@
           accusationHTML = `<h3>You have accused <span style="color:#ff5252">${targetName}</span>.</h3><p>Waiting for others...</p>`;
         } else {
           accusationHTML = `
-                        <h4>Who is the wolf? Time for discussion!</h4>
+                        <h4>Who is the Werewolf? Time for discussion!</h4>
                         <select id="accuse-select"></select>
                         <button id="accuse-btn">Accuse</button>`;
         }
@@ -819,7 +878,7 @@
 
         // 1. Accusation Logic (Only if dropdown exists)
         if (myAccusationId === null) {
-          populateSelect("accuse-select", livingPlayers, true);
+          populateSelect("accuse-select", livingPlayers, true, true);
           document.getElementById("accuse-btn").onclick = () => {
             const select = document.getElementById("accuse-select");
             if (select)
@@ -1131,12 +1190,12 @@
       socket.on("wolf_team_info", (data) => {
         if (data.teammates.length > 0) {
           logMessage(
-            `You are a wolf. Your fellow wolves are: <strong>${data.teammates.join(
+            `You are a Werewolf. Your fellow Werewolves are: <strong>${data.teammates.join(
               ", ",
             )}</strong>.`,
           );
         } else {
-          logMessage(`You are the lone wolf.`);
+          logMessage(`You are the lone Werewolf.`);
         }
       });
 

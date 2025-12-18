@@ -1,6 +1,6 @@
 """
 roles.py
-Version: 2.0.0
+Version: 4.4.7
 Defines the behavior of all roles using a generic base class and specific subclasses.
 """
 import random
@@ -22,10 +22,10 @@ class Role:
         # Basic Metadata
         self.name_key = "Unknown"
         self.description_key = "desc_generic"
-        self.team = "neutral"  # villager, wolf, solo
+        self.team = "neutral"  # villager, werewolf, solo
 
         # Logic Settings
-        self.priority = 0  # 0 = First (e.g., Bodyguard), 100 = Last (e.g., Wolf)
+        self.priority = 0  # 0 = First (e.g., Bodyguard), 100 = Last (e.g.,Werewolf)
         self.is_night_active = False
 
     def on_assign(self, player_obj):
@@ -59,7 +59,7 @@ class Role:
         return {}
 
     def passive_effect(self, player_obj):
-        """Logic for constant effects (e.g., Tough Wolf extra life)."""
+        """Logic for constant effects (e.g., Tough Werewolf extra life)."""
         return {}
 
     def check_win_condition(self, player_obj, game_context) -> bool:
@@ -70,7 +70,14 @@ class Role:
         return False
 
     def on_death(self, player_obj, game_context):
-        """Triggered when this player dies (e.g., Hunter)."""
+        """
+        Triggered when this player dies.
+        Can be used for Hunter (shoot someone) or Martyr (buff someone).
+        """
+        print(f"DEBUG: {player_obj.name} ({self.name_key}) has died.")
+        # Future logic:
+        # if self.name_key == "role_hunter":
+        #     game_context['engine'].trigger_hunter_event(player_obj)
         pass
 
     def to_dict(self):
@@ -124,7 +131,7 @@ class Werewolf(Role):
         self.is_night_active = True
 
     def night_action(self, player_obj, target_player_obj, game_context):
-        # The engine will aggregate wolf votes, but the action is simply voting a target
+        # The engine will aggregate Werewolf votes, but the action is simply voting a target
         return {"action": "kill_vote", "target": target_player_obj.id}
 
 
@@ -164,9 +171,23 @@ class Bodyguard(Role):
         self.team = "villager"
         self.priority = 0  # Priority 0: PROTECT BEFORE ATTACK
         self.is_night_active = True
+        self.last_protected_id = None
 
     def night_action(self, player_obj, target_player_obj, game_context):
-        return {"action": "protect", "target": target_player_obj.id}
+        if target_player_obj.id == self.last_protected_id:
+            return {}
+
+        target_player_obj.status_effects.append("protected")
+        self.last_protected_id = target_player_obj.id
+        print(f"Bodyguard protecting {target_player_obj.name}")
+        return {}
+
+    def get_valid_targets(self, player_obj, game_context):
+        """Returns a list of valid player IDs this role can target."""
+        all_living = [p for p in game_context["players"] if p.is_alive]
+        if self.last_protected_id:
+            return [p for p in all_living if p.id != self.last_protected_id]
+        return all_living
 
 
 # roles.py (Additions)
@@ -180,17 +201,24 @@ class Cupid(Role):
         self.team = "villager"
         self.priority = 1  # Very early, before wolves
         self.is_night_active = True
-        self.first_night_only = True  # Logic flag
+
+    def get_valid_targets(self, player_obj, game_context):
+        """Returns a list of valid player IDs this role can target."""
+        return [p for p in game_context["players"] if p.is_alive and p != self]
 
     def night_action(self, player_obj, target_player_obj, game_context):
-        # Cupid only acts on the first night (engine must handle 'first_night' check)
-        # Note: Frontend must allow Cupid to select TWO targets.
-        # For simplicity in this phase, we assume target_player_obj is a list or we handle single link.
-        if self.first_night_only:
-            self.first_night_only = False
-            return {"action": "link_lovers", "target": target_player_obj.id}
-        else:
+        if self.is_night_active:
+            self.is_night_active = False
+
+        # Validation: Cannot pick self
+        if target_player_obj.id == player_obj.id:
             return {}
+
+        player_obj.status_effects.append("lover")
+        target_player_obj.status_effects.append("lover")
+        print(f"Cupid {player_obj.name}) linked with {target_player_obj.name}")
+
+        return {}
 
 
 @register_role
@@ -217,33 +245,26 @@ class Witch(Role):
         potion = metadata.get("potion")  # 'heal' or 'kill'
 
         # 2. Process Heal
-        if potion == "heal":
-            if self.has_heal_potion:
-                self.has_heal_potion = False
-                player_obj.status_effects.append("used_heal")
-                return {
-                    "action": "witch_magic",
-                    "target": target_player_obj.id if target_player_obj else None,
-                }
-            else:
-                # Cheating/Error check
-                return {}
+        if potion == "heal" and self.has_heal_potion:
+            self.has_heal_potion = False
+            target_player_obj.status_effects.append("healed")
+            return {
+                "action": "witch_magic",
+                "target": target_player_obj.id if target_player_obj else None,
+            }
 
         # 3. Process Kill
-        elif potion == "kill":
-            if self.has_kill_potion and target_player_obj:
-                self.has_kill_potion = False
-                player_obj.status_effects.append("used_poison")
-                return {"action": "witch_magic", "target": target_player_obj.id}
-            else:
-                return {}
+        elif potion == "poison" and self.has_kill_potion:
+            self.has_kill_potion = False
+            target_player_obj.status_effects.append("poisoned")
+            return {"action": "witch_magic", "target": target_player_obj.id}
 
         return {}
 
 
 @register_role
 class Monster(Role):
-    # seen as wolf, but cannot be killed by wolfs
+    # seen as Werewolf, but cannot be killed by Werewolf
     def __init__(self):
         super().__init__()
         self.name_key = ROLE_MONSTER

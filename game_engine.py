@@ -1,6 +1,6 @@
 """
 game_engine.py
-# Version: 4.4.5
+# Version: 4.4.7
 Manages the game flow, player states, complex role interactions, and phase transitions.
 """
 import random
@@ -22,7 +22,6 @@ class Player:
         self.linked_partner_id = None  # For Cupid's lovers
 
     def reset_night_status(self):
-        """Clear temporary night flags like 'protected'. Persist 'lover' status."""
         PERSISTENT_EFFECTS = ["lover", "poisoned", "immune_to_wolf"]
         self.status_effects = [
             s for s in self.status_effects if s in PERSISTENT_EFFECTS
@@ -55,7 +54,7 @@ class Game:
         # Night Phase Data
         self.pending_actions = {}  # Dict[player_id, target_id]
         self.turn_history = set()  # who acted this phase
-        self.night_log = []  # Logs for the frontend (e.g., "Seer saw a Wolf")
+        self.night_log = []  # Logs for the frontend e.g., "Seer saw a Werewolf"
 
         # Day Phase Data
         self.accusations = {}  # accuser_id: target_id
@@ -121,17 +120,32 @@ class Game:
 
         # 4. Construct the Master Role List
         final_roles_list = []
+        base_roles = [ROLE_WEREWOLF, ROLE_SEER, ROLE_VILLAGER]
+
+        for r_key in selected_role_keys:
+            if r_key not in base_roles:
+                final_roles_list.append(r_key)
 
         # Add Wolves
-        for _ in range(num_wolves):
-            final_roles_list.append(ROLE_WEREWOLF)
+        if not selected_role_keys or ROLE_WEREWOLF in selected_role_keys:
+            for _ in range(num_wolves):
+                final_roles_list.append(ROLE_WEREWOLF)
+
         # Add Seer
-        for _ in range(num_seer):
-            final_roles_list.append(ROLE_SEER)
+        if not selected_role_keys or ROLE_SEER in selected_role_keys:
+            for _ in range(num_seer):
+                final_roles_list.append(ROLE_SEER)
 
         # Fill remainder with Villagers
         while len(final_roles_list) < num_players:
             final_roles_list.append(ROLE_VILLAGER)
+
+        # Safety: If we have too many roles (e.g. 4 players but 5 specials picked), trim the end.
+        if len(final_roles_list) > num_players:
+            print(
+                f"WARNING: Too many roles selected for {num_players} players. Trimming."
+            )
+            final_roles_list = final_roles_list[:num_players]
 
         # Shuffle roles to ensure randomness (since players are already shuffled, this is double safety)
         random.shuffle(final_roles_list)
@@ -218,6 +232,20 @@ class Game:
 
             return None
 
+    def advance_phase(self):
+        """
+        Automatically transitions to the next logical phase based on current state.
+        Removes phase logic from app.py.
+        """
+        if self.phase == PHASE_NIGHT:
+            self.set_phase(PHASE_ACCUSATION)
+
+        elif self.phase == PHASE_LYNCH:
+            self.set_phase(PHASE_NIGHT)
+
+        elif self.phase == PHASE_ACCUSATION:
+            self.set_phase(PHASE_NIGHT)
+
     def receive_night_action(self, player_id, target_id):
         """
         Store the player's intent. Process it later.
@@ -284,82 +312,65 @@ class Game:
         # We pass a 'context' dict so roles can see the state of the game
         game_context = {
             "players": list(self.players.values()),
-            "current_action_metadata": {},
+            "pending_actions": self.pending_actions,
         }
 
         for player in active_players:
-            target_data = self.pending_actions.get(player.id)
-            if not target_data:
+            raw_action = self.pending_actions.get(player.id)
+
+            target_id = None
+            metadata = {}
+
+            # Parse input (it might be a string ID or a dict with metadata)
+            if isinstance(raw_action, dict):
+                target_id = raw_action.get("target_id")
+                metadata = raw_action.get("metadata", {})
+            else:
+                target_id = raw_action
+
+            # Update context for roles that need metadata (e.g. Witch)
+            game_context["current_action_metadata"] = metadata
+
+            if not target_id or target_id == "Nobody":
                 continue
 
-            # Need to resolve the target player object from ID
-            # (If target_data is a dict, extract ID, otherwise assume string ID)
-            # todo: might not need, just use status_effects
-            if isinstance(target_data, dict):
-                # Pass metadata to Role so Witch knows what to do
-                game_context["current_action_metadata"] = target_data
-                target_id = target_data.get("target_id")
-            else:
-                game_context["current_action_metadata"] = {}
-                target_id = target_data
-            target_player = self.players.get(target_id)
-
-            if not target_player:
+            # Resolve ID to Player Object
+            target_player_obj = self.players.get(target_id)
+            if not target_player_obj:
                 continue
 
             # Execute the Role's specific logic (polymorphism!)
-            result = player.role.night_action(player, target_player, game_context)
+            result = player.role.night_action(player, target_player_obj, game_context)
 
             # 4. Handle Results
             if result:  # might not need this if
+                # Need to resolve the target player object from ID
+                result_target_id = result.get("target")
                 action_type = result.get("action")
+                effect = result.get("effect")
 
-                if action_type == "protect":
-                    print(f"Action: {player.name} protected {target_player.name}")
-                    protected_ids.add(target_player.id)
-                    target_player.status_effects.append("protected")
+                if result_target_id and effect:
+                    # Resolve the target ID from the result to an object
+                    t_obj = self.players.get(result_target_id)
+                    if t_obj:
+                        print(f"Effect Applied: {effect} on {t_obj.name}")
+                        t_obj.status_effects.append(effect)
+                        # Special handling for Protection
+                        if effect == "protected":
+                            protected_ids.add(result_target_id)
 
-                elif action_type == "link_lovers":
-                    # Cupid links the sender and the target (simplified)
-                    # Or Cupid sends two targets. Handling simplified 1-target version:
-                    print(f"Action: Cupid links {player.name} and {target_player.name}")
-                    player.linked_partner_id = target_player.id
-                    target_player.linked_partner_id = player.id
-                    player.status_effects.append("lover")
-                    target_player.status_effects.append("lover")
+                self.night_log.append(
+                    {
+                        "player_id": player.id,
+                        "message": f"Result: {result.get('result', 'Done')}",
+                    }
+                )
 
-                elif action_type == "kill_vote":
-                    # must be Unanimous
-                    werewolf_votes.append(target_player.id)
+                # Handle Kill Votes (Werewolves)
+                if action_type == "kill_vote":
+                    werewolf_votes.append(result.get(result_target_id))
 
-                elif action_type == "witch_magic":
-                    # Check Status Effects to know what happened
-                    if "used_heal" in player.status_effects:
-                        print(
-                            f"Action: Witch heals {target_player.name if target_player else 'Unknown'}"
-                        )
-                        if target_player:
-                            protected_ids.add(target_player.id)
-                        player.status_effects.remove("used_heal")
-
-                    elif "used_poison" in player.status_effects:
-                        print(f"Action: Witch poisons {target_player.name}")
-                        if target_player:
-                            kill_list.add(target_player.id)
-                        player.status_effects.remove("used_poison")
-
-                elif action_type == "investigate":
-                    print(
-                        f"Debug: Seer {player.name} investigated {target_player.name}: {result.get('result')}"
-                    )
-                    self.night_log.append(
-                        {
-                            "player_id": player.id,
-                            "message": f"Seer Result: {result.get('result')}",
-                        }
-                    )
-
-        # 4. Resolve Wolf Votes
+        # 4. Resolve Werewolf Votes
         # Unanimous vote kills, else no kill
         living_werewolves = self.get_living_players("werewolf")
         if (
@@ -373,7 +384,12 @@ class Game:
 
             # Check Protection
             # todo: possible unnest from previous if
-            if target_id in protected_ids:
+            # self.status_effects = [ s for s in self.status_effects if s in PERSISTENT_EFFECTS ]
+            NO_DEATH = ["protected", "healed"]
+
+            if target_id in protected_ids or [
+                s for s in target_id.status_effects if s in NO_DEATH
+            ]:
                 print(f"Attack on {target_name} blocked by protection!")
             else:
                 # Check Passive Immunity (Monster)
@@ -388,15 +404,24 @@ class Game:
         final_deaths = set()
 
         def process_death(pid):
+            if pid in final_deaths:
+                return
             final_deaths.add(pid)
+
             victim = self.players[pid]
             if not victim:
                 return
 
-            # Check Lovers (Daisy chain death)
-            if victim.linked_partner_id:
-                partner = self.players.get(victim.linked_partner_id)
-                if partner and partner.is_alive and partner.id not in final_deaths:
+            # Check Lovers
+            if "lover" in victim.status_effects:
+                lovers_to_kill = [
+                    p
+                    for p in self.players.values()
+                    if p.is_alive
+                    and p.id not in final_deaths
+                    and "lover" in p.status_effects
+                ]
+                for partner in lovers_to_kill:
                     print(f"Lovers Pact: {partner.name} dies of grief!")
                     process_death(partner.id)
 
@@ -405,8 +430,13 @@ class Game:
 
         # Apply State Changes
         for pid in final_deaths:
-            self.players[pid].is_alive = False
+            player = self.players[pid]
+            player.is_alive = False
             print(f"DIED: {self.players[pid].name}")
+
+            # We pass the killer's ID or context if available (simplified here)
+            if player.role:
+                player.role.on_death(player, {"players": list(self.players.values())})
 
         return list(final_deaths)
 
@@ -500,21 +530,24 @@ class Game:
 
         # Majority YES required (> 50%)
         if yes > (total / 2):
-            self.players[self.lynch_target_id].is_alive = False
+            victim = self.players[self.lynch_target_id]
+            victim.is_alive = False
             result_data["killed_id"] = self.lynch_target_id
+
+            # TRIGGER ROLE HOOK
+            if victim.role:
+                victim.role.on_death(victim, {"players": list(self.players.values())})
 
             if self.check_game_over():
                 result_data["game_over"] = True
                 return result_data
 
-        # Reset to Night (unless game over)
-        self.set_phase(PHASE_NIGHT)
         return result_data
 
     def check_game_over(self):
         """
         Checks all win conditions.
-        Priority: 1. Solo Roles (Alpha Wolf, Fool) 2. Teams
+        Priority: 1. Solo Roles (Alpha_Werewolf, Fool) 2. Teams
         """
         active_players = self.get_living_players()
         game_context = {"players": list(self.players.values())}
