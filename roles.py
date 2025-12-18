@@ -58,6 +58,14 @@ class Role:
         """
         return {}
 
+    def get_night_ui_schema(self, player_obj, game_context):
+        """
+        Returns a dict defining the UI interaction.
+        Types: 'info', 'single_target', 'multi_target', 'menu'
+        """
+        # Default behavior: Just show a message (Villager style)
+        return {"type": "info", "message": self.night_prompt}
+
     def passive_effect(self, player_obj):
         """Logic for constant effects (e.g., Tough Werewolf extra life)."""
         return {}
