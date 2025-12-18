@@ -145,16 +145,18 @@ class Seer(Role):
         self.priority = 10  # Seer acts early
         self.is_night_active = True
 
+    def investigate(self, target_player):
+        """Central logic for determining what the Seer sees."""
+        if (
+            target_player.role.team == "werewolf"
+            or target_player.role.team == "monster"
+        ):
+            return ROLE_WEREWOLF
+        return ROLE_VILLAGER
+
     def night_action(self, player_obj, target_player_obj, game_context):
         # Return the information immediately to the engine to send back to user
-        result = (
-            "werewolf"
-            if (
-                target_player_obj.role.team == "werewolf"
-                or target_player_obj.role.team == "monster"
-            )
-            else "villager"
-        )
+        result = self.investigate(target_player_obj)
         return {
             "action": "investigate",
             "target": target_player_obj.id,
@@ -183,7 +185,7 @@ class Bodyguard(Role):
         return {}
 
     def get_valid_targets(self, player_obj, game_context):
-        """Returns a list of valid player IDs this role can target."""
+        """Returns a list of valid player IDs excluding last portected"""
         all_living = [p for p in game_context["players"] if p.is_alive]
         if self.last_protected_id:
             return [p for p in all_living if p.id != self.last_protected_id]
@@ -203,7 +205,7 @@ class Cupid(Role):
         self.is_night_active = True
 
     def get_valid_targets(self, player_obj, game_context):
-        """Returns a list of valid player IDs this role can target."""
+        """Returns a list of valid player IDs excluding self"""
         return [p for p in game_context["players"] if p.is_alive and p != self]
 
     def night_action(self, player_obj, target_player_obj, game_context):
@@ -216,7 +218,7 @@ class Cupid(Role):
 
         player_obj.status_effects.append("lover")
         target_player_obj.status_effects.append("lover")
-        print(f"Cupid {player_obj.name}) linked with {target_player_obj.name}")
+        print(f"Cupid {player_obj.name} linked with {target_player_obj.name}")
 
         return {}
 
@@ -251,13 +253,18 @@ class Witch(Role):
             return {
                 "action": "witch_magic",
                 "target": target_player_obj.id if target_player_obj else None,
+                "effect": "healed",
             }
 
         # 3. Process Kill
         elif potion == "poison" and self.has_kill_potion:
             self.has_kill_potion = False
             target_player_obj.status_effects.append("poisoned")
-            return {"action": "witch_magic", "target": target_player_obj.id}
+            return {
+                "action": "witch_magic",
+                "target": target_player_obj.id,
+                "effect": "poisoned",
+            }
 
         return {}
 

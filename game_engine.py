@@ -305,7 +305,6 @@ class Game:
         active_players.sort(key=lambda p: p.role.priority)
 
         werewolf_votes = []
-        protected_ids = set()
         kill_list = set()
 
         # 3. Iterate and Execute
@@ -355,9 +354,6 @@ class Game:
                     if t_obj:
                         print(f"Effect Applied: {effect} on {t_obj.name}")
                         t_obj.status_effects.append(effect)
-                        # Special handling for Protection
-                        if effect == "protected":
-                            protected_ids.add(result_target_id)
 
                 self.night_log.append(
                     {
@@ -366,9 +362,13 @@ class Game:
                     }
                 )
 
+                if "poisoned" in target_player_obj.status_effects:
+                    print(f"{target_player_obj.name} poisoned!")
+                    kill_list.add(target_player_obj.id)
+
                 # Handle Kill Votes (Werewolves)
                 if action_type == "kill_vote":
-                    werewolf_votes.append(result.get(result_target_id))
+                    werewolf_votes.append(result_target_id)
 
         # 4. Resolve Werewolf Votes
         # Unanimous vote kills, else no kill
@@ -379,28 +379,22 @@ class Game:
             and len(set(werewolf_votes)) == 1
         ):
             target_id = werewolf_votes[0]
-            target_name = self.players[target_id].name
-            print(f"Werewolves selected: {target_name}")
-
-            # Check Protection
-            # todo: possible unnest from previous if
-            # self.status_effects = [ s for s in self.status_effects if s in PERSISTENT_EFFECTS ]
-            NO_DEATH = ["protected", "healed"]
-
-            if target_id in protected_ids or [
-                s for s in target_id.status_effects if s in NO_DEATH
-            ]:
-                print(f"Attack on {target_name} blocked by protection!")
-            else:
-                # Check Passive Immunity (Monster)
+            if target_id in self.players:
                 victim = self.players[target_id]
+                target_name = victim.name
+                print(f"Werewolves selected: {target_name}")
 
-                if "immune_to_wolf" in victim.status_effects:
+                if "protected" in victim.status_effects:
+                    print(f"Attack on {target_name} blocked by protection!")
+                elif "protected" in victim.status_effects:
+                    print(f"Attack on {target_name} healed by Witch!")
+                elif "immune_to_wolf" in victim.status_effects:
                     print(f"Attack on {target_name} failed (Immune)!")
                 else:
                     kill_list.add(target_id)
 
         # 5. Process Deaths & Lovers Pact
+
         final_deaths = set()
 
         def process_death(pid):

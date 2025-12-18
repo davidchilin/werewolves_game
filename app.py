@@ -170,6 +170,14 @@ def broadcast_game_state():
         my_rematch_vote = pid in game_instance.rematch_votes
         rematch_count = len(game_instance.rematch_votes)
 
+        valid_targets = []
+        if engine_p and engine_p.role:
+            # Use the Role's internal logic (which excludes last protected)
+            targets = engine_p.role.get_valid_targets(
+                engine_p, {"players": list(game_instance.players.values())}
+            )
+            valid_targets = [{"id": t.id, "username": t.name} for t in targets]
+
         payload = {
             "accusation_counts": accusation_counts,
             "admin_only_chat": game_instance.admin_only_chat,
@@ -200,6 +208,7 @@ def broadcast_game_state():
             "total_accusation_duration": game_instance.timer_durations.get(
                 PHASE_ACCUSATION, 90
             ),
+            "valid_targets": valid_targets,
             "your_role": role_str,
         }
 
@@ -790,6 +799,7 @@ def handle_werewolf_choice(data):
 def handle_seer_choice(data):
     player_id = session.get("player_id")
     target_id = data.get("target_id")
+
     result = game_instance.receive_night_action(player_id, target_id)
 
     if result == "ALREADY_ACTED":
@@ -798,16 +808,14 @@ def handle_seer_choice(data):
         return emit("error", {"message": "Action ignored."})
     # Immediate Seer Feedback (Standard Mode Feature)
     if result != "RESOLVED":
-        target = game_instance.players.get(target_id)
-        if target:
-            is_werewolf = (
-                target.role.team == "werewolf" or target.role.team == "monster"
-            )
+        seer_player = game_instance.players.get(player_id)
+        target_player = game_instance.players.get(target_id)
+        if target_player and seer_player and seer_player.role:
             emit(
                 "seer_result",
                 {
-                    "username": target.name,
-                    "role": ROLE_WEREWOLF if is_werewolf else ROLE_VILLAGER,
+                    "username": target_player.name,
+                    "role": seer_player.role.investigate(target_player),
                 },
             )
 

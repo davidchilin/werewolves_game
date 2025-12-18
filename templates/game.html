@@ -365,7 +365,7 @@
         }
       }
     </style>
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
   </head>
   <body>
     <div class="game-container">
@@ -491,6 +491,7 @@
         isAdmin = false;
       let timerInterval,
         timersDisabled = false;
+      let validTargets = [];
 
       // Phase 4 State
       let isPassAndPlay = false;
@@ -646,7 +647,7 @@
       // Response from server with role data
       socket.on("pnp_state_received", (data) => {
         // Render Role & Prompt (Silly or Serious)
-        let roleName = data.role_name.replace("role_", "").toUpperCase();
+        let roleName = data.role_name.toUpperCase();
         let html = `
                     <div class="role-header">
                         <h2>You are: ${roleName}</h2>
@@ -766,7 +767,7 @@
                 `;
             // Populate: Exclude Self (false for 'nobody', then manual filter)
             // Assuming livingPlayers is available in scope
-            populateSelect("action-select", livingPlayers, false, false);
+            populateSelect("action-select", validTargets, false, false);
 
             document.getElementById("action-btn").onclick = () => {
               const target = document.getElementById("action-select").value;
@@ -788,7 +789,7 @@
             `;
 
             // 2. Populate Dropdown (True = include 'Nobody' option)
-            populateSelect("action-select", livingPlayers, true, true);
+            populateSelect("action-select", validTargets, true, true);
 
             // 3. Attach Event
             document.getElementById("action-btn").onclick = () => {
@@ -1034,6 +1035,7 @@
         isAlive = data.is_alive;
         livingPlayers = data.living_players;
         allPlayers = data.all_players;
+        validTargets = data.valid_targets || [];
         timersDisabled = data.timers_disabled;
         myNightTargetId = data.my_night_target_id;
         myAccusationId = data.my_accusation_id;
