@@ -1,12 +1,13 @@
 """
 app.py
-Version: 4.4.5
+Version: 4.4.8
 """
-from collections import Counter
-from dotenv import load_dotenv, find_dotenv
+import logging
 import os
 import time
 import uuid
+from collections import Counter
+from dotenv import find_dotenv, load_dotenv
 from flask import (
     Flask,
     jsonify,
@@ -17,7 +18,8 @@ from flask import (
     session,
     url_for,
 )
-from flask_socketio import SocketIO, join_room, emit
+from flask_socketio import SocketIO, emit, join_room
+
 from config import *
 from game_engine import Game
 from roles import AVAILABLE_ROLES
@@ -30,6 +32,8 @@ app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get(
     "FLASK_SECRET_KEY", "omiunhbybt7vr6c53wz3523c2r445ybF4y6jmo8o8p"
 )
+log = logging.getLogger("werkzeug")
+log.setLevel(logging.ERROR)
 
 # --- Global State ---
 game_instance = Game("main_game")
@@ -57,8 +61,8 @@ game = {
 
 
 class PlayerWrapper:
-    def __init__(self, username, sid):
-        self.username = username
+    def __init__(self, name, sid):
+        self.name = name
         self.sid = sid
         self.is_admin = False
 
@@ -87,7 +91,7 @@ def broadcast_player_list():
         player_list.append(
             {
                 "id": pid,
-                "username": conn.username,
+                "name": conn.name,
                 "is_admin": conn.is_admin,
                 "is_alive": is_alive,
             }
@@ -107,10 +111,9 @@ def broadcast_player_list():
 def broadcast_game_state():
     """Syncs the FULL Engine state to all clients."""
     # 1. Public Data
-    print("DEBUG: Starting broadcast_game_state...")
     try:
         all_players = [
-            {"id": p.id, "username": p.name} for p in game_instance.players.values()
+            {"id": p.id, "name": p.name} for p in game_instance.players.values()
         ]
         if game_instance.phase == PHASE_ACCUSATION:
             accusation_counts = dict(Counter(game_instance.accusations.values()))
@@ -138,19 +141,29 @@ def broadcast_game_state():
     # todo: should we do this for all player, or only to (specific player)
     for pid, conn in game["players"].items():
         if not conn.sid:
-            print(f"DEBUG: Skipping {conn.username} (No SID)")
+            print(f"DEBUG: Skipping {conn.name} (No SID)")
             continue
 
         engine_p = game_instance.players.get(pid)
         role_str, is_alive = ROLE_VILLAGER, True
+        night_ui = None
 
         if engine_p:
             is_alive = engine_p.is_alive
             role_str = engine_p.role.name_key if engine_p.role else "Unknown"
+            if (
+                game_instance.phase == PHASE_NIGHT
+                and engine_p.role
+                and engine_p.is_alive
+            ):
+                # Pass context so role can calculate valid targets
+                ctx = {"players": list(game_instance.players.values())}
+                night_ui = engine_p.role.get_night_ui_schema(engine_p, ctx)
         else:
-            print(f"DEBUG WARNING: Player {conn.username} ({pid}) not found in Engine!")
+            print(f"WARNING: Player {conn.name} not found in Engine!")
         # --- NEW: Retrieve Actions for ALL phases ---
         my_night_target = game_instance.get_player_night_choice(pid)
+        my_night_metadata = game_instance.get_player_night_metadata(pid)
         my_accusation = game_instance.get_player_accusation(pid)
         my_lynch_vote = game_instance.get_player_lynch_vote(pid)
         my_sleep_vote = game_instance.has_player_voted_to_sleep(pid)
@@ -174,9 +187,9 @@ def broadcast_game_state():
         if engine_p and engine_p.role:
             # Use the Role's internal logic (which excludes last protected)
             targets = engine_p.role.get_valid_targets(
-                engine_p, {"players": list(game_instance.players.values())}
+                {"players": list(game_instance.players.values())}
             )
-            valid_targets = [{"id": t.id, "username": t.name} for t in targets]
+            valid_targets = [{"id": t.id, "name": t.name} for t in targets]
 
         payload = {
             "accusation_counts": accusation_counts,
@@ -187,8 +200,7 @@ def broadcast_game_state():
             "is_admin": conn.is_admin,
             "is_alive": is_alive,
             "living_players": [
-                {"id": p.id, "username": p.name}
-                for p in game_instance.get_living_players()
+                {"id": p.id, "name": p.name} for p in game_instance.get_living_players()
             ],
             "lynch_target_id": game_instance.lynch_target_id,
             "lynch_target_name": lynch_target_name,
@@ -197,9 +209,11 @@ def broadcast_game_state():
             "my_accusation_name": my_accusation_name,
             "my_lynch_vote": my_lynch_vote,
             "my_night_target_id": my_night_target,
+            "my_night_metadata": my_night_metadata,
             "my_night_target_name": my_night_target_name,
             "my_rematch_vote": my_rematch_vote,
             "my_sleep_vote": my_sleep_vote,
+            "night_ui": night_ui,
             "phase": game_instance.phase,
             "phase_end_time": game_instance.phase_end_time,
             "rematch_vote_count": rematch_count,
@@ -213,8 +227,6 @@ def broadcast_game_state():
         }
 
         socketio.emit("game_state_sync", payload, to=conn.sid)
-
-    print("DEBUG: Broadcast complete.")
 
 
 # --- Timer System ---
@@ -295,16 +307,16 @@ def index():
         )
     # login properly then redirect to lobby
     if request.method == "POST":
-        username = request.form.get("username", "").strip()
+        name = request.form.get("name", "").strip()
         code = request.form.get("game_code", "").strip().upper()
-        if not username:
-            return render_template("index.html", error="Username is required.")
+        if not name:
+            return render_template("index.html", error="name is required.")
         if code != game["game_code"]:
             return render_template("index.html", error="Invalid game code.")
         for p in game["players"].values():
-            if p.username.lower() == username.lower():
-                return render_template("index.html", error="Username is already taken.")
-        session["player_id"], session["username"] = str(uuid.uuid4()), username
+            if p.name.lower() == name.lower():
+                return render_template("index.html", error="Name is already taken.")
+        session["player_id"], session["name"] = str(uuid.uuid4()), name
         return redirect(url_for("lobby"))
     return render_template("index.html")
 
@@ -380,7 +392,7 @@ def add_header(r):
 
 # --- SocketIO Events ---
 @socketio.on("connect")
-def handle_connect():
+def handle_connect(auth=None):
     log_and_emit(f"===> A client connected. SID: {request.sid}")
     player_id = session.get("player_id")
     if not player_id:
@@ -390,28 +402,24 @@ def handle_connect():
     if player_id not in game["players"]:
         if game["game_state"] != PHASE_LOBBY:
             return emit("error", {"message": "Game in progress."})
-        new_player = PlayerWrapper(session.get("username"), request.sid)
+        new_player = PlayerWrapper(session.get("name"), request.sid)
         # set first player in room to be admin, if no admin from previous match
         # check if error here, since possilbe game["players"] is empty, even in rematch?
         if not game["admin_sid"]:
             new_player.is_admin = True
             game["admin_sid"] = request.sid
-            log_and_emit(
-                f"===> +++ New player Admin {new_player.username} added to game. id: {new_player} +++"
-            )
+            log_and_emit(f"===> +++ New player Admin {new_player.name} added to game.")
         game["players"][player_id] = new_player
-        log_and_emit(
-            f"===> +++ New player {new_player.username} added to game. id: {new_player} +++"
-        )
+        log_and_emit(f"===> +++ New player {new_player.name} added to game.")
     # reconnecting player
     else:
         game["players"][player_id].sid = request.sid
-        log_and_emit(f"===> Player {game['players'][player_id].username} reconnected.")
+        log_and_emit(f"===> Player {game['players'][player_id].name} reconnected.")
         # reestablish admin for new game/rematch
         if game["players"][player_id].is_admin:
             game["admin_sid"] = request.sid
             log_and_emit(
-                f"===> Admin {game['players'][player_id].username} confirmed and SID updated."
+                f"===> Admin {game['players'][player_id].name} confirmed and SID updated."
             )
 
     join_room(game["game_code"])
@@ -422,7 +430,7 @@ def handle_connect():
     else:
         player = game["players"][player_id]
         log_and_emit(
-            f">>>> Game Phase: {game['game_state']}. Syncing state for {player.username}."
+            f">>>> Game Phase: {game['game_state']}. Syncing state for {player.name}."
         )
         broadcast_game_state()
 
@@ -431,9 +439,7 @@ def handle_connect():
 def handle_disconnect():
     player_id, _ = get_player_by_sid(request.sid)
     if player_id and player_id in game["players"]:
-        log_and_emit(
-            f"==== Player {game['players'][player_id].username} disconnected ===="
-        )
+        log_and_emit(f"==== Player {game['players'][player_id].name} disconnected ====")
 
 
 # In your Flask-SocketIO handler:
@@ -482,7 +488,7 @@ def handle_send_message(data):
                 emit(
                     "message",
                     {
-                        "text": f"shhh...the village is sleeping quietly, <strong>{p.username}</strong>"
+                        "text": f"shhh...the village is sleeping quietly, <strong>{p.name}</strong>"
                     },
                 )
             else:
@@ -504,7 +510,7 @@ def handle_send_message(data):
     # 4. Broadcast
     socketio.emit(
         "new_message",
-        {"text": f"<strong>{p.username}:</strong> {msg}", "channel": channel},
+        {"text": f"<strong>{p.name}:</strong> {msg}", "channel": channel},
         to=game["game_code"],
     )
 
@@ -600,7 +606,7 @@ def handle_start_game(data):
     game_instance.mode = data.get("settings", {}).get("mode", "standard")
     game_instance.players = {}
     for pid, obj in game["players"].items():
-        game_instance.add_player(pid, obj.username)
+        game_instance.add_player(pid, obj.name)
 
     # game["players_ready_for_game"] = set()
     log_and_emit(f"===> Game Started! Mode: {game_instance.mode}")
@@ -707,23 +713,23 @@ def handle_admin_set_new_code(data):
     broadcast_player_list()
 
 
-@socketio.on("hero_night_action")
-def handle_hero_night_action(data):
-    player_id = session.get("player_id")
+def send_werewolf_info(player_id):
+    """Sends the list of werewolf teammates to a specific player."""
+    # 1. Get Engine Player Object
+    p_engine = game_instance.players.get(player_id)
 
-    if data.get("target_id") == "NOBODY":
-        result = game_instance.receive_night_action(player_id, "Nobody")
-    else:
-        result = game_instance.receive_night_action(player_id, data)
-
-    if result == "ALREADY_ACTED":
-        broadcast_game_state()
-        return
-    if result == "IGNORED":
-        emit("error", {"message": "Action ignored."})
+    # 2. Check if they are a Werewolf
+    if not p_engine or not p_engine.role or p_engine.role.team != "werewolf":
         return
 
-    broadcast_game_state()
+    # 3. Find Teammates (All living wolves excluding self)
+    werewolves = game_instance.get_living_players("werewolf")
+    teammates = [w.name for w in werewolves if w.id != player_id]
+
+    # 4. Get Socket ID and Emit
+    p_conn = game["players"].get(player_id)
+    if p_conn and p_conn.sid:
+        socketio.emit("werewolf_team_info", {"teammates": teammates}, to=p_conn.sid)
 
 
 @socketio.on("pnp_request_state")
@@ -735,7 +741,7 @@ def handle_pnp_request(data):
     player = game_instance.players.get(data.get("player_id"))
     if player:
         targets = player.role.get_valid_targets(
-            player, {"players": list(game_instance.players.values())}
+            {"players": list(game_instance.players.values())}
         )
         prompt = getattr(player.role, "night_prompt", "Choose a target")
 
@@ -779,45 +785,38 @@ def handle_client_ready_for_game():
     broadcast_game_state()
 
 
-@socketio.on("werewolf_choice")
-def handle_werewolf_choice(data):
+@socketio.on("hero_choice")
+def handle_hero_choice(data):
     player_id = session.get("player_id")
-    result = game_instance.receive_night_action(player_id, data.get("target_id"))
+    target_id = data.get("target_id")
+
+    if target_id == "Nobody":
+        result = game_instance.receive_night_action(player_id, "Nobody")
+    else:
+        result = game_instance.receive_night_action(player_id, data)
+
     if result == "ALREADY_ACTED":
         # refresh the UI and show their previous choice.
         return broadcast_game_state()
     if result == "IGNORED":
-        return emit("error", {"message": "Action ignored (Wrong phase?)"})
-    if result == "RESOLVED":
-        resolve_night()
-
-    # If successful (PENDING), we must update the UI to show they've submitted
-    broadcast_game_state()
-
-
-@socketio.on("seer_choice")
-def handle_seer_choice(data):
-    player_id = session.get("player_id")
-    target_id = data.get("target_id")
-
-    result = game_instance.receive_night_action(player_id, target_id)
-
-    if result == "ALREADY_ACTED":
-        return broadcast_game_state()
-    if result == "IGNORED":
         return emit("error", {"message": "Action ignored."})
-    # Immediate Seer Feedback (Standard Mode Feature)
-    if result != "RESOLVED":
-        seer_player = game_instance.players.get(player_id)
+    if result == "RESOLVED":
+        return resolve_night()
+
+    seer_player = game_instance.players.get(player_id)
+    if seer_player and seer_player.role.name_key == ROLE_SEER:
+        # Immediate Seer Feedback (Standard Mode Feature)
         target_player = game_instance.players.get(target_id)
-        if target_player and seer_player and seer_player.role:
+        if target_player and hasattr(seer_player.role, "investigate"):
             emit(
                 "seer_result",
                 {
-                    "username": target_player.name,
+                    "name": target_player.name,
                     "role": seer_player.role.investigate(target_player),
                 },
             )
+    # If successful (PENDING), update UI show submitted/waiting..
+    broadcast_game_state()
 
 
 @socketio.on("accuse_player")
@@ -864,7 +863,23 @@ def handle_cast_lynch_vote(data):
 
 def resolve_night():
     # 1. Engine Calculation
-    deaths = game_instance.resolve_night_phase()
+    deaths = game_instance.resolve_night_deaths()
+
+    for pid, p in game_instance.players.items():
+        if p.linked_partner_id and p.is_alive:
+            partner = game_instance.players.get(p.linked_partner_id)
+            if partner:
+                # Send private message to this specific socket
+                player_socket = game["players"].get(pid)
+                if player_socket and player_socket.sid:
+                    socketio.emit(
+                        "message",
+                        {
+                            "text": f"💘 You are in love with <strong>{partner.name}</strong>! If one dies, you both die.",
+                            "channel": "living",
+                        },
+                        to=player_socket.sid,
+                    )
 
     # 2. Notify Clients
     if deaths:
@@ -875,7 +890,7 @@ def resolve_night():
                 {
                     "killed_player": {
                         "id": p.id,
-                        "username": p.name,
+                        "name": p.name,
                         "role": p.role.name_key,
                     }
                 },
@@ -924,7 +939,7 @@ def handle_vote_for_rematch():
 
             game_instance.players = {}
             for pid, obj in game["players"].items():
-                game_instance.add_player(pid, obj.username)
+                game_instance.add_player(pid, obj.name)
 
             game["game_state"] = PHASE_LOBBY
             game["game_over_data"] = None

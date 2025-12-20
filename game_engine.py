@@ -1,6 +1,6 @@
 """
 game_engine.py
-# Version: 4.4.7
+# Version: 4.4.8
 Manages the game flow, player states, complex role interactions, and phase transitions.
 """
 import random
@@ -105,9 +105,10 @@ class Game:
         num_players = len(player_ids)
 
         # 3. Calculate Counts (The Math)
-        if 4 <= num_players <= 6:
+        # temp wolf 4-6, 7-8, 9-11, 12-16, x.25
+        if 4 <= num_players <= 4:
             num_wolves = 1
-        elif 7 <= num_players <= 8:
+        elif 5 <= num_players <= 8:
             num_wolves = 2
         elif 9 <= num_players <= 11:
             num_wolves = 3
@@ -165,7 +166,7 @@ class Game:
             self.players[pid].role = role_class()
             self.players[pid].role.on_assign(self.players[pid])
 
-            print(f"DEBUG: Assigned {role_class.__name__} to Player ID: {pid}")
+            print(f"Assigned {role_class.__name__} to Player")
 
         print(f"Roles assigned for Game {self.game_id} (Mode: {self.mode})")
 
@@ -191,9 +192,9 @@ class Game:
         # Trigger cleanup or specific phase logic here
         if new_phase == PHASE_NIGHT:
             self.accusation_restarts = 0
-            self.accusations = {}
+            self.accusations = {}  # not needed?
             duration = self.timer_durations.get(PHASE_NIGHT, 90)
-            self.end_day_votes = set()
+            self.end_day_votes = set()  # not needed?
             self.night_actions = {}
             self.night_log = []
             self.pending_actions = {}
@@ -208,8 +209,8 @@ class Game:
             duration = self.timer_durations.get(PHASE_ACCUSATION, 90)
             self.end_day_votes = set()
             self.lynch_target_id = None
-            self.lynch_votes = {}
-            self.night_actions = {}
+            self.lynch_votes = {}  # not needed?
+            self.night_actions = {}  # not needed?
         elif new_phase == PHASE_LYNCH:
             duration = self.timer_durations.get(PHASE_LYNCH, 60)
             self.lynch_votes = {}
@@ -284,6 +285,13 @@ class Game:
             return choice.get("target_id")
         return choice
 
+    def get_player_night_metadata(self, player_id):
+        """Returns the metadata dict (e.g. {'potion': 'heal'}) or None."""
+        choice = self.pending_actions.get(player_id)
+        if isinstance(choice, dict):
+            return choice.get("metadata")
+        return None
+
     def get_player_accusation(self, player_id):
         """Returns the ID of the player this user accused."""
         return self.accusations.get(player_id)
@@ -292,8 +300,8 @@ class Game:
         """Returns 'yes' or 'no' if the player has voted."""
         return self.lynch_votes.get(player_id)
 
-    def resolve_night_phase(self):
-        print("--- RESOLVING NIGHT ---")
+    def resolve_night_deaths(self):
+        print("--- RESOLVING NIGHT Deaths & ACTIONS ---")
 
         # 1. Get all alive players with active roles
         active_players = [
@@ -316,7 +324,6 @@ class Game:
 
         for player in active_players:
             raw_action = self.pending_actions.get(player.id)
-
             target_id = None
             metadata = {}
 
@@ -342,15 +349,17 @@ class Game:
             result = player.role.night_action(player, target_player_obj, game_context)
 
             # 4. Handle Results
-            if result:  # might not need this if
+            if result:
                 # Need to resolve the target player object from ID
-                result_target_id = result.get("target")
+                result_target_id = result.get("target")  # same as target_player_obj.id
                 action_type = result.get("action")
                 effect = result.get("effect")
 
                 if result_target_id and effect:
                     # Resolve the target ID from the result to an object
-                    t_obj = self.players.get(result_target_id)
+                    t_obj = self.players.get(
+                        result_target_id
+                    )  # same as target_player_obj
                     if t_obj:
                         print(f"Effect Applied: {effect} on {t_obj.name}")
                         t_obj.status_effects.append(effect)
@@ -386,7 +395,7 @@ class Game:
 
                 if "protected" in victim.status_effects:
                     print(f"Attack on {target_name} blocked by protection!")
-                elif "protected" in victim.status_effects:
+                elif "healed" in victim.status_effects:
                     print(f"Attack on {target_name} healed by Witch!")
                 elif "immune_to_wolf" in victim.status_effects:
                     print(f"Attack on {target_name} failed (Immune)!")
@@ -395,44 +404,30 @@ class Game:
 
         # 5. Process Deaths & Lovers Pact
 
-        final_deaths = set()
+        dead_set = set()
 
-        def process_death(pid):
-            if pid in final_deaths:
-                return
-            final_deaths.add(pid)
+        def kill_recursive(pid):
+            # target.is_alive=False, execute death hook, kill lover
+            dead_set.add(pid)
+            p = self.players[pid]
+            p.is_alive = False
+            print(f"DIED: {p.name}")
 
-            victim = self.players[pid]
-            if not victim:
-                return
+            # Trigger Death Hook
+            if p.role:
+                p.role.on_death(p, {"players": list(self.players.values())})
 
             # Check Lovers
-            if "lover" in victim.status_effects:
-                lovers_to_kill = [
-                    p
-                    for p in self.players.values()
-                    if p.is_alive
-                    and p.id not in final_deaths
-                    and "lover" in p.status_effects
-                ]
-                for partner in lovers_to_kill:
-                    print(f"Lovers Pact: {partner.name} dies of grief!")
-                    process_death(partner.id)
+            if "lover" in p.status_effects:
+                for other in self.players.values():
+                    if other.is_alive and "lover" in other.status_effects:
+                        print(f"Lovers Pact: {other.name} dies of broken heart.")
+                        kill_recursive(other.id)
 
         for pid in kill_list:
-            process_death(pid)
+            kill_recursive(pid)
 
-        # Apply State Changes
-        for pid in final_deaths:
-            player = self.players[pid]
-            player.is_alive = False
-            print(f"DIED: {self.players[pid].name}")
-
-            # We pass the killer's ID or context if available (simplified here)
-            if player.role:
-                player.role.on_death(player, {"players": list(self.players.values())})
-
-        return list(final_deaths)
+        return list(dead_set)
 
     # --- DAY LOGIC (Accusations & Voting) ---
 
@@ -524,13 +519,30 @@ class Game:
 
         # Majority YES required (> 50%)
         if yes > (total / 2):
-            victim = self.players[self.lynch_target_id]
-            victim.is_alive = False
             result_data["killed_id"] = self.lynch_target_id
 
-            # TRIGGER ROLE HOOK
-            if victim.role:
-                victim.role.on_death(victim, {"players": list(self.players.values())})
+            dead_set = set()
+
+            def kill_recursive(pid):
+                # target.is_alive=False, execute death hook, kill lover
+                dead_set.add(pid)
+                p = self.players[pid]
+                p.is_alive = False
+                print(f"LYNCH KILL: {p.name}")
+
+                # Trigger Death Hook
+                if p.role:
+                    p.role.on_death(p, {"players": list(self.players.values())})
+
+                # Check for Lovers
+                if "lover" in p.status_effects:
+                    for other in self.players.values():
+                        if other.is_alive and "lover" in other.status_effects:
+                            print(f"Lovers Pact: {other.name} dies of broken heart.")
+                            kill_recursive(other.id)
+
+            # Start the chain reaction
+            kill_recursive(self.lynch_target_id)
 
             if self.check_game_over():
                 result_data["game_over"] = True

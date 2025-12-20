@@ -1,4 +1,4 @@
-<!-- Version: 4.4.5 -->
+<!-- Version: 4.4.8 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -471,16 +471,6 @@
       const PHASE_LYNCH = "Lynch_Vote";
       const PHASE_GAME_OVER = "Game_Over";
 
-      // Role Keys
-      const ROLE_WEREWOLF = "Werewolf";
-      const ROLE_SEER = "Seer";
-      const ROLE_VILLAGER = "Villager";
-      const ROLE_BODYGUARD = "Bodyguard";
-      const ROLE_WITCH = "Witch";
-      const ROLE_CUPID = "Cupid";
-      const ROLE_MONSTER = "Monster";
-      const ROLE_ALPHA_WEREWOLF = "Alpha_Werewolf";
-
       const socket = io();
       // Global State
       let myRole,
@@ -491,12 +481,15 @@
         isAdmin = false;
       let timerInterval,
         timersDisabled = false;
-      let validTargets = [];
+      let validTargets = [],
+        currentNightUI = null;
 
       // Phase 4 State
       let isPassAndPlay = false;
       let hasActed = new Set(),
         myNightTargetId = null,
+        myNightMetadata = null,
+        lastSeerResult = null,
         myAccusationId = null,
         myLynchVote = null,
         currentLynchTargetName = "Unknown",
@@ -608,10 +601,8 @@
               const disabled = hasActed.has(p.id)
                 ? 'disabled style="opacity:0.5"'
                 : "";
-              const label = hasActed.has(p.id)
-                ? `${p.username} (Done)`
-                : p.username;
-              return `<button class="pnp-btn" ${disabled} onclick="startConfirmFlow('${p.id}', '${p.username}')">${label}</button>`;
+              const label = hasActed.has(p.id) ? `${p.name} (Done)` : p.name;
+              return `<button class="pnp-btn" ${disabled} onclick="startConfirmFlow('${p.id}', '${p.name}')">${label}</button>`;
             })
             .join("") +
           `</div>`;
@@ -713,122 +704,121 @@
           if (!includeSelf && p.id === socket.id) {
             return;
           }
-          select.innerHTML += `<option value="${p.id}">${p.username}</option>`;
+          select.innerHTML += `<option value="${p.id}">${p.name}</option>`;
         });
       }
 
-      function renderNightUI() {
-        if (myRole === ROLE_WEREWOLF) {
-          if (myNightTargetId === null) {
-            actionArea.innerHTML = `<h4>Wolf, who will you eat?</h4><select id="action-select"></select> <button id="action-btn">Kill</button>`;
-            populateSelect("action-select", livingPlayers, true, true);
-            document.getElementById("action-btn").onclick = () => {
-              const select = document.getElementById("action-select");
-
-              socket.emit("werewolf_choice", {
-                target_id: select.value,
-              });
-
-              const playerPicked = select.options[select.selectedIndex]
-                ? select.options[select.selectedIndex].text
-                : "Nobody";
-
-              actionArea.innerHTML = `<p>You are hungry for <span style="color: #ff0000">${playerPicked}</span>. Waiting ...</p>`;
-            };
-          } else {
-            const target = allPlayers.find((p) => p.id === myNightTargetId);
-            const playerPicked = target ? target.username : "Nobody";
-            actionArea.innerHTML = `<p>You are hungry for <span style="color: #ff0000">${playerPicked}</span>. Waiting ...</p>`;
+      function renderNightUI(uiData) {
+        if (myNightTargetId === null) {
+          // 1. Safety Check
+          if (!uiData || !uiData.pre) {
+            actionArea.innerHTML = "<p>Sleeping...</p>";
+            return;
           }
-        } else if (myRole === ROLE_SEER) {
-          if (myNightTargetId === null) {
-            actionArea.innerHTML = `<h4>Seer, whose role will you see?</h4><select id="action-select"></select> <button id="action-btn">Investigate</button>`;
-            populateSelect("action-select", livingPlayers, true, true);
-            document.getElementById("action-btn").onclick = () => {
-              const select = document.getElementById("action-select");
-              socket.emit("seer_choice", {
-                target_id: select.value,
-              });
-
-              const playerPicked = select.options[select.selectedIndex]
-                ? select.options[select.selectedIndex].text
-                : "Nobody";
-              actionArea.innerHTML = `<p>You saw <span style="color:
-                #ff0000">${playerPicked}</span>'s role. Waiting ...</p>`;
-            };
-          } else {
-            actionArea.innerHTML = `<p>You have seen all that you can see tonight.</p>`;
+          // 2. Render the Form (Server-Driven HTML)
+          actionArea.innerHTML = uiData.pre;
+          // 3. Populate Dropdown (if exists)
+          // 1st dropdown
+          if (uiData.targets) {
+            populateSelect(
+              "action-select",
+              uiData.targets,
+              uiData.can_skip,
+              true,
+            );
+            // 2nd dropdown
+            if (uiData.potions) {
+              populateSelect("action-select-2", uiData.potions, false, false);
+            } else if (myRole === "Cupid") {
+              populateSelect(
+                "action-select-2",
+                uiData.targets,
+                uiData.can_skip,
+                true,
+              );
+            }
           }
-        } else if (myRole === ROLE_CUPID) {
-          if (myNightTargetId === null) {
-            actionArea.innerHTML = `
-                    <h4>Select your lover:</h4>
-                    <p class="role-desc">You and the selected player are fataly in love. If one
-                    dies, the other dies of heartache.</p>
-                    <select id="action-select"></select>
-                    <button id="action-btn">Shoot Arrow</button>
-                `;
-            // Populate: Exclude Self, exclue 'Nobody'
-            populateSelect("action-select", validTargets, false, false);
-            document.getElementById("action-btn").onclick = () => {
+          // 4. Handle Button Click
+          const actionBtn = document.getElementById("action-btn");
+          if (actionBtn) {
+            actionBtn.onclick = () => {
               const select = document.getElementById("action-select");
+              const select2 = document.getElementById("action-select-2");
 
-              socket.emit("hero_night_action", { target_id: select.value });
+              const val1 = select ? select.value : null;
+              const val2 = select2 ? select2.value : null;
 
-              const playerPicked = select.options[select.selectedIndex]
-                ? select.options[select.selectedIndex].text
-                : "Nobody";
+              // --- FIX: Prevent Same Target Selection (Cupid) ---
+              if (val1 && val2 && val1 === val2 && val1 !== "Nobody") {
+                alert(
+                  "Cannot select the same person twice! Pick two different persons.",
+                );
+                return; // Stop execution here
+              }
+              // Construct Payload
+              const payload = { target_id: val1 };
 
-              actionArea.innerHTML = `<p>Love is in the air... <span style="color: #ff0000">${playerPicked}</span>.</p>`;
+              // Add Metadata if a second selection exists
+              if (val2 !== null) {
+                payload.metadata = {};
+                if (uiData.potions) {
+                  // It's the Witch -> second value is potion
+                  payload.metadata.potion = val2;
+                } else {
+                  // It's Cupid -> second value is second target
+                  payload.metadata.target_id2 = val2;
+                }
+              }
+
+              socket.emit("hero_choice", payload);
+              // Render Post-Action Message
+              const playerPicked =
+                select && select.selectedIndex >= 0
+                  ? select.options[select.selectedIndex].text
+                  : "Nobody";
+
+              const playerPicked2 =
+                select2 && select2.selectedIndex >= 0
+                  ? select2.options[select2.selectedIndex].text
+                  : "Nobody";
+
+              let msg = uiData.post;
+              msg = msg.replace("${playerPicked}", playerPicked);
+              msg = msg.replace("${playerPicked2}", playerPicked2);
+              actionArea.innerHTML = msg;
             };
-          } else {
-            const target = allPlayers.find((p) => p.id === myNightTargetId);
-            const playerPicked = target ? target.username : "Nobody";
-            actionArea.innerHTML = `<p>You love <span style="color:
-              #ff0000">${playerPicked}</span>.</p>`;
-          }
-        } else if (myRole === ROLE_BODYGUARD) {
-          if (myNightTargetId === null) {
-            // 1. Render Input
-            actionArea.innerHTML = `
-                <h4>Bodyguard, who will you protect?</h4>
-                <select id="action-select"></select>
-                <button id="action-btn">Protect</button>
-            `;
-            // 2. Populate Dropdown (True = include 'Nobody' option)
-            populateSelect("action-select", validTargets, true, true);
-            // 3. Attach Event
-            document.getElementById("action-btn").onclick = () => {
-              const select = document.getElementById("action-select");
-              socket.emit("hero_night_action", {
-                target_id: select.value,
-              });
-
-              const playerPicked = select.options[select.selectedIndex]
-                ? select.options[select.selectedIndex].text
-                : "Nobody";
-              // Immediate Feedback
-              actionArea.innerHTML = `<p>Sending protection orders for <span style="color: #ff0000">${playerPicked}</span>. Waiting ...</p>`;
-            };
-          } else {
-            // 4. Render Status (Already acted)
-            const target = allPlayers.find((p) => p.id === myNightTargetId);
-            const playerPicked = target ? target.username : "Nobody";
-            actionArea.innerHTML = `<p>You are protecting <span
-              style="color:#4caf50">${playerPicked}</span> tonight.</p>`;
           }
         } else {
-          // Villager
-          if (myNightTargetId === null) {
-            actionArea.innerHTML = `<p>You are dreaming of yummy pupusas while the night creatures are stirring ...  </p><h4>Who is acting quirky this night?</h4><select
-                          id="action-select"></select> <button id="action-btn">Select</button>`;
-            populateSelect("action-select", livingPlayers, true, true);
-            document.getElementById("action-btn").onclick = () => {
-              actionArea.innerHTML = `<p>You have made your choice.</p>`;
-            };
-          } else {
-            actionArea.innerHTML = `<p>You have made your choice.</p>`;
+          // Night Action already performed
+          if (lastSeerResult) {
+            actionArea.innerHTML = `<p>${lastSeerResult}</p>`;
+            return;
           }
+          const target = allPlayers.find((p) => p.id === myNightTargetId);
+          const playerPicked = target ? target.name : "Nobody";
+          let playerPicked2 = "Unknown";
+
+          if (myNightMetadata && myNightMetadata.potion) {
+            // Map 'heal' -> 'Heal Potion' for display
+            playerPicked2 =
+              myNightMetadata.potion === "heal"
+                ? "Heal Potion"
+                : myNightMetadata.potion === "poison"
+                  ? "Poison Potion"
+                  : "Nothing";
+          }
+          // If Cupid: metadata.target_id2
+          else if (myNightMetadata && myNightMetadata.target_id2) {
+            const target2 = allPlayers.find(
+              (p) => p.id === myNightMetadata.target_id2,
+            );
+            playerPicked2 = target2 ? target2.name : "Nobody";
+          }
+
+          let msg = uiData.post || "<p>Action submitted.</p>";
+          msg = msg.replace("${playerPicked}", playerPicked);
+          msg = msg.replace("${playerPicked2}", playerPicked2);
+          actionArea.innerHTML = msg;
         }
       }
 
@@ -839,7 +829,7 @@
         // Check if already accused (considering "Nobody" as a valid accusation)
         if (myAccusationId !== null) {
           const target = allPlayers.find((p) => p.id === myAccusationId);
-          const playerPicked = target ? target.username : "Nobody";
+          const playerPicked = target ? target.name : "Nobody";
           accusationHTML = `<h3>You have accused <span
             style="color:#ff5252">${playerPicked}</span>.</h3><p>Waiting for others...</p>`;
         } else {
@@ -940,7 +930,7 @@
 
         switch (phase) {
           case PHASE_NIGHT:
-            renderNightUI();
+            renderNightUI(currentNightUI);
             break;
           case PHASE_ACCUSATION:
             renderAccusationUI(currentDuration);
@@ -1050,11 +1040,16 @@
         validTargets = data.valid_targets || [];
         timersDisabled = data.timers_disabled;
         myNightTargetId = data.my_night_target_id;
+        myNightMetadata = data.my_night_metadata || {};
         myAccusationId = data.my_accusation_id;
+        currentNightUI = data.night_ui;
         mySleepVote = data.my_sleep_vote;
         myLynchVote = data.my_lynch_vote;
         currentLynchTargetName = data.lynch_target_name || "Unknown";
 
+        if (myNightTargetId === null) {
+          lastSeerResult = null;
+        }
         if (data.total_accusation_duration) {
           totalAccusationDuration = data.total_accusation_duration;
         }
@@ -1181,9 +1176,9 @@
       });
 
       socket.on("night_result_kill", (data) => {
-        const { username, role, id } = data.killed_player;
+        const { name, role, id } = data.killed_player;
         logMessage(
-          `🫀 Remnants of a body were found! <strong>${username}</strong> was killed. They were a <strong>${role}</strong> ⚰️`,
+          `🫀 Remnants of a body were found! <strong>${name}</strong> was killed. They were a <strong>${role}</strong> ⚰️`,
         );
         if (myPlayerId === id) {
           isAlive = false;
@@ -1192,8 +1187,9 @@
       });
 
       socket.on("seer_result", (data) => {
-        const msg = `Your vision reveals that <strong>${data.username}</strong> is <strong>${data.role}</strong>.`;
+        const msg = `Your vision reveals that <strong>${data.name}</strong> is <strong>${data.role}</strong>.`;
         logMessage(msg);
+        lastSeerResult = msg;
         actionArea.innerHTML = `<p>${msg}</p>`;
       });
 
@@ -1201,7 +1197,7 @@
         logMessage("🌞 The sun rises, and no one was killed."),
       );
 
-      socket.on("wolf_team_info", (data) => {
+      socket.on("werewolf_team_info", (data) => {
         if (data.teammates.length > 0) {
           logMessage(
             `You are a Werewolf. Your fellow Werewolves are: <strong>${data.teammates.join(
@@ -1242,8 +1238,7 @@
         allPlayers.forEach((p) => {
           const li = document.createElement("li");
           const nameSpan = document.createElement("span");
-          nameSpan.textContent =
-            p.username + (p.id === myPlayerId ? " (You)" : "");
+          nameSpan.textContent = p.name + (p.id === myPlayerId ? " (You)" : "");
           li.appendChild(nameSpan);
           const count = accusationCounts[p.id] || 0;
           if (count > 0) {
@@ -1266,7 +1261,7 @@
         );
         if (
           myPlayerId &&
-          allPlayers.find((p) => p.id === myPlayerId)?.username ===
+          allPlayers.find((p) => p.id === myPlayerId)?.name ===
             data.accuser_name
         ) {
           const accuseBtn = document.getElementById("accuse-btn");

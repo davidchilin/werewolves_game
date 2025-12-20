@@ -1,4 +1,4 @@
-<!-- Version: 4.4.7 -->
+<!-- Version: 4.4.8 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -403,7 +403,7 @@
         }
         data.players.forEach((player) => {
           const li = document.createElement("li");
-          li.textContent = player.username;
+          li.textContent = player.name;
           if (player.id === currentPlayerId) {
             li.classList.add("you");
             li.textContent += " (You)";

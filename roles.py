@@ -1,6 +1,6 @@
 """
 roles.py
-Version: 4.4.7
+Version: 4.4.9
 Defines the behavior of all roles using a generic base class and specific subclasses.
 """
 import random
@@ -42,14 +42,14 @@ class Role:
         """Called at the very start of the night phase."""
         pass
 
-    def get_valid_targets(self, player_obj, game_context):
+    def get_valid_targets(self, game_context):
         """Returns a list of valid player IDs this role can target."""
         return [p for p in game_context["players"] if p.is_alive]
 
     @property
     def night_prompt(self) -> str:
         """The text displayed to the user during the night."""
-        return "Select a target:"
+        return "Dim didi dum :)"
 
     def night_action(self, player_obj, target_player_obj, game_context):
         """
@@ -64,7 +64,11 @@ class Role:
         Types: 'info', 'single_target', 'multi_target', 'menu'
         """
         # Default behavior: Just show a message (Villager style)
-        return {"type": "info", "message": self.night_prompt}
+        return {
+            "type": "info",
+            "pre": f"<h4>{self.night_prompt}</h4>",
+            "post": "<p>You are sleeping...</p>",
+        }
 
     def passive_effect(self, player_obj):
         """Logic for constant effects (e.g., Tough Werewolf extra life)."""
@@ -122,10 +126,17 @@ class Villager(Role):
         ]
         return random.choice(prompts)
 
-    # todo: possibly not needed, as same as parent version.
-    def night_action(self, player_obj, target_player_obj, game_context):
-        # Dummy action: Do nothing, return empty
-        return {}
+    def get_night_ui_schema(self, player_obj, game_context):
+        return {
+            "type": "single_target",
+            "pre": f'<p>You are dreaming of yummy pupusas while the night creatures are stirring ... </p><h4>{self.night_prompt}</h4><select id="action-select"></select> <button id="action-btn">Select</button>',
+            "post": '<p>You made an interesting choice, picking <span style="color: #ff0000">${playerPicked}</span>. Waiting...</p>',
+            "targets": [
+                {"id": p.id, "name": p.name}
+                for p in self.get_valid_targets(game_context)
+            ],
+            "can_skip": True,
+        }
 
 
 @register_role
@@ -141,6 +152,18 @@ class Werewolf(Role):
     def night_action(self, player_obj, target_player_obj, game_context):
         # The engine will aggregate Werewolf votes, but the action is simply voting a target
         return {"action": "kill_vote", "target": target_player_obj.id}
+
+    def get_night_ui_schema(self, player_obj, game_context):
+        return {
+            "type": "single_target",
+            "pre": '<h4>Werewolf, who will you eat?</h4><select id="action-select"></select> <button id="action-btn">Kill</button>',
+            "post": '<p>You are hungry for <span style="color: #ff0000">${playerPicked}</span>. Waiting...</p>',
+            "targets": [
+                {"id": p.id, "name": p.name}
+                for p in self.get_valid_targets(game_context)
+            ],
+            "can_skip": True,
+        }
 
 
 @register_role
@@ -171,6 +194,18 @@ class Seer(Role):
             "result": result,
         }
 
+    def get_night_ui_schema(self, player_obj, game_context):
+        return {
+            "type": "single_target",
+            "pre": '<h4>Seer, whose role will you see?</h4><select id="action-select"></select> <button id="action-btn">Investigate</button>',
+            "post": '<p>You saw <span style="color: #ff0000">${playerPicked}</span>\'s role. Waiting ...</p>',
+            "targets": [
+                {"id": p.id, "name": p.name}
+                for p in self.get_valid_targets(game_context)
+            ],
+            "can_skip": True,
+        }
+
 
 @register_role
 class Bodyguard(Role):
@@ -192,12 +227,24 @@ class Bodyguard(Role):
         print(f"Bodyguard protecting {target_player_obj.name}")
         return {}
 
-    def get_valid_targets(self, player_obj, game_context):
+    def get_valid_targets(self, game_context):
         """Returns a list of valid player IDs excluding last portected"""
         all_living = [p for p in game_context["players"] if p.is_alive]
         if self.last_protected_id:
             return [p for p in all_living if p.id != self.last_protected_id]
         return all_living
+
+    def get_night_ui_schema(self, player_obj, game_context):
+        return {
+            "type": "single_target",
+            "pre": '<h4>Bodyguard, who will you protect?</h4><select id="action-select"></select> <button id="action-btn">Protect</button>',
+            "post": '<p>Sending protection orders for <span style="color: #ff0000">${playerPicked}</span>. Waiting ...</p>',
+            "targets": [
+                {"id": p.id, "name": p.name}
+                for p in self.get_valid_targets(game_context)
+            ],
+            "can_skip": True,
+        }
 
 
 # roles.py (Additions)
@@ -212,23 +259,52 @@ class Cupid(Role):
         self.priority = 1  # Very early, before wolves
         self.is_night_active = True
 
-    def get_valid_targets(self, player_obj, game_context):
-        """Returns a list of valid player IDs excluding self"""
-        return [p for p in game_context["players"] if p.is_alive and p != self]
-
     def night_action(self, player_obj, target_player_obj, game_context):
-        if self.is_night_active:
-            self.is_night_active = False
+        self.is_night_active = False
 
         # Validation: Cannot pick self
         if target_player_obj.id == player_obj.id:
             return {}
 
-        player_obj.status_effects.append("lover")
+        # 1. Get Potion Type from Metadata (provided by Engine)
+        metadata = game_context.get("current_action_metadata", {})
+        target_player_id2 = metadata.get("target_id2")
+
+        if not target_player_id2:
+            print("Cupid Error: Second target not found.")
+            return {}
+
+        target_player_obj2 = next(
+            (p for p in game_context["players"] if p.id == target_player_id2), None
+        )
+
+        if not target_player_obj2:
+            print("Cupid Error: Second target not found.")
+            return {}
+
         target_player_obj.status_effects.append("lover")
-        print(f"Cupid {player_obj.name} linked with {target_player_obj.name}")
+        target_player_obj2.status_effects.append("lover")
+        target_player_obj.linked_partner_id = target_player_obj2.id
+        target_player_obj2.linked_partner_id = target_player_obj.id
+
+        print(f"Cupid {target_player_obj.name} linked with {target_player_obj2.name}")
 
         return {}
+
+    def get_night_ui_schema(self, player_obj, game_context):
+        if not self.is_night_active:
+            return {"type": "info", "pre": "<p>You have already chosen lovers.</p>"}
+
+        return {
+            "type": "two_target",
+            "pre": '<h4>Select the lovers:</h4><p class="role-desc">The selected players are fatally in love. If one dies, the other dies of heartache.</p><select id="action-select"></select><select id="action-select-2"></select><button id="action-btn">Shoot Arrow</button>',
+            "post": '<p>Love is in the air... <span style="color: #ff0000">${playerPicked} & ${playerPicked2}</span>.</p>',
+            "targets": [
+                {"id": p.id, "name": p.name}
+                for p in self.get_valid_targets(game_context)
+            ],
+            "can_skip": False,
+        }
 
 
 @register_role
@@ -276,6 +352,30 @@ class Witch(Role):
 
         return {}
 
+    def get_night_ui_schema(self, player_obj, game_context):
+        if not self.has_heal_potion and not self.has_kill_potion:
+            return {"type": "info", "pre": "<p>You have used all your potions!</p>"}
+
+        # Format potions as {id, name} so populateSelect works
+        potions = []
+        if self.has_heal_potion:
+            potions.append({"id": "heal", "name": "Heal Potion"})
+        if self.has_kill_potion:
+            potions.append({"id": "poison", "name": "Poison Potion"})
+        potions.append({"id": "none", "name": "Do Nothing"})
+
+        return {
+            "type": "two_target",
+            "pre": '<h4>Witch, who will consume a potion?</h4><select id="action-select"></select> <select id="action-select-2"></select><button id="action-btn">Feed Potion</button>',
+            "post": '<p><span style="color: #ff0000">${playerPicked}</span> consumed ${playerPicked2}</p>',
+            "targets": [
+                {"id": p.id, "name": p.name}
+                for p in self.get_valid_targets(game_context)
+            ],
+            "potions": potions,
+            "can_skip": True,
+        }
+
 
 @register_role
 class Monster(Role):
@@ -293,9 +393,6 @@ class Monster(Role):
     def night_prompt(self):
         return "Who is a finger licker?"
 
-    def night_action(self, player_obj, target_player_obj, game_context):
-        return {}  # Dummy action
-
 
 @register_role
 class AlphaWerewolf(Werewolf):  # Inherits from Werewolf!
@@ -306,6 +403,6 @@ class AlphaWerewolf(Werewolf):  # Inherits from Werewolf!
     def check_win_condition(self, player_obj, game_context):
         # Wins if is the ONLY one left alive
         living_players = [p for p in game_context["players"] if p.is_alive]
-        if len(living_players) == 1 and living_players[0].id == player_obj.id:
+        if len(living_players) == 1 and player_obj.is_alive:
             return True
         return False
