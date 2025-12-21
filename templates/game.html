@@ -1,4 +1,4 @@
-<!-- Version: 4.4.8 -->
+<!-- Version: 4.4.9 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -1176,10 +1176,27 @@
       });
 
       socket.on("night_result_kill", (data) => {
-        const { name, role, id } = data.killed_player;
-        logMessage(
-          `🫀 Remnants of a body were found! <strong>${name}</strong> was killed. They were a <strong>${role}</strong> ⚰️`,
-        );
+        const { username, role, id, reason } = data.killed_player;
+        const displayName = username || "Unknown";
+
+        let msg = "";
+
+        // 1. Witch Poison Message
+        if (reason === "Witch Potion") {
+          msg = `☣️ A dissolving body was found! ☠ <strong>${displayName}</strong> was killed. They were a <strong>${role}</strong> ⚰️`;
+        }
+        // 2. Lovers Pact Message
+        else if (reason === "Love Pact") {
+          msg = `💕 <strong>${displayName}</strong> was found dead! 😈 They were a <strong>${role}</strong> ⚰️`;
+        }
+        // 3. Default / Werewolf Message
+        else {
+          msg = `🫀 Remnants of a body were found! <strong>${displayName}</strong> was killed. 🐾 They were a <strong>${role}</strong> ⚰️`;
+        }
+
+        logMessage(msg);
+
+        // Update local state if I am the one who died
         if (myPlayerId === id) {
           isAlive = false;
           setChatMode(data.admin_only_chat, data.phase);

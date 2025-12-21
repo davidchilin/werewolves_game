@@ -1,6 +1,6 @@
 """
 app.py
-Version: 4.4.8
+Version: 4.4.9
 """
 import logging
 import os
@@ -21,8 +21,8 @@ from flask import (
 from flask_socketio import SocketIO, emit, join_room
 
 from config import *
-from game_engine import Game
-from roles import AVAILABLE_ROLES
+from game_engine import *
+from roles import *
 
 # --- App Initialization ---
 load_dotenv(find_dotenv(filename=".env.werewolves"))
@@ -433,6 +433,7 @@ def handle_connect(auth=None):
             f">>>> Game Phase: {game['game_state']}. Syncing state for {player.name}."
         )
         broadcast_game_state()
+        send_werewolf_info(player_id)
 
 
 @socketio.on("disconnect")
@@ -866,16 +867,19 @@ def resolve_night():
     deaths = game_instance.resolve_night_deaths()
 
     for pid, p in game_instance.players.items():
-        if p.linked_partner_id and p.is_alive:
+        if p.linked_partner_id:
             partner = game_instance.players.get(p.linked_partner_id)
             if partner:
                 # Send private message to this specific socket
                 player_socket = game["players"].get(pid)
                 if player_socket and player_socket.sid:
+                    status_msg = ""
+                    if not p.is_alive:
+                        status_msg = "You died, but you should know... "
                     socketio.emit(
                         "message",
                         {
-                            "text": f"💘 You are in love with <strong>{partner.name}</strong>! If one dies, you both die.",
+                            "text": f"{status_msg}💘 You are in love with <strong>{partner.name}</strong>! If one dies, you both die.",
                             "channel": "living",
                         },
                         to=player_socket.sid,
@@ -883,22 +887,20 @@ def resolve_night():
 
     # 2. Notify Clients
     if deaths:
-        for pid in deaths:
-            p = game_instance.players[pid]
+        for death_record in deaths:
             socketio.emit(
                 "night_result_kill",
                 {
-                    "killed_player": {
-                        "id": p.id,
-                        "name": p.name,
-                        "role": p.role.name_key,
-                    }
+                    "killed_player": death_record,
+                    "admin_only_chat": game_instance.admin_only_chat,
+                    "phase": game_instance.phase,
                 },
                 to=game["game_code"],
             )
     else:
         socketio.emit("night_result_no_kill", {}, to=game["game_code"])
 
+    socketio.sleep(2)  # Short pause for effect
     check_game_over_or_next_phase()
 
 

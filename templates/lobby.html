@@ -1,4 +1,4 @@
-<!-- Version: 4.4.8 -->
+<!-- Version: 4.4.9 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -289,8 +289,8 @@
             checkbox.name = "selected_roles";
             checkbox.value = role.name_key; // e.g. "role_werewolf"
 
-            const defaults = [ROLE_VILLAGER, ROLE_WEREWOLF, ROLE_SEER];
-            if (defaults.includes(role.name_key)) {
+            const defaultRoles = [ROLE_VILLAGER, ROLE_WEREWOLF, ROLE_SEER];
+            if (defaultRoles.includes(role.name_key)) {
               checkbox.checked = true;
             }
 

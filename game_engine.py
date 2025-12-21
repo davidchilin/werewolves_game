@@ -1,14 +1,21 @@
 """
 game_engine.py
-# Version: 4.4.8
+# Version: 4.4.9
 Manages the game flow, player states, complex role interactions, and phase transitions.
 """
 import random
 import time
-from config import *
+from config import GAME_DEFAULTS
 from collections import Counter
-from roles import AVAILABLE_ROLES
+from roles import *
 from threading import RLock
+
+# --- Phases ---
+PHASE_LOBBY = "Lobby"
+PHASE_NIGHT = "Night"
+PHASE_ACCUSATION = "Accusation"
+PHASE_LYNCH = "Lynch_Vote"
+PHASE_GAME_OVER = "Game_Over"
 
 
 class Player:
@@ -18,11 +25,11 @@ class Player:
         self.name = name
         self.role = None  # Will be an instance of a Role class
         self.is_alive = True
-        self.status_effects = []  # e.g., ['protected', 'poisoned', 'lover']
+        self.status_effects = []  # e.g., ['protected', 'poisoned']
         self.linked_partner_id = None  # For Cupid's lovers
 
     def reset_night_status(self):
-        PERSISTENT_EFFECTS = ["lover", "poisoned", "immune_to_wolf"]
+        PERSISTENT_EFFECTS = ["poisoned", "immune_to_wolf"]
         self.status_effects = [
             s for s in self.status_effects if s in PERSISTENT_EFFECTS
         ]
@@ -93,7 +100,7 @@ class Game:
         """
         print("Starting role assignment process...")
 
-        # 1. Build Map: 'role_werewolf' -> RoleWerewolf Class
+        # 1. Build Map: 'werewolf' -> RoleWerewolf Class
         key_to_class_map = {}
         for role_name, role_cls in AVAILABLE_ROLES.items():
             temp_obj = role_cls()
@@ -106,9 +113,9 @@ class Game:
 
         # 3. Calculate Counts (The Math)
         # temp wolf 4-6, 7-8, 9-11, 12-16, x.25
-        if 4 <= num_players <= 4:
+        if 4 <= num_players <= 6:
             num_wolves = 1
-        elif 5 <= num_players <= 8:
+        elif 7 <= num_players <= 8:
             num_wolves = 2
         elif 9 <= num_players <= 11:
             num_wolves = 3
@@ -121,15 +128,20 @@ class Game:
 
         # 4. Construct the Master Role List
         final_roles_list = []
-        base_roles = [ROLE_WEREWOLF, ROLE_SEER, ROLE_VILLAGER]
+        special_werewolves_added = 0
 
         for r_key in selected_role_keys:
-            if r_key not in base_roles:
+            if r_key not in GAME_DEFAULTS["DEFAULT_ROLES"]:
                 final_roles_list.append(r_key)
 
-        # Add Wolves
+                if r_key == ROLE_ALPHA_WEREWOLF:
+                    special_werewolves_added += 1
+
+        # Add Regular Werewolves (total - variants)
         if not selected_role_keys or ROLE_WEREWOLF in selected_role_keys:
-            for _ in range(num_wolves):
+            # Reduce regular wolves by the number of special wolves added
+            remaining_wolves_needed = max(0, num_wolves - special_werewolves_added)
+            for _ in range(remaining_wolves_needed):
                 final_roles_list.append(ROLE_WEREWOLF)
 
         # Add Seer
@@ -148,7 +160,7 @@ class Game:
             )
             final_roles_list = final_roles_list[:num_players]
 
-        # Shuffle roles to ensure randomness (since players are already shuffled, this is double safety)
+        # 2nd Shuffle of roles to ensure randomnes
         random.shuffle(final_roles_list)
 
         print(f"Final List of Role Keys to Assign: {final_roles_list}")
@@ -166,7 +178,7 @@ class Game:
             self.players[pid].role = role_class()
             self.players[pid].role.on_assign(self.players[pid])
 
-            print(f"Assigned {role_class.__name__} to Player")
+            print(f"Assigned {role_class.__name__} to {self.players[pid].name}")
 
         print(f"Roles assigned for Game {self.game_id} (Mode: {self.mode})")
 
@@ -313,7 +325,7 @@ class Game:
         active_players.sort(key=lambda p: p.role.priority)
 
         werewolf_votes = []
-        kill_list = set()
+        pending_deaths = []
 
         # 3. Iterate and Execute
         # We pass a 'context' dict so roles can see the state of the game
@@ -351,18 +363,12 @@ class Game:
             # 4. Handle Results
             if result:
                 # Need to resolve the target player object from ID
-                result_target_id = result.get("target")  # same as target_player_obj.id
                 action_type = result.get("action")
                 effect = result.get("effect")
 
-                if result_target_id and effect:
-                    # Resolve the target ID from the result to an object
-                    t_obj = self.players.get(
-                        result_target_id
-                    )  # same as target_player_obj
-                    if t_obj:
-                        print(f"Effect Applied: {effect} on {t_obj.name}")
-                        t_obj.status_effects.append(effect)
+                if target_player_obj.id and effect:
+                    print(f"Effect Applied: {effect} on {target_player_obj.name}")
+                    target_player_obj.status_effects.append(effect)
 
                 self.night_log.append(
                     {
@@ -373,11 +379,13 @@ class Game:
 
                 if "poisoned" in target_player_obj.status_effects:
                     print(f"{target_player_obj.name} poisoned!")
-                    kill_list.add(target_player_obj.id)
+                    pending_deaths.append(
+                        {"target_id": target_player_obj.id, "reason": "Witch poison"}
+                    )
 
                 # Handle Kill Votes (Werewolves)
                 if action_type == "kill_vote":
-                    werewolf_votes.append(result_target_id)
+                    werewolf_votes.append(target_player_obj.id)
 
         # 4. Resolve Werewolf Votes
         # Unanimous vote kills, else no kill
@@ -400,34 +408,40 @@ class Game:
                 elif "immune_to_wolf" in victim.status_effects:
                     print(f"Attack on {target_name} failed (Immune)!")
                 else:
-                    kill_list.add(target_id)
-
+                    pending_deaths.append(
+                        {"target_id": target_id, "reason": "Werewolf meat"}
+                    )
         # 5. Process Deaths & Lovers Pact
 
-        dead_set = set()
+        dead_ids_set = set()
+        final_deaths = []
 
-        def kill_recursive(pid):
+        def kill_recursive(pid, reason):
             # target.is_alive=False, execute death hook, kill lover
-            dead_set.add(pid)
+            dead_ids_set.add(pid)
             p = self.players[pid]
             p.is_alive = False
-            print(f"DIED: {p.name}")
+            print(f"DIED: {p.name}, Reason: {reason}")
+
+            final_deaths.append(
+                {"id": p.id, "name": p.name, "role": p.role.name_key, "reason": reason}
+            )
 
             # Trigger Death Hook
             if p.role:
                 p.role.on_death(p, {"players": list(self.players.values())})
 
             # Check Lovers
-            if "lover" in p.status_effects:
-                for other in self.players.values():
-                    if other.is_alive and "lover" in other.status_effects:
-                        print(f"Lovers Pact: {other.name} dies of broken heart.")
-                        kill_recursive(other.id)
+            if p.linked_partner_id:
+                partner = self.players[p.linked_partner_id]
+                if partner and partner.is_alive:
+                    print(f"Lovers Pact: {partner.name} dies of broken heart.")
+                    kill_recursive(partner.id, "Love Pact")
 
-        for pid in kill_list:
-            kill_recursive(pid)
+        for death in pending_deaths:
+            kill_recursive(death["target_id"], death["reason"])
 
-        return list(dead_set)
+        return final_deaths
 
     # --- DAY LOGIC (Accusations & Voting) ---
 
@@ -534,12 +548,12 @@ class Game:
                 if p.role:
                     p.role.on_death(p, {"players": list(self.players.values())})
 
-                # Check for Lovers
-                if "lover" in p.status_effects:
-                    for other in self.players.values():
-                        if other.is_alive and "lover" in other.status_effects:
-                            print(f"Lovers Pact: {other.name} dies of broken heart.")
-                            kill_recursive(other.id)
+                # Check Lovers
+                if p.linked_partner_id:
+                    partner = self.players[p.linked_partner_id]
+                    if partner and partner.is_alive:
+                        print(f"Lovers Pact: {partner.name} dies of broken heart.")
+                        kill_recursive(partner.id)
 
             # Start the chain reaction
             kill_recursive(self.lynch_target_id)

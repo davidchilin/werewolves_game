@@ -1,6 +1,6 @@
 """
 config.py
-Version: 4.4.8
+Version: 4.4.9
 Central location for all game defaults and timer settings.
 """
 
@@ -14,22 +14,5 @@ GAME_DEFAULTS = {
     "MIN_PLAYERS": 4,
     "DEFAULT_LANGUAGE": "en",
     "ENABLE_PASS_AND_PLAY": False,
+    "DEFAULT_ROLES": ["Villager", "Werewolf", "Seer"],
 }
-
-# --- Phases ---
-PHASE_LOBBY = "Lobby"
-PHASE_NIGHT = "Night"
-PHASE_ACCUSATION = "Accusation"
-PHASE_LYNCH = "Lynch_Vote"
-PHASE_GAME_OVER = "Game_Over"
-
-# --- Roles ---
-# Simplified keys as requested
-ROLE_WEREWOLF = "Werewolf"
-ROLE_SEER = "Seer"
-ROLE_VILLAGER = "Villager"
-ROLE_BODYGUARD = "Bodyguard"
-ROLE_WITCH = "Witch"
-ROLE_CUPID = "Cupid"
-ROLE_MONSTER = "Monster"
-ROLE_ALPHA_WEREWOLF = "Alpha_Werewolf"

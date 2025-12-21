@@ -6,6 +6,18 @@ Defines the behavior of all roles using a generic base class and specific subcla
 import random
 from config import *
 
+# --- Roles ---
+# Simplified keys, add manually to lobby.html
+ROLE_WEREWOLF = "Werewolf"
+ROLE_SEER = "Seer"
+ROLE_VILLAGER = "Villager"
+ROLE_BODYGUARD = "Bodyguard"
+ROLE_WITCH = "Witch"
+ROLE_CUPID = "Cupid"
+ROLE_MONSTER = "Monster"
+ROLE_ALPHA_WEREWOLF = "Alpha_Werewolf"
+
+
 # 1. Global Registry to keep track of all available roles
 AVAILABLE_ROLES = {}
 
@@ -47,9 +59,16 @@ class Role:
         return [p for p in game_context["players"] if p.is_alive]
 
     @property
-    def night_prompt(self) -> str:
-        """The text displayed to the user during the night."""
-        return "Dim didi dum :)"
+    def night_prompt(self):
+        prompts = [
+            "Who has the cutest smile?",
+            "Who would die first in a zombie apocalypse?",
+            "Who is the most lightweight drinker?",
+            "Who looks the most suspicious right now?",
+            "Who is a finger licker?",
+            "Dim didi dum :)",
+        ]
+        return random.choice(prompts)
 
     def night_action(self, player_obj, target_player_obj, game_context):
         """
@@ -59,20 +78,16 @@ class Role:
         return {}
 
     def get_night_ui_schema(self, player_obj, game_context):
-        """
-        Returns a dict defining the UI interaction.
-        Types: 'info', 'single_target', 'multi_target', 'menu'
-        """
-        # Default behavior: Just show a message (Villager style)
         return {
-            "type": "info",
-            "pre": f"<h4>{self.night_prompt}</h4>",
-            "post": "<p>You are sleeping...</p>",
+            "type": "single_target",
+            "pre": f'<p>You are dreaming of yummy pupusas while the night creatures are stirring ... </p><h4>{self.night_prompt}</h4><select id="action-select"></select> <button id="action-btn">Select</button>',
+            "post": '<p>You made an interesting choice, picking <span style="color: #ff0000">${playerPicked}</span>. Waiting...</p>',
+            "targets": [
+                {"id": p.id, "name": p.name}
+                for p in self.get_valid_targets(game_context)
+            ],
+            "can_skip": True,
         }
-
-    def passive_effect(self, player_obj):
-        """Logic for constant effects (e.g., Tough Werewolf extra life)."""
-        return {}
 
     def check_win_condition(self, player_obj, game_context) -> bool:
         """
@@ -114,29 +129,6 @@ class Villager(Role):
         self.description_key = "desc_villager"
         self.team = "villager"
         self.is_night_active = False
-
-    @property
-    def night_prompt(self):
-        prompts = [
-            "Who has the cutest smile?",
-            "Who would die first in a zombie apocalypse?",
-            "Who is the most lightweight drinker?",
-            "Who looks the most suspicious right now?",
-            "Who is a finger licker?",
-        ]
-        return random.choice(prompts)
-
-    def get_night_ui_schema(self, player_obj, game_context):
-        return {
-            "type": "single_target",
-            "pre": f'<p>You are dreaming of yummy pupusas while the night creatures are stirring ... </p><h4>{self.night_prompt}</h4><select id="action-select"></select> <button id="action-btn">Select</button>',
-            "post": '<p>You made an interesting choice, picking <span style="color: #ff0000">${playerPicked}</span>. Waiting...</p>',
-            "targets": [
-                {"id": p.id, "name": p.name}
-                for p in self.get_valid_targets(game_context)
-            ],
-            "can_skip": True,
-        }
 
 
 @register_role
@@ -222,10 +214,13 @@ class Bodyguard(Role):
         if target_player_obj.id == self.last_protected_id:
             return {}
 
-        target_player_obj.status_effects.append("protected")
         self.last_protected_id = target_player_obj.id
         print(f"Bodyguard protecting {target_player_obj.name}")
-        return {}
+        return {
+            "action": "protect",
+            "effect": "protected",
+            "target": target_player_obj.id,
+        }
 
     def get_valid_targets(self, game_context):
         """Returns a list of valid player IDs excluding last portected"""
@@ -262,34 +257,35 @@ class Cupid(Role):
     def night_action(self, player_obj, target_player_obj, game_context):
         self.is_night_active = False
 
+        print("Cupid Night Actions Called ==================>")
         # Validation: Cannot pick self
         if target_player_obj.id == player_obj.id:
             return {}
 
-        # 1. Get Potion Type from Metadata (provided by Engine)
+        # 1. Get second lover from Metadata (provided by Engine)
         metadata = game_context.get("current_action_metadata", {})
         target_player_id2 = metadata.get("target_id2")
-
         if not target_player_id2:
-            print("Cupid Error: Second target not found.")
+            print("Cupid Error: Second target not found in metadata.")
             return {}
 
         target_player_obj2 = next(
             (p for p in game_context["players"] if p.id == target_player_id2), None
         )
-
         if not target_player_obj2:
             print("Cupid Error: Second target not found.")
             return {}
 
-        target_player_obj.status_effects.append("lover")
-        target_player_obj2.status_effects.append("lover")
         target_player_obj.linked_partner_id = target_player_obj2.id
         target_player_obj2.linked_partner_id = target_player_obj.id
 
         print(f"Cupid {target_player_obj.name} linked with {target_player_obj2.name}")
 
-        return {}
+        return {
+            "action": "Link Lovers",
+            "target": target_player_obj.id,
+            "partner": target_player_obj2,
+        }
 
     def get_night_ui_schema(self, player_obj, game_context):
         if not self.is_night_active:
@@ -333,7 +329,6 @@ class Witch(Role):
         # 2. Process Heal
         if potion == "heal" and self.has_heal_potion:
             self.has_heal_potion = False
-            target_player_obj.status_effects.append("healed")
             return {
                 "action": "witch_magic",
                 "target": target_player_obj.id if target_player_obj else None,
@@ -343,10 +338,9 @@ class Witch(Role):
         # 3. Process Kill
         elif potion == "poison" and self.has_kill_potion:
             self.has_kill_potion = False
-            target_player_obj.status_effects.append("poisoned")
             return {
                 "action": "witch_magic",
-                "target": target_player_obj.id,
+                "target": target_player_obj.id if target_player_obj else None,
                 "effect": "poisoned",
             }
 
@@ -388,10 +382,6 @@ class Monster(Role):
     def on_assign(self, player_obj):
         # This is checked by the Engine when calculating deaths
         player_obj.status_effects.append("immune_to_wolf")
-
-    @property
-    def night_prompt(self):
-        return "Who is a finger licker?"
 
 
 @register_role
