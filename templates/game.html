@@ -729,7 +729,7 @@
             // 2nd dropdown
             if (uiData.potions) {
               populateSelect("action-select-2", uiData.potions, false, false);
-            } else if (myRole === "Cupid") {
+            } else if (document.getElementById("action-select-2")) {
               populateSelect(
                 "action-select-2",
                 uiData.targets,
@@ -1176,8 +1176,8 @@
       });
 
       socket.on("night_result_kill", (data) => {
-        const { username, role, id, reason } = data.killed_player;
-        const displayName = username || "Unknown";
+        const { name, role, id, reason } = data.killed_player;
+        const displayName = name || "Unknown";
 
         let msg = "";
 

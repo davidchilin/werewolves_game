@@ -185,7 +185,7 @@ def broadcast_game_state():
 
         valid_targets = []
         if engine_p and engine_p.role:
-            # Use the Role's internal logic (which excludes last protected)
+            # Use the Role's internal logic
             targets = engine_p.role.get_valid_targets(
                 {"players": list(game_instance.players.values())}
             )
@@ -644,7 +644,9 @@ def resolve_lynch():
 
     # 2. Notify
     msg = "No one was lynched."
-    if result["killed_id"]:
+    if result.get("armor_save"):
+        msg = "⚖️ The village voted to lynch, but... <strong>strangely, nobody dies.</strong>"
+    elif result["killed_id"]:
         name = game_instance.players[result["killed_id"]].name
         role = game_instance.players[result["killed_id"]].role.name_key
         msg = f"⚖️ <strong>{name}</strong> was lynched! Role: {role} ⚰️"
@@ -884,20 +886,29 @@ def resolve_night():
                         },
                         to=player_socket.sid,
                     )
-
+    # since deaths may also contain "armor_save"
+    actual_death = False
     # 2. Notify Clients
     if deaths:
         for death_record in deaths:
-            socketio.emit(
-                "night_result_kill",
-                {
-                    "killed_player": death_record,
-                    "admin_only_chat": game_instance.admin_only_chat,
-                    "phase": game_instance.phase,
-                },
-                to=game["game_code"],
-            )
-    else:
+            if death_record.get("type") == "armor_save":
+                socketio.emit(
+                    "log_message",
+                    {"text": "<strong>Strangely, nobody dies...</strong>"},
+                    to=game["game_code"],
+                )
+            elif death_record.get("type", "death") == "death":
+                actual_death = True
+                socketio.emit(
+                    "night_result_kill",
+                    {
+                        "killed_player": death_record,
+                        "admin_only_chat": game_instance.admin_only_chat,
+                        "phase": game_instance.phase,
+                    },
+                    to=game["game_code"],
+                )
+    if not actual_death:
         socketio.emit("night_result_no_kill", {}, to=game["game_code"])
 
     socketio.sleep(2)  # Short pause for effect

@@ -27,9 +27,10 @@ class Player:
         self.is_alive = True
         self.status_effects = []  # e.g., ['protected', 'poisoned']
         self.linked_partner_id = None  # For Cupid's lovers
+        self.visiting_id = None  # for prostitue
 
     def reset_night_status(self):
-        PERSISTENT_EFFECTS = ["poisoned", "immune_to_wolf"]
+        PERSISTENT_EFFECTS = ["poisoned", "immune_to_wolf", "2nd_life"]
         self.status_effects = [
             s for s in self.status_effects if s in PERSISTENT_EFFECTS
         ]
@@ -113,9 +114,9 @@ class Game:
 
         # 3. Calculate Counts (The Math)
         # temp wolf 4-6, 7-8, 9-11, 12-16, x.25
-        if 4 <= num_players <= 6:
+        if 4 <= num_players <= 4:
             num_wolves = 1
-        elif 7 <= num_players <= 8:
+        elif 5 <= num_players <= 8:
             num_wolves = 2
         elif 9 <= num_players <= 11:
             num_wolves = 3
@@ -134,10 +135,10 @@ class Game:
             if r_key not in GAME_DEFAULTS["DEFAULT_ROLES"]:
                 final_roles_list.append(r_key)
 
-                if r_key == ROLE_ALPHA_WEREWOLF:
+                if r_key in SPECIAL_WEREWOLVES:
                     special_werewolves_added += 1
 
-        # Add Regular Werewolves (total - variants)
+        # Add Regular Werewolves (total - special)
         if not selected_role_keys or ROLE_WEREWOLF in selected_role_keys:
             # Reduce regular wolves by the number of special wolves added
             remaining_wolves_needed = max(0, num_wolves - special_werewolves_added)
@@ -325,7 +326,7 @@ class Game:
         active_players.sort(key=lambda p: p.role.priority)
 
         werewolf_votes = []
-        pending_deaths = []
+        pending_deaths = []  # List of {"id": pid, "reason": str}
 
         # 3. Iterate and Execute
         # We pass a 'context' dict so roles can see the state of the game
@@ -377,6 +378,21 @@ class Game:
                     }
                 )
 
+                if action_type == "revealed_werewolf":
+                    pending_deaths.append(
+                        {
+                            "target_id": target_player_obj.id,
+                            "reason": result.get("reason", "Revealed"),
+                        }
+                    )
+                if action_type == "revealed_wrongly":
+                    pending_deaths.append(
+                        {
+                            "target_id": player.id,
+                            "reason": result.get("reason", "Revealed"),
+                        }
+                    )
+
                 if "poisoned" in target_player_obj.status_effects:
                     print(f"{target_player_obj.name} poisoned!")
                     pending_deaths.append(
@@ -418,18 +434,37 @@ class Game:
 
         def kill_recursive(pid, reason):
             # target.is_alive=False, execute death hook, kill lover
-            dead_ids_set.add(pid)
             p = self.players[pid]
+
+            if "2nd_life" in p.status_effects:
+                print(f"{p.name} used their 2nd life!")
+                p.status_effects.remove("2nd_life")
+                final_deaths.append({"id": p.id, "type": "armor_save", "name": p.name})
+                return final_deaths  # cancel death
+
+            dead_ids_set.add(pid)
             p.is_alive = False
             print(f"DIED: {p.name}, Reason: {reason}")
 
             final_deaths.append(
-                {"id": p.id, "name": p.name, "role": p.role.name_key, "reason": reason}
+                {
+                    "id": p.id,
+                    "type": "death",
+                    "name": p.name,
+                    "role": p.role.name_key,
+                    "reason": reason,
+                }
             )
 
-            # Trigger Death Hook
-            if p.role:
-                p.role.on_death(p, {"players": list(self.players.values())})
+            # Trigger Death Hook (hunter/backlash) return {"kill": target_id}
+            death_reaction = p.role.on_death(
+                p, {"players": list(self.players.values())}
+            )
+            if death_reaction and "kill" in death_reaction:
+                target_to_shoot = death_reaction["kill"]
+                if target_to_shoot and target_to_shoot not in dead_ids_set:
+                    print(f"Retaliation Shot by {p.name} on {target_to_shoot}!")
+                    kill_recursive(target_to_shoot, "Retaliation")
 
             # Check Lovers
             if p.linked_partner_id:
@@ -437,6 +472,13 @@ class Game:
                 if partner and partner.is_alive:
                     print(f"Lovers Pact: {partner.name} dies of broken heart.")
                     kill_recursive(partner.id, "Love Pact")
+
+            # Check Date with Prostitute
+            if p.visiting_id:
+                partner = self.players[p.visiting_id]
+                if partner and partner.is_alive:
+                    print(f"Date damage: {partner.name} dies too.")
+                    kill_recursive(partner.id, "Collatoral Damage")
 
         for death in pending_deaths:
             kill_recursive(death["target_id"], death["reason"])
@@ -524,6 +566,7 @@ class Game:
         result_data = {
             "summary": {"yes": [], "no": []},
             "killed_id": None,
+            "armor_save": False,
             "game_over": False,
         }
 
@@ -535,28 +578,63 @@ class Game:
         if yes > (total / 2):
             result_data["killed_id"] = self.lynch_target_id
 
-            dead_set = set()
+            dead_ids_set = set()
 
-            def kill_recursive(pid):
+            def kill_recursive(pid, reason):
                 # target.is_alive=False, execute death hook, kill lover
-                dead_set.add(pid)
                 p = self.players[pid]
-                p.is_alive = False
-                print(f"LYNCH KILL: {p.name}")
 
-                # Trigger Death Hook
-                if p.role:
-                    p.role.on_death(p, {"players": list(self.players.values())})
+                if "2nd_life" in p.status_effects:
+                    print(f"{p.name} used their 2nd life!")
+                    p.status_effects.remove("2nd_life")
+                    result_data["killed_id"] = None
+                    result_data["armor_save"] = True
+                    return  # CANCEL DEATH
+
+                dead_ids_set.add(pid)
+                p.is_alive = False
+                print(f"DIED: {p.name}, Reason: {reason}")
+
+                # Trigger Death Hook (hunter/backlash) return {"kill": target_id}
+                death_reaction = p.role.on_death(
+                    p, {"players": list(self.players.values())}
+                )
+                if death_reaction and "kill" in death_reaction:
+                    target_to_shoot = death_reaction["kill"]
+                    if target_to_shoot and target_to_shoot not in dead_ids_set:
+                        print(f"Retaliation Shot by {p.name} on {target_to_shoot}!")
+                        kill_recursive(target_to_shoot, "Retaliation")
 
                 # Check Lovers
                 if p.linked_partner_id:
                     partner = self.players[p.linked_partner_id]
                     if partner and partner.is_alive:
                         print(f"Lovers Pact: {partner.name} dies of broken heart.")
-                        kill_recursive(partner.id)
+                        kill_recursive(partner.id, "Love Pact")
+
+                # Check Prostitute
+                if p.visiting_id:
+                    partner = self.players[p.visiting_id]
+                    if partner and partner.is_alive:
+                        print(f"Date damage: {partner.name} dies too.")
+                        kill_recursive(partner.id, "Collatoral Damage")
 
             # Start the chain reaction
-            kill_recursive(self.lynch_target_id)
+            kill_recursive(self.lynch_target_id, "Lynched")
+
+            p = self.players[self.lynch_target_id]
+            # Handle Fool Win immediately
+            if p.role.name_key == "Fool":
+                self.winner = p.name
+                self.game_over_data = {
+                    "winning_team": p.name,
+                    "reason": "The Fool tricked you all!",
+                    "final_player_states": [
+                        pl.to_dict() for pl in self.players.values()
+                    ],
+                }
+                result_data["game_over"] = True
+                return result_data
 
             if self.check_game_over():
                 result_data["game_over"] = True
