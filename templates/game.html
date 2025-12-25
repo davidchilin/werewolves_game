@@ -1,5 +1,5 @@
-<!-- Version: 4.4.9 -->
-<!doctype html>
+<!-- Version: 4.5.1 -->
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -271,7 +271,6 @@
         display: none; /* Keep it hidden by default */
         flex-direction: column;
         align-items: center;
-        justify-content: center;
         position: fixed;
         top: 0;
         left: 0;
@@ -285,12 +284,31 @@
         width: 90%;
         max-width: 500px;
         padding: 20px;
-        margin: 20px 0;
+        margin: auto;
         background-color: #1e1e1e;
         border: 1px solid #bb86fc; /* Purple highlight border */
         border-radius: 12px;
         text-align: center;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        margin-top: 20px;
+        margin-bottom: 20px;
+      }
+      .game-over-log {
+        height: 150px;
+        overflow-y: auto;
+        border: 1px solid #444;
+        background: #111;
+        padding: 10px;
+        margin-top: 15px;
+        text-align: left;
+        display: flex;
+        flex-direction: column-reverse; /* Keeps newest at top/bottom depending on preference */
+        font-size: 0.9em;
+      }
+      .game-over-log div {
+        border-bottom: 1px solid #333;
+        padding-bottom: 4px;
+        margin-bottom: 4px;
       }
       #game-over-title {
         color: #bb86fc; /* Purple title */
@@ -446,7 +464,8 @@
         <ul id="final-roles-list"></ul>
         <button id="return-to-lobby-btn">Vote to Return to Lobby</button>
         <div id="rematch-vote-status"></div>
-
+        <h4>Game History</h4>
+        <div id="game-over-log" class="game-over-log"></div>
         <div id="game-over-chat-container" class="chat-container">
           <h4>Post-Game Chat</h4>
           <div id="game-over-chat-messages" class="chat-messages"></div>
@@ -804,8 +823,8 @@
               myNightMetadata.potion === "heal"
                 ? "Heal Potion"
                 : myNightMetadata.potion === "poison"
-                  ? "Poison Potion"
-                  : "Nothing";
+                ? "Poison Potion"
+                : "Nothing";
           }
           // If Cupid: metadata.target_id2
           else if (myNightMetadata && myNightMetadata.target_id2) {
@@ -978,18 +997,44 @@
 
         document.querySelector(".game-container").style.display = "none";
         gameOverScreen.style.display = "flex";
+
+        const winner = data.winning_team;
+        const titleEl = document.getElementById("game-over-title");
+
+        if (winner === "Villagers" || winner === "Werewolves") {
+          titleEl.textContent = `The ${winner} Win!`;
+        } else {
+          // Solo winner (e.g., "PlayerName Won!")
+          titleEl.textContent = `${winner} Won!`;
+        }
+
         // Populate game over data...
-        document.getElementById("game-over-title").textContent =
-          `The ${data.winning_team} Win!`;
+
         document.getElementById("game-over-reason").textContent = data.reason;
 
         const rolesList = document.getElementById("final-roles-list");
         rolesList.innerHTML = "";
         data.final_player_states.forEach((p) => {
-          rolesList.innerHTML += `<li><strong>${p.name}</strong> was a ${
-            p.role
-          } ${p.is_alive ? "" : "💀"}</li>`;
+          let isWinner = false;
+
+          // Check standard teams
+          if (winner === "Villagers" && p.team === "villager") isWinner = true;
+          else if (winner === "Werewolves" && p.team === "werewolf")
+            isWinner = true;
+          // Check solo winner (Winner name matches player name)
+          else if (winner === p.name) isWinner = true;
+
+          const trophy = isWinner ? " 🏆" : "";
+          const deadStatus = p.is_alive ? "" : " 💀";
+
+          rolesList.innerHTML += `<li><strong>${p.name}</strong>${trophy} was a ${p.role}${deadStatus}</li>`;
         });
+
+        const mainLog = document.getElementById("log-panel"); // Used correct ID from previous fix
+        const gameOverLog = document.getElementById("game-over-log");
+        if (mainLog && gameOverLog) {
+          gameOverLog.innerHTML = mainLog.innerHTML;
+        }
 
         const returnBtn = document.getElementById("return-to-lobby-btn");
 
@@ -1047,6 +1092,17 @@
         myLynchVote = data.my_lynch_vote;
         currentLynchTargetName = data.lynch_target_name || "Unknown";
 
+        const logContainer = document.getElementById("log-panel");
+
+        // Only refill if we have history and the log is currently empty (or to force sync)
+        if (data.message_history && logContainer.innerHTML.trim() === "") {
+          data.message_history.forEach((msg) => {
+            logMessage(msg);
+          });
+          // Scroll to bottom
+          logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
         if (myNightTargetId === null) {
           lastSeerResult = null;
         }
@@ -1083,7 +1139,8 @@
           gameInterface.style.display = "none";
 
           myRoleDisplay.textContent =
-            (myRole || "Unknown") + (isAdmin ? " 👑" : "");
+            (myRole === "Random_Seer" ? "Seer" : myRole) +
+            (isAdmin ? " 👑" : "");
           if (data.phase)
             phaseDisplay.textContent = data.phase.replace(/_/g, " ");
 
@@ -1188,6 +1245,14 @@
         // 2. Lovers Pact Message
         else if (reason === "Love Pact") {
           msg = `💕 <strong>${displayName}</strong> was found dead! 😈 They were a <strong>${role}</strong> ⚰️`;
+        } else if (reason === "Retaliation") {
+          msg = `☠ <strong>${displayName}</strong> fucked with the wrong person! They were a <strong>${role}</strong> ⚰️`;
+        } else if (reason === "revealed_werewolf") {
+          msg = `☠ <strong>${displayName}</strong> was revealed to be a
+                     <strong>${role}</strong> and strung up! ⚰️`;
+        } else if (reason === "revealed_wrongly") {
+          msg = `☠ <strong>${role} ${displayName}</strong> revealed an innocent
+              <strong>Villager</strong> and died of embarrassment! ⚰️`;
         }
         // 3. Default / Werewolf Message
         else {

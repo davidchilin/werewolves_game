@@ -1,6 +1,6 @@
 """
 roles.py
-Version: 4.4.9
+Version: 4.5.1
 Defines the behavior of all roles using a generic base class and specific subclasses.
 """
 import random
@@ -94,7 +94,7 @@ class Role:
     def get_night_ui_schema(self, player_obj, game_context):
         return {
             "pre": f'<h4>{self.night_prompt}</h4><select id="action-select"></select> <button id="action-btn">Select</button>',
-            "post": '<p>You made an interesting choice, picking <span style="color: springgreen">${playerPicked}</span>. <p>You are now dreaming of yummy pupusas while the night creatures are stirring ... Waiting...</p>',
+            "post": '<p>You made an interesting choice, picking <span style="color: springgreen">${playerPicked}</span>. <p>You are now dreaming of yummy pupusas while the night creatures are stirring ...</p>',
             "targets": [
                 {"id": p.id, "name": p.name}
                 for p in self.get_valid_targets(game_context)
@@ -114,9 +114,8 @@ class Role:
         Triggered when this player dies.
         Can be used for Hunter (shoot someone) or Martyr (buff someone).
         """
-        print(f"DEBUG: {player_obj.name} ({self.name_key}) has died.")
         # Future logic:
-        # if self.name_key == "role_hunter":
+        # if self.name_key == "hunter":
         #     game_context['engine'].trigger_hunter_event(player_obj)
         return {}
 
@@ -161,7 +160,7 @@ class Werewolf(Role):
     def get_night_ui_schema(self, player_obj, game_context):
         return {
             "pre": '<h4>Werewolf, who will you eat?</h4><select id="action-select"></select> <button id="action-btn">Kill</button>',
-            "post": '<p>You are hungry for <span style="color: darkred">${playerPicked}</span>. Waiting...</p>',
+            "post": '<p>You are hungry for <span style="color: red" strong >${playerPicked}</span>. Waiting...</p>',
             "targets": [
                 {"id": p.id, "name": p.name}
                 for p in self.get_valid_targets(game_context)
@@ -177,7 +176,7 @@ class Seer(Role):
         self.name_key = ROLE_SEER
         self.description_key = "desc_seer"
         self.team = "villager"
-        self.priority = 10  # Seer acts early
+        self.priority = 5  # Seer acts early
         self.is_night_active = True
 
     def investigate(self, target_player):
@@ -390,7 +389,8 @@ class Monster(Role):
 
 
 @register_role
-class AlphaWerewolf(Werewolf):  # Inherits from Werewolf!
+class Alpha_Werewolf(Werewolf):  # Inherits from Werewolf!
+    # Wins if last one alive
     def __init__(self):
         super().__init__()
         self.name_key = ROLE_ALPHA_WEREWOLF
@@ -404,7 +404,7 @@ class AlphaWerewolf(Werewolf):  # Inherits from Werewolf!
 
 
 @register_role
-class ToughVillager(Villager):
+class Tough_Villager(Villager):
     def __init__(self):
         super().__init__()
         self.name_key = ROLE_TOUGH_VILLAGER
@@ -415,7 +415,7 @@ class ToughVillager(Villager):
 
 
 @register_role
-class ToughWerewolf(Werewolf):
+class Tough_Werewolf(Werewolf):
     def __init__(self):
         super().__init__()
         self.name_key = ROLE_TOUGH_WEREWOLF
@@ -426,6 +426,7 @@ class ToughWerewolf(Werewolf):
 
 @register_role
 class Fool(Role):
+    # Wins if lynched
     def __init__(self):
         super().__init__()
         self.name_key = ROLE_FOOL
@@ -435,6 +436,7 @@ class Fool(Role):
 
 @register_role
 class Demented(Villager):
+    # Wins if last one alive
     def __init__(self):
         super().__init__()
         self.name_key = ROLE_DEMENTED_VILLAGER
@@ -518,9 +520,6 @@ class Backlash_Werewolf(Hunter):
     def night_action(self, player_obj, target_player_obj, game_context):
         # 1. Handle the Primary Selection (The Wolf Kill Vote)
         # We use the parent logic to generate the standard kill vote
-        action_result = super().night_action(
-            player_obj, target_player_obj, game_context
-        )
 
         # 2. Handle the Secondary Selection (The Backlash Grudge)
         # We retrieve the second dropdown's value from metadata
@@ -529,9 +528,14 @@ class Backlash_Werewolf(Hunter):
 
         if backlash_id:
             self.failsafe_target = backlash_id
-            print(f"Backlash Wolf {player_obj.name} marked {backlash_id} for death.")
+            backlash_name = "Unknown"
+            found_player = next((p for p in game_context["players"] if p.id == backlash_id), None)
+            if found_player:
+                backlash_name = found_player.name
 
-        return action_result
+            print(f"Backlash Wolf {player_obj.name} marked {backlash_name} for death.")
+
+        return {"action": "kill_vote", "target": target_player_obj.id}
 
 
 @register_role
@@ -548,12 +552,12 @@ class Revealer(Role):
         if target_player_obj.role.team == "werewolf":
             return {
                 "action": "revealed_werewolf",
-                "reason": "Werewolf revealed!",
+                "reason": "revealed_werewolf",
             }
         else:
             return {
                 "action": "revealed_wrongly",
-                "reason": "They were innocent... oops💀",
+                "reason": "revealed_wrongly",
             }
 
     def get_valid_targets(self, game_context):
@@ -564,7 +568,7 @@ class Revealer(Role):
 
     def get_night_ui_schema(self, player_obj, game_context):
         return {
-            "pre": '<h4>Revealer: Expose a wolf. If you\'re wrong, you die💀</h4><select id="action-select"></select> <button id="action-btn">Reveale</button>',
+            "pre": '<h4>Revealer: Expose a wolf. If you\'re wrong, you die💀</h4><select id="action-select"></select> <button id="action-btn">Reveal</button>',
             "post": '<p>You revealed <span style="color:orangered">${playerPicked}</span>.</p>',
             "targets": [
                 {"id": p.id, "name": p.name}
@@ -575,13 +579,13 @@ class Revealer(Role):
 
 
 @register_role
-class RandomSeer(Seer):
+class Random_Seer(Seer):
     def __init__(self):
         super().__init__()
         self.name_key = ROLE_RANDOM_SEER
         # insane, naive, paranoid, normal
         self.sanity = random.choice(["insane", "naive", "paranoid", "normal"])
-        print(f"DEBUG: RandomSeer spawned as {self.sanity}")
+        print(f"RandomSeer spawned as {self.sanity}")
 
     def investigate(self, target_player):
         actual = super().investigate(target_player)  # "Werewolf" or "Villager"
@@ -601,21 +605,20 @@ class Prostitute(Role):
     # todo make it so player visiting gets night actions skipped
     def __init__(self):
         super().__init__()
-        self.name_key = ROLE_PROSTITUTE
-        self.team = "villager"
         self.is_night_active = True
+        self.name_key = ROLE_PROSTITUTE
+        self.priority = 10
         self.slept_with = set()
-        self.visiting_id = None  # Used by Engine to calculate collateral damage
-        self.priority = 5
+        self.team = "villager"
 
     def on_night_start(self, player_obj, game_context):
-        self.visiting_id = None  # Reset every night
+        pass
 
     def night_action(self, player_obj, target_player_obj, game_context):
-        # clear previous night's visitor's visiting_id
-        game_context.players[self.visiting_id].visiting_id = None
-        self.visiting_id = target_player_obj.id
+        player_obj.visiting_id = target_player_obj.id
+        target_player_obj.visiting_id = player_obj.id
         self.slept_with.add(target_player_obj.id)
+        print(f"Prostitute {player_obj.name} is visiting {target_player_obj.name}")
         return {}
 
     def check_win_condition(self, player_obj, game_context):
@@ -644,12 +647,13 @@ class Prostitute(Role):
 
 
 @register_role
-class WildChild(Villager):
+class Wild_Child(Villager):
     def __init__(self):
         super().__init__()
         self.name_key = ROLE_WILD_CHILD
         self.role_model_id = None
         self.transformed = False
+        self.is_night_active = True
 
     def get_valid_targets(self, game_context):
         """Returns a list of valid player IDs this role can target, exclude self."""
@@ -671,17 +675,19 @@ class WildChild(Villager):
                 print("Wild Child transformed!")
 
     def night_action(self, player_obj, target_player_obj, game_context):
-        # Night 1 only action
+        # Night 1 only: select role model
         if self.role_model_id is None and self.transformed == False:
             self.role_model_id = target_player_obj.id
             if self.role_model_id:
                 self.is_night_active = False
                 return {"result": "Role Model Selected"}
+        # if transformed, werewolf action
         elif self.transformed:
             return {"action": "kill_vote", "target": target_player_obj.id}
         return {}
 
     def get_night_ui_schema(self, player_obj, game_context):
+        # select role model
         if self.role_model_id is None:
             return {
                 "pre": '<h4>Wild Child, Choose your Rolemodel</h4><select id="action-select"></select> <button id="action-btn">Choose</button>',
@@ -692,8 +698,17 @@ class WildChild(Villager):
                 ],
                 "can_skip": False,
             }
-
+        # werewolf ui
         if self.transformed:
-            return Role.werewolf.get_night_ui_schema(self, player_obj, game_context)
+            return {
+            "pre": '<h4>Werewolf, who will you eat?</h4><select id="action-select"></select> <button id="action-btn">Kill</button>',
+            "post": '<p>You are hungry for <span style="color: red" strong >${playerPicked}</span>. Waiting...</p>',
+            "targets": [
+                {"id": p.id, "name": p.name}
+                for p in self.get_valid_targets(game_context)
+            ],
+            "can_skip": True,
+        }
+        # villager ui if not transformed
         else:
-            return Role.get_night_ui_schema(self, player_obj, game_context)
+            return Villager.get_night_ui_schema(self, player_obj, game_context)
