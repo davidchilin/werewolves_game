@@ -362,7 +362,8 @@ class Game:
             })
 
             # Trigger Death Hook (hunter/backlash) return {"kill": target_id}
-            death_reaction = player_obj.role.on_death(player_obj, {"players": list(self.players.values())})
+            ctx = {"players": list(self.players.values()), "reason": reason}
+            death_reaction = player_obj.role.on_death(player_obj, ctx )
 
             if death_reaction and "kill" in death_reaction:
                 retaliation_target_id = death_reaction["kill"]
@@ -459,7 +460,7 @@ class Game:
         # Unanimous vote kills, else no kill
         living_werewolves = self.get_living_players("werewolf")
         active_werewolves = [w for w in living_werewolves if w.id not in
-                             blocked_player_ids]
+                             blocked_player_ids and w.role.name_key != ROLE_SORCERER]
         if (
             werewolf_vote_ids
             and len(active_werewolves) > 0
@@ -597,6 +598,13 @@ class Game:
                                 p.role.is_night_active = True
                                 p.priority = 45
                                 print(f"Wild Child {p.name} transformed into a Werewolf!")
+
+                ctx = {
+                "players": list(self.players.values()),
+                "reason": reason,
+                "lynch_votes": self.lynch_votes
+                }
+                death_reaction = player_obj.role.on_death(player_obj, ctx)
 
                 # Trigger Death Hook (hunter/backlash) return {"kill": target_id}
                 death_reaction = player_obj.role.on_death(player_obj, {"players": list(self.players.values())})

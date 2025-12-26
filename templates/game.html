@@ -1238,12 +1238,9 @@
 
         let msg = "";
 
-        // 1. Witch Poison Message
-        if (reason === "Witch Potion") {
+        if (reason === "Witch Poison") {
           msg = `☣️ A dissolving body was found! ☠ <strong>${displayName}</strong> was killed. They were a <strong>${role}</strong> ⚰️`;
-        }
-        // 2. Lovers Pact Message
-        else if (reason === "Love Pact") {
+        } else if (reason === "Love Pact") {
           msg = `💕 <strong>${displayName}</strong> was found dead! 😈 They were a <strong>${role}</strong> ⚰️`;
         } else if (reason === "Retaliation") {
           msg = `☠ <strong>${displayName}</strong> fucked with the wrong person! They were a <strong>${role}</strong> ⚰️`;
@@ -1253,10 +1250,10 @@
         } else if (reason === "revealed_wrongly") {
           msg = `☠ <strong>${role} ${displayName}</strong> revealed an innocent
               <strong>Villager</strong> and died of embarrassment! ⚰️`;
-        }
-        // 3. Default / Werewolf Message
-        else {
+        } else if (reason === "Werewolf meat") {
           msg = `🫀 Remnants of a body were found! <strong>${displayName}</strong> was killed. 🐾 They were a <strong>${role}</strong> ⚰️`;
+        } else {
+          msg = reason;
         }
 
         logMessage(msg);

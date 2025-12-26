@@ -885,9 +885,10 @@ def resolve_night():
                 reason = event.get("reason", "Unknown")
                 name = event.get("name", "Unknown")
                 role = event.get("role", "Unknown")
-
-                hist_msg = f"🫀 Remnants of a body were found! <strong>{name}</strong> was killed. 🐾 They were a <strong>{role}</strong> ⚰️"
-                if reason == "Witch Potion":
+                hist_msg = reason
+                if reason == "Werewolf meat":
+                    hist_msg = f"🫀 Remnants of a body were found! <strong>{name}</strong> was killed. 🐾 They were a <strong>{role}</strong> ⚰️"
+                if reason == "Witch Poison":
                      hist_msg = f"☣️ A dissolving body was found! ☠ <strong>{name}</strong> was killed. Role: {role} ⚰️"
                 elif reason == "Love Pact":
                      hist_msg = f"💕 <strong>{name}</strong> died of a broken heart! 😈 Role: {role} ⚰️"
@@ -913,8 +914,7 @@ def resolve_night():
     if not actual_death:
         socketio.emit("night_result_no_kill", {}, to=game["game_code"])
 
-
-    socketio.sleep(3)  # Short pause for effect
+    socketio.sleep(4)  # Short pause for effect
     check_game_over_or_next_phase()
 
 
