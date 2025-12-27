@@ -1,6 +1,6 @@
 """
 app.py
-Version: 4.5.1
+Version: 4.5.2
 """
 import logging
 import os
@@ -246,7 +246,12 @@ def perform_tally_accusations():
 
     # 2. Handle Outcome
     if res_type == "trial":
-        # Trial Started
+        if outcome.get("message"):
+             socketio.emit("message", {
+                "text": outcome["message"]
+             }, to=game["game_code"])
+             #game_instance.message_history.append(outcome["message"])
+
         socketio.emit(
             "lynch_vote_started",
             {
@@ -622,6 +627,15 @@ def resolve_lynch():
     # 1. Engine Calculation
     result = game_instance.resolve_lynch_vote()
 
+    if result.get("announcements"):
+        for ann in result["announcements"]:
+            print("Debug: anouncement resolve_lynch: {ann}")
+            game_instance.message_history.append(ann)
+            socketio.emit("new_message", {
+                "text": ann,
+                "channel": "announcement"
+            }, to=game["game_code"])
+
     # 2. Notify
     msg = "No one was lynched."
     if result.get("armor_save"):
@@ -630,10 +644,6 @@ def resolve_lynch():
         name = game_instance.players[result["killed_id"]].name
         role = game_instance.players[result["killed_id"]].role.name_key
         msg = f"⚖️ <strong>{name}</strong> was lynched! Role: {role} ⚰️"
-
-        living_wolves = game_instance.get_living_players("werewolf")
-        for werewolf in living_wolves:
-            send_werewolf_info(werewolf.id)
 
     game_instance.message_history.append(msg)
 
@@ -647,6 +657,26 @@ def resolve_lynch():
         to=game["game_code"],
     )
 
+    if result.get("secondary_deaths"):
+        for d in result["secondary_deaths"]:
+            # Format message based on reason
+            sec_msg = f"☠️ <strong>{d['name']}</strong> died as well! Reason: {d['reason']} ⚰️"
+
+            if "Honeypot" in d['reason']:
+                clean_reason = d['reason'].replace("Honeypot retaliation: ", "")
+                # Clean up UUIDs if present in the message
+                sec_msg = f"🍯 <strong>{d['name']}</strong> was dragged down by the Honeypot! {clean_reason} 🐝"
+            elif d['reason'] == "Love Pact":
+                sec_msg = f"💔 <strong>{d['name']}</strong> died of a broken heart!"
+
+            game_instance.message_history.append(sec_msg)
+            socketio.emit("message", {"text": sec_msg}, to=game["game_code"])
+
+
+
+    living_wolves = game_instance.get_living_players("werewolf")
+    for werewolf in living_wolves:
+        send_werewolf_info(werewolf.id)
 
     socketio.sleep(5)
     check_game_over_or_next_phase()
@@ -791,7 +821,8 @@ def handle_hero_choice(data):
 
     seer_player_obj = game_instance.players.get(player_id)
     if seer_player_obj and seer_player_obj.role.name_key in [ROLE_SEER,
-                                                             ROLE_RANDOM_SEER]:
+                                                             ROLE_RANDOM_SEER,
+                                                             ROLE_SORCERER]:
         # Immediate Seer Feedback (Standard Mode Feature)
         target_player_obj = game_instance.players.get(target_id)
         if target_player_obj and hasattr(seer_player_obj.role, "investigate"):
@@ -872,7 +903,7 @@ def resolve_night():
             if event_type == "armor_save":
                 msg = "<strong>Strangely, nobody dies...</strong>"
                 game_instance.message_history.append(msg)
-                socketio.emit("log_message", {"text": msg}, to=game["game_code"])
+                socketio.emit("message", {"text": msg}, to=game["game_code"])
             elif event_type == "blocked":
                 player_wrapper = game["players"].get(event["id"])
                 if player_wrapper and player_wrapper.sid:
@@ -880,6 +911,13 @@ def resolve_night():
                         "text": f"{event['message']}",
                         "channel": "living"
                     }, to=player_wrapper.sid)
+            elif event_type == "announcement":
+                msg = event["message"]
+                game_instance.message_history.append(msg)
+                socketio.emit("new_message", {
+                    "text": msg,
+                    "channel": "announcement" # Shows in purple/bold usually
+                }, to=game["game_code"])
             elif event_type == "death":
                 actual_death = True
                 reason = event.get("reason", "Unknown")
@@ -898,6 +936,12 @@ def resolve_night():
                      hist_msg = f"☠ <strong>{name}</strong> was revealed to be a <strong>{role}</strong> and strung up! ⚰️"
                 elif reason == "revealed_wrongly":
                      hist_msg = f"☠ <strong>{name}</strong> revealed a <strong>Villager</strong> and died of embarrassment! ⚰️"
+                elif reason == "Serial Killer":
+                     hist_msg = f"🔪 A mutilated body was found! <strong>{name}</strong> was the victim of a <strong>Serial Killer</strong>! 🩸 Role: {role}"
+                elif "Honeypot" in reason:
+                     # Clean up prefix for display if needed
+                     clean_reason = reason.replace("Honeypot retaliation: ", "")
+                     hist_msg = f"🍯 <strong>{role} {name}</strong> fell into a trap! {clean_reason} 🐝"
 
                 game_instance.message_history.append(hist_msg)
 
@@ -905,6 +949,7 @@ def resolve_night():
                     "killed_player": event,
                     "admin_only_chat": game_instance.admin_only_chat,
                     "phase": game_instance.phase,
+                    "message": hist_msg,
                 }, to=game["game_code"])
 
                 living_wolves = game_instance.get_living_players("werewolf")

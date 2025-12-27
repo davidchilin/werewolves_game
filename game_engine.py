@@ -1,6 +1,6 @@
 """
 game_engine.py
-# Version: 4.5.1
+# Version: 4.5.2
 Manages the game flow, player states, complex role interactions, and phase transitions.
 """
 import random
@@ -365,11 +365,19 @@ class Game:
             ctx = {"players": list(self.players.values()), "reason": reason}
             death_reaction = player_obj.role.on_death(player_obj, ctx )
 
-            if death_reaction and "kill" in death_reaction:
-                retaliation_target_id = death_reaction["kill"]
-                if retaliation_target_id and retaliation_target_id not in dead_ids_set:
-                    print(f"Retaliation by {player_obj.name} on {retaliation_target_id}!")
-                    kill_recursive(retaliation_target_id, "Retaliation")
+            if death_reaction:
+                if "kill" in death_reaction:
+                    retaliation_target_id = death_reaction["kill"]
+                    custom_reason = death_reaction.get("reason", "Retaliation")
+
+                    if retaliation_target_id and retaliation_target_id not in dead_ids_set:
+                        retaliation_target_obj = self.players.get(retaliation_target_id)
+                        if retaliation_target_obj:
+                            print(f"Retaliation by {player_obj.name} on {retaliation_target_obj.name}!")
+                        kill_recursive(retaliation_target_id, custom_reason)
+
+                if death_reaction.get("type") == "announcement":
+                    final_death_events.append(death_reaction)
 
             # Lovers Pact
             if player_obj.linked_partner_id:
@@ -432,8 +440,7 @@ class Game:
                 action_type = result.get("action")
                 effect = result.get("effect")
 
-
-                if target_player_obj.id and effect:
+                if target_player_obj and effect:
                     print(f"Effect Applied: {effect} on {target_player_obj.name}")
                     target_player_obj.status_effects.append(effect)
 
@@ -450,6 +457,10 @@ class Game:
 
                 if action_type == "revealed_wrongly":
                     kill_recursive(player_obj.id, result.get("reason", "Revealed"))
+
+                if action_type == "direct_kill":
+                    print(f"DEBUG: Direct kill triggering for {target_player_obj.name}")
+                    kill_recursive(target_player_obj.id, result.get("reason", "Murder"))
 
                 # Handle Kill Votes (Werewolves)
                 if action_type == "kill_vote":
@@ -521,6 +532,27 @@ class Game:
 
         # if tie, restart accusations once
         if len(most_common) > 1 and most_common[0][1] == most_common[1][1]:
+            mayor = next(p for p in self.players.values() if p.is_alive and
+                         getattr(p.role, "next_mayor_id", None))
+            if mayor:
+                mayor_vote = self.accusations.get(mayor.id)
+                tied_candidate_1 = most_common[0][0]
+                tied_candidate_2 = most_common[1][0]
+
+                if mayor_vote == tied_candidate_1 or mayor_vote == tied_candidate_2:
+                    self.lynch_target_id = mayor_vote
+
+                    tie_msg = f"⚖️ <strong>Tie Vote!</strong> The Mayor broke the tie against {self.players[mayor_vote].name}!"
+                    self.message_history.append(tie_msg)
+
+                    self.set_phase(PHASE_LYNCH)
+                    return {
+                        "result": "trial",
+                        "target_id": self.lynch_target_id,
+                        "target_name": self.players[self.lynch_target_id].name,
+                        "message": tie_msg,
+                    }
+
             if self.accusation_restarts == 0:
                 self.accusation_restarts += 1
                 self.accusations = {}
@@ -562,6 +594,8 @@ class Game:
             "killed_id": None,
             "armor_save": False,
             "game_over": False,
+            "announcements": [],
+            "secondary_deaths": [],
         }
 
         # Populate summary names
@@ -588,6 +622,14 @@ class Game:
                 player_obj.is_alive = False
                 print(f"DIED: {player_obj.name}, Reason: {reason}")
 
+                if player_id != self.lynch_target_id:
+                    result_data["secondary_deaths"].append({
+                        "id": player_id,
+                        "name": player_obj.name,
+                        "role": player_obj.role.name_key,
+                        "reason": reason
+                    })
+
                 # Wild Child Update
                 for p in self.players.values():
                     if p.is_alive and p.role and p.role.name_key == ROLE_WILD_CHILD:
@@ -606,14 +648,18 @@ class Game:
                 }
                 death_reaction = player_obj.role.on_death(player_obj, ctx)
 
-                # Trigger Death Hook (hunter/backlash) return {"kill": target_id}
-                death_reaction = player_obj.role.on_death(player_obj, {"players": list(self.players.values())})
+                if death_reaction:
+                    if "kill" in death_reaction:
+                        retaliation_target_id = death_reaction["kill"]
+                        custom_reason = death_reaction.get("reason", "Retaliation")
 
-                if death_reaction and "kill" in death_reaction:
-                    retaliation_target_id = death_reaction["kill"]
-                    if retaliation_target_id and retaliation_target_id not in dead_ids_set:
-                        print(f"Retaliation by {player_obj.name} on {retaliation_target_id}!")
-                        kill_recursive(retaliation_target_id, "Retaliation")
+                        if retaliation_target_id and retaliation_target_id not in dead_ids_set:
+                            retaliation_target_obj = self.players.get(retaliation_target_id)
+                            if retaliation_target_obj:
+                                print(f"Retaliation by {player_obj.name} on {retaliation_target_obj.name}!")
+                            kill_recursive(retaliation_target_id, custom_reason)
+                    if death_reaction.get("type") == "announcement":
+                        result_data["announcements"].append(death_reaction["message"])
 
                 # Check Lovers
                 if player_obj.linked_partner_id:

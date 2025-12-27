@@ -1,4 +1,4 @@
-<!-- Version: 4.5.1 -->
+<!-- Version: 4.5.2 -->
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -1201,6 +1201,7 @@
 
       // Messages
       socket.on("message", (data) => logMessage(data.text));
+
       socket.on("new_message", (data) => {
         const messageEl = document.createElement("div");
         messageEl.innerHTML = data.text;
@@ -1233,33 +1234,11 @@
       });
 
       socket.on("night_result_kill", (data) => {
-        const { name, role, id, reason } = data.killed_player;
-        const displayName = name || "Unknown";
-
-        let msg = "";
-
-        if (reason === "Witch Poison") {
-          msg = `☣️ A dissolving body was found! ☠ <strong>${displayName}</strong> was killed. They were a <strong>${role}</strong> ⚰️`;
-        } else if (reason === "Love Pact") {
-          msg = `💕 <strong>${displayName}</strong> was found dead! 😈 They were a <strong>${role}</strong> ⚰️`;
-        } else if (reason === "Retaliation") {
-          msg = `☠ <strong>${displayName}</strong> fucked with the wrong person! They were a <strong>${role}</strong> ⚰️`;
-        } else if (reason === "revealed_werewolf") {
-          msg = `☠ <strong>${displayName}</strong> was revealed to be a
-                     <strong>${role}</strong> and strung up! ⚰️`;
-        } else if (reason === "revealed_wrongly") {
-          msg = `☠ <strong>${role} ${displayName}</strong> revealed an innocent
-              <strong>Villager</strong> and died of embarrassment! ⚰️`;
-        } else if (reason === "Werewolf meat") {
-          msg = `🫀 Remnants of a body were found! <strong>${displayName}</strong> was killed. 🐾 They were a <strong>${role}</strong> ⚰️`;
-        } else {
-          msg = reason;
+        if (data.message) {
+          logMessage(data.message);
         }
-
-        logMessage(msg);
-
         // Update local state if I am the one who died
-        if (myPlayerId === id) {
+        if (data.killed_player && myPlayerId === data.killed_player.id) {
           isAlive = false;
           setChatMode(data.admin_only_chat, data.phase);
         }
