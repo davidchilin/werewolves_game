@@ -1,4 +1,4 @@
-<!-- Version: 4.5.2 -->
+<!-- Version: 4.5.3 -->
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -6,382 +6,321 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Werewolves - The Game</title>
     <style>
-      /* --- Base Styles --- */
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          Helvetica, Arial, sans-serif;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin: 0;
-        min-height: 100vh;
-        background-color: #111111;
-        color: #eeeecc;
-      }
-      .game-container {
-        width: 95%;
-        max-width: 800px;
-        display: flex;
-        gap: 20px;
-      }
-      .main-panel {
-        flex-grow: 1;
-        min-width: 0; /* Prevents flexbox overflow */
-      }
-      .side-panel {
-        width: 250px;
-        border-left: 1px solid #444;
-        padding-left: 20px;
-        flex-shrink: 0; /* Prevents side panel from shrinking */
-        display: flex;
-        flex-direction: column;
-      }
+            /* --- Base Styles --- */
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                Helvetica, Arial, sans-serif;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              margin: 0;
+              min-height: 100vh;
+              background-color: #111111;
+              color: #eeeecc;
+            }
+            .game-container {
+              width: 95%;
+              max-width: 800px;
+              display: flex;
+              gap: 20px;
+            }
+            .main-panel {
+              flex-grow: 1;
+              min-width: 0; /* Prevents flexbox overflow */
+            }
+            .side-panel {
+              width: 250px;
+              border-left: 1px solid #444;
+              padding-left: 20px;
+              flex-shrink: 0; /* Prevents side panel from shrinking */
+              display: flex;
+              flex-direction: column;
+            }
 
-      /* --- UI Components --- */
-      .player-list {
-        padding-left: 0;
-      }
-      .player-list li {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        list-style-type: none;
-        padding: 8px;
-        border-radius: 4px;
-        margin-bottom: 5px;
-        background-color: #2c2c2c;
-      }
-      .player-list li.dead {
-        text-decoration: line-through;
-        color: #777;
-        background-color: #222;
-      }
-      .accusation-count {
-        font-size: 0.9em;
-        font-weight: bold;
-        background-color: #c62828;
-        color: white;
-        padding: 2px 6px;
-        border-radius: 10px;
-        margin-left: auto;
-      }
-      .role-display {
-        padding: 10px;
-        background-color: #1e1e1e;
-        border: 1px solid #444;
-        border-radius: 5px;
-        text-align: center;
-        margin-bottom: 15px;
-      }
-      .phase-display {
-        font-size: 1.5em;
-        font-weight: bold;
-        text-align: center;
-        margin-bottom: 10px;
-        text-transform: capitalize;
-        color: #bb86fc;
-      }
-      .timer-display {
-        font-size: 1.2em;
-        text-align: center;
-        color: #fdd835;
-        margin-bottom: 20px;
-      }
+            /* --- UI Components --- */
+            .player-list {
+              padding-left: 0;
+            }
+            .player-list li {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              list-style-type: none;
+              padding: 8px;
+              border-radius: 4px;
+              margin-bottom: 5px;
+              background-color: #2c2c2c;
+            }
+            .player-list li.dead {
+              text-decoration: line-through;
+              color: #777;
+              background-color: #222;
+            }
+            .accusation-count {
+              font-size: 0.9em;
+              font-weight: bold;
+              background-color: #c62828;
+              color: white;
+              padding: 2px 6px;
+              border-radius: 10px;
+              margin-left: auto;
+            }
+            .role-display {
+              padding: 10px;
+              background-color: #1e1e1e;
+              border: 1px solid #444;
+              border-radius: 5px;
+              text-align: center;
+              margin-bottom: 15px;
+            }
+            .phase-display {
+              font-size: 1.5em;
+              font-weight: bold;
+              text-align: center;
+              margin-bottom: 10px;
+              text-transform: capitalize;
+              color: #bb86fc;
+            }
+            .timer-display {
+              font-size: 1.2em;
+              text-align: center;
+              color: #fdd835;
+              margin-bottom: 20px;
+            }
 
-      /* --- Standard Action Area --- */
-      .action-area {
-        min-height: 100px;
-        border: 1px dashed #555;
-        padding: 15px;
-        border-radius: 5px;
-        background-color: #1e1e1e;
-      }
-      .action-area h4 {
-        margin-top: 0;
-      }
-      .action-area select,
-      .action-area button {
-        font-size: 1.1em;
-        margin: 10px 5px 0 0;
-        padding: 8px;
-        border-radius: 5px;
-        border: 1px solid #444;
-        background-color: #2c2c2c;
-        color: #e0e0e0;
-      }
-      .action-area button {
-        background-color: #3f51b5;
-        border: none;
-        cursor: pointer;
-      }
-      .action-area button:hover:not(:disabled) {
-        background-color: #5c6bc0;
-      }
-      .action-area button:disabled {
-        background-color: #333;
-        color: #777;
-        cursor: not-allowed;
-      }
-      .vote-btn-yes {
-        background-color: #4caf50 !important;
-      }
-      .vote-btn-yes:hover {
-        background-color: #66bb6a !important;
-      }
-      .vote-btn-no {
-        background-color: #f44336 !important;
-      }
-      .vote-btn-no:hover {
-        background-color: #ef5350 !important;
-      }
-      hr {
-        border-color: #444;
-        margin: 20px 0;
-      }
-      /* --- Phase 4: Pass-and-Play Styles --- */
-      #game-interface {
-        display: none; /* Hidden by default */
-      }
-      .pnp-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-        gap: 10px;
-        margin-top: 10px;
-      }
-      .pnp-btn {
-        width: 100%;
-        padding: 15px;
-        background-color: #3f51b5;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-size: 1.1em;
-        cursor: pointer;
-        text-align: center;
-        transition: transform 0.1s;
-      }
-      .pnp-btn:active {
-        transform: scale(0.98);
-      }
-      .confirm-box {
-        border: 2px solid #fdd835;
-        padding: 20px;
-        text-align: center;
-        background: #222;
-        border-radius: 10px;
-        margin-top: 20px;
-      }
-      .confirm-box h3 {
-        margin-top: 0;
-        color: #fdd835;
-      }
-      .confirm-box button {
-        margin: 10px;
-        padding: 10px 20px;
-        font-size: 1.1em;
-        cursor: pointer;
-        border-radius: 5px;
-        border: none;
-      }
-      .confirm-box button:first-of-type {
-        background-color: #4caf50;
-        color: white;
-      }
-      .confirm-box button.cancel {
-        background-color: #f44336;
-        color: white;
-      }
-      .role-header {
-        text-align: center;
-        margin-bottom: 20px;
-        border-bottom: 1px solid #444;
-        padding-bottom: 10px;
-      }
-      .target-grid {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        justify-content: center;
-      }
-      .target-grid button {
-        padding: 12px 20px;
-        background-color: #444;
-        border: 1px solid #666;
-        color: white;
-        cursor: pointer;
-        border-radius: 6px;
-      }
-      .target-grid button:hover {
-        background-color: #666;
-      }
+            /* --- Action Area --- */
+            .action-area {
+              min-height: 100px;
+              border: 1px dashed #555;
+              padding: 15px;
+              border-radius: 5px;
+              background-color: #1e1e1e;
+            }
+            .action-area h4 {
+              margin-top: 0;
+            }
+            .action-area select,
+            .action-area button {
+              font-size: 1.1em;
+              margin: 10px 5px 0 0;
+              padding: 8px;
+              border-radius: 5px;
+              border: 1px solid #444;
+              background-color: #2c2c2c;
+              color: #e0e0e0;
+            }
+            .action-area button {
+              background-color: #3f51b5;
+              border: none;
+              cursor: pointer;
+            }
+            .action-area button:hover:not(:disabled) {
+              background-color: #5c6bc0;
+            }
+            .action-area button:disabled {
+              background-color: #333;
+              color: #777;
+              cursor: not-allowed;
+            }
+            .vote-btn-yes { background-color: #4caf50 !important; }
+            .vote-btn-yes:hover { background-color: #66bb6a !important; }
+            .vote-btn-no { background-color: #f44336 !important; }
+            .vote-btn-no:hover { background-color: #ef5350 !important; }
+            hr { border-color: #444; margin: 20px 0; }
 
-      /* --- Chat & Logs --- */
-      .log-panel {
-        height: 200px;
-        overflow-y: scroll;
-        border: 1px solid #333;
-        padding: 10px;
-        background: #1e1e1e;
-        margin-top: 20px;
-        display: flex;
-        flex-direction: column-reverse;
-      }
-      .log-panel div {
-        padding-bottom: 5px;
-        margin-bottom: 5px;
-        border-bottom: 1px solid #333;
-      }
-      .log-panel .vote-summary {
-        font-size: 0.9em;
-        color: #aaa;
-      }
-      .chat-container {
-        margin-top: 20px;
-        display: flex;
-        flex-direction: column;
-      }
-      .chat-messages {
-        height: 150px;
-        overflow-y: auto;
-        border: 1px solid #333;
-        padding: 10px;
-        background: #1e1e1e;
-        margin-bottom: 10px;
-        display: flex;
-        flex-direction: column-reverse;
-      }
-      .chat-form {
-        display: flex;
-      }
-      .chat-input {
-        flex-grow: 1;
-        margin-right: 10px;
-      }
-      .ghost-chat {
-        color: #a0a0ff;
-        font-style: italic;
-      }
-      .announcement {
-        color: #bb86fc;
-        font-weight: bold;
-      }
+            /* --- PnP Styles --- */
+            #game-interface { display: none; }
+            .pnp-grid {
+              display: grid;
+              grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+              gap: 10px;
+              margin-top: 10px;
+            }
+            .pnp-btn {
+              width: 100%;
+              padding: 15px;
+              background-color: #3f51b5;
+              color: white;
+              border: none;
+              border-radius: 8px;
+              font-size: 1.1em;
+              cursor: pointer;
+              text-align: center;
+              transition: transform 0.1s;
+            }
+            .pnp-btn:active { transform: scale(0.98); }
+            .confirm-box {
+              border: 2px solid #fdd835;
+              padding: 20px;
+              text-align: center;
+              background: #222;
+              border-radius: 10px;
+              margin-top: 20px;
+            }
+            .confirm-box h3 { margin-top: 0; color: #fdd835; }
+            .confirm-box button {
+              margin: 10px;
+              padding: 10px 20px;
+              font-size: 1.1em;
+              cursor: pointer;
+              border-radius: 5px;
+              border: none;
+            }
+            .confirm-box button:first-of-type { background-color: #4caf50; color: white; }
+            .confirm-box button.cancel { background-color: #f44336; color: white; }
+            .role-header {
+              text-align: center;
+              margin-bottom: 20px;
+              border-bottom: 1px solid #444;
+              padding-bottom: 10px;
+            }
+            .target-grid {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 10px;
+              justify-content: center;
+            }
+            .target-grid button {
+              padding: 12px 20px;
+              background-color: #444;
+              border: 1px solid #666;
+              color: white;
+              cursor: pointer;
+              border-radius: 6px;
+            }
+            .target-grid button:hover { background-color: #666; }
 
-      /* --- Game Over Overlay --- */
-      #game-over-screen {
-        display: none; /* Keep it hidden by default */
-        flex-direction: column;
-        align-items: center;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(18, 18, 18, 0.95);
-        z-index: 100;
-        overflow-y: auto; /* Allow scrolling on small screens */
-      }
-      .game-over-box {
-        width: 90%;
-        max-width: 500px;
-        padding: 20px;
-        margin: auto;
-        background-color: #1e1e1e;
-        border: 1px solid #bb86fc; /* Purple highlight border */
-        border-radius: 12px;
-        text-align: center;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        margin-top: 20px;
-        margin-bottom: 20px;
-      }
-      .game-over-log {
-        height: 150px;
-        overflow-y: auto;
-        border: 1px solid #444;
-        background: #111;
-        padding: 10px;
-        margin-top: 15px;
-        text-align: left;
-        display: flex;
-        flex-direction: column-reverse; /* Keeps newest at top/bottom depending on preference */
-        font-size: 0.9em;
-      }
-      .game-over-log div {
-        border-bottom: 1px solid #333;
-        padding-bottom: 4px;
-        margin-bottom: 4px;
-      }
-      #game-over-title {
-        color: #bb86fc; /* Purple title */
-        margin-top: 0;
-        font-size: 2.5em;
-      }
-      #final-roles-list {
-        list-style-type: none;
-        padding: 0;
-        margin-top: 20px;
-        max-width: 300px;
-        margin-left: auto;
-        margin-right: auto;
-        text-align: left;
-      }
-      #final-roles-list li {
-        background-color: #2c2c2c;
-        padding: 10px;
-        margin-bottom: 8px;
-        border-radius: 5px;
-      }
-      #return-to-lobby-btn {
-        margin-top: 25px;
-        padding: 12px 24px;
-        font-size: 1.1em;
-        color: white;
-        background-color: #3f51b5;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-      }
-      #return-to-lobby-btn:disabled {
-        background-color: #333;
-        cursor: not-allowed;
-      }
-      #rematch-vote-status {
-        margin-top: 15px;
-        font-size: 0.9em;
-        color: #aaa;
-        min-height: 20px;
-      }
-      .chat-messages div {
-        padding-bottom: 5px;
-        margin-bottom: 5px;
-        border-bottom: 1px solid #333;
-      }
-      #admin-controls-ingame button {
-        margin-top: 10px;
-        width: 100%;
-      }
-      .btn-active {
-        background-color: #dd6655; !important;
-      }
+            /* --- Chat & Logs --- */
+            .log-panel {
+              height: 200px;
+              overflow-y: scroll;
+              border: 1px solid #333;
+              padding: 10px;
+              background: #1e1e1e;
+              margin-top: 20px;
+              display: flex;
+              flex-direction: column-reverse;
+            }
+            .log-panel div {
+              padding-bottom: 5px;
+              margin-bottom: 5px;
+              border-bottom: 1px solid #333;
+            }
+            .log-panel .vote-summary { font-size: 0.9em; color: #aaa; }
+            .chat-container {
+              margin-top: 20px;
+              display: flex;
+              flex-direction: column;
+            }
+            .chat-messages {
+              height: 150px;
+              overflow-y: auto;
+              border: 1px solid #333;
+              padding: 10px;
+              background: #1e1e1e;
+              margin-bottom: 10px;
+              display: flex;
+              flex-direction: column-reverse;
+            }
+            .chat-form { display: flex; }
+            .chat-input { flex-grow: 1; margin-right: 10px; }
+            .ghost-chat { color: #a0a0ff; font-style: italic; }
+            .announcement { color: #bb86fc; font-weight: bold; }
 
-      /* --- Mobile Responsive Styles --- */
-      @media (max-width: 768px) {
-        body {
-          align-items: flex-start; /* Align to top on mobile */
-          padding-top: 15px;
-        }
-        .game-container {
-          flex-direction: column;
-          gap: 0;
-        }
-        .side-panel {
-          width: 100%;
-          border-left: none;
-          border-top: 1px solid #444;
-          padding-left: 0;
-          padding-top: 20px;
-          margin-top: 20px;
-        }
-      }
+            /* --- Game Over Overlay --- */
+            #game-over-screen {
+              display: none; /* Keep it hidden by default */
+              flex-direction: column;
+              align-items: center;
+              position: fixed;
+              top: 0; left: 0;
+              width: 100%; height: 100%;
+              background-color: rgba(18, 18, 18, 0.95);
+              z-index: 100;
+              overflow-y: auto; /* Allow scrolling on small screens */
+            }
+            .game-over-box {
+              width: 90%;
+              max-width: 500px;
+              padding: 20px;
+              margin: auto;
+              background-color: #1e1e1e;
+              border: 1px solid #bb86fc; /* Purple highlight border */
+              border-radius: 12px;
+              text-align: center;
+              box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+              margin-top: 20px;
+              margin-bottom: 20px;
+            }
+            .game-over-log {
+              height: 150px;
+              overflow-y: auto;
+              border: 1px solid #444;
+              background: #111;
+              padding: 10px;
+              margin-top: 15px;
+              text-align: left;
+              display: flex;
+              font-size: 0.9em;
+            }
+            .game-over-log div {
+              border-bottom: 1px solid #333;
+              padding-bottom: 4px;
+              margin-bottom: 4px;
+            }
+            #game-over-title { color: #bb86fc; margin-top: 0; font-size: 2.5em; }
+            #final-roles-list {
+              list-style-type: none;
+              padding: 0;
+              margin-top: 20px;
+              max-width: 300px;
+              margin-left: auto;
+              margin-right: auto;
+              text-align: left;
+            }
+            #final-roles-list li {
+              background-color: #2c2c2c;
+              padding: 10px;
+              margin-bottom: 8px;
+              border-radius: 5px;
+            }
+            #return-to-lobby-btn {
+              margin-top: 25px;
+              padding: 12px 24px;
+              font-size: 1.1em;
+              color: white;
+              background-color: #3f51b5;
+              border: none;
+              border-radius: 5px;
+              cursor: pointer;
+            }
+            #return-to-lobby-btn:disabled { background-color: #333; cursor: not-allowed; }
+            #rematch-vote-status {
+              margin-top: 15px;
+              font-size: 0.9em;
+              color: #aaa;
+              min-height: 20px;
+            }
+            .chat-messages div {
+              padding-bottom: 5px;
+              margin-bottom: 5px;
+              border-bottom: 1px solid #333;
+            }
+      #admin-controls-ingame {
+              text-align: center;
+            }
+            #admin-controls-ingame button { margin: 5px auto; width: 80%; display: block; }
+            .btn-active { background-color: #dd6655; !important; }
+
+            /* --- Mobile Responsive Styles --- */
+            @media (max-width: 768px) {
+              body { align-items: flex-start; padding-top: 15px; }
+              .game-container { flex-direction: column; gap: 0; }
+              .side-panel {
+                width: 100%; border-left: none; border-top: 1px solid #444;
+                padding-left: 0; padding-top: 20px; margin-top: 20px;
+              }
+            }
     </style>
     <script src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
   </head>
@@ -390,23 +329,8 @@
       <div class="main-panel">
         <div id="phase-display" class="phase-display">Loading...</div>
         <div id="timer-display" class="timer-display"></div>
-        <div
-          id="action-status-message"
-          style="
-            display: none;
-            color: #fdd835;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 10px;
-            border: 1px solid #fdd835;
-            padding: 10px;
-            border-radius: 5px;
-          "
-        ></div>
         <div id="action-area" class="action-area"><p>Please wait...</p></div>
-
         <div id="game-interface"></div>
-
         <h3>Game Log</h3>
         <div id="log-panel" class="log-panel"></div>
       </div>
@@ -416,25 +340,10 @@
           Your Role: <strong id="my-role">Unknown</strong>
         </div>
 
-        <div
-          id="admin-controls-ingame"
-          style="display: none; align-items: center"
-        >
-          <button id="admin-next-phase-btn" style="width: 80%; margin-top: 5px">
-            Next Phase
-          </button>
-          <button
-            id="admin-pause-timer-btn"
-            style="width: 80%; margin-top: 5px"
-          >
-            Pause Timers ⏸️
-          </button>
-          <button
-            id="admin-chat-toggle-btn"
-            style="width: 80%; margin-top: 5px"
-          >
-            Toggle Admin Chat
-          </button>
+        <div id="admin-controls-ingame" style="display: none">
+          <button id="admin-next-phase-btn">Next Phase</button>
+          <button id="admin-pause-timer-btn">Pause Timers ⏸️</button>
+          <button id="admin-chat-toggle-btn">Toggle Admin Chat</button>
         </div>
 
         <h3>Players</h3>
@@ -456,6 +365,7 @@
         </div>
       </div>
     </div>
+
     <div id="game-over-screen">
       <div class="game-over-box">
         <h1 id="game-over-title"></h1>
@@ -500,10 +410,9 @@
         isAdmin = false;
       let timerInterval,
         timersDisabled = false;
-      let validTargets = [],
-        currentNightUI = null;
+      let currentNightUI = null;
 
-      // Phase 4 State
+      // Phase State
       let isPassAndPlay = false;
       let hasActed = new Set(),
         myNightTargetId = null,
@@ -517,66 +426,44 @@
         sleepButtonTimeout = null; // To clear old timers prevents bugs
 
       // --- DOM Elements ---
-      const phaseDisplay = document.getElementById("phase-display");
-      const timerDisplay = document.getElementById("timer-display");
-      const actionArea = document.getElementById("action-area");
-      const gameInterface = document.getElementById("game-interface"); // PnP container
-      const logPanel = document.getElementById("log-panel");
-      const playerListEl = document.getElementById("player-list");
-      const myRoleDisplay = document.getElementById("my-role");
-      const sidePanel = document.getElementById("side-panel");
+      const els = {
+        phase: document.getElementById("phase-display"),
+        timer: document.getElementById("timer-display"),
+        action: document.getElementById("action-area"),
+        pnp: document.getElementById("game-interface"),
+        log: document.getElementById("log-panel"),
+        role: document.getElementById("my-role"),
+        playerList: document.getElementById("player-list"),
+        sidePanel: document.getElementById("side-panel"),
+        adminControls: document.getElementById("admin-controls-ingame"),
+        gameChatTitle: document.getElementById("chat-title"),
+        gameChatSendBtn: document.getElementById("game-chat-send-btn"),
+        gameChatInput: document.getElementById("game-chat-input"),
+        gameOverScreen: document.getElementById("game-over-screen"),
+        gameOverChatSendBtn: document.getElementById("game-over-chat-send-btn"),
+        gameOverChatInput: document.getElementById("game-over-chat-input"),
+        adminChatToggle: document.getElementById("admin-chat-toggle-btn"),
+      };
 
-      // Admin
-      const adminControlsIngame = document.getElementById(
-        "admin-controls-ingame",
-      );
-      const adminChatToggleBtn = document.getElementById(
-        "admin-chat-toggle-btn",
-      );
-      const adminNextPhaseBtn = document.getElementById("admin-next-phase-btn");
-
-      // Game Chat
-      const gameChatTitle = document.getElementById("chat-title");
-      const gameChatMessages = document.getElementById("game-chat-messages");
-      const gameChatForm = document.getElementById("game-chat-form");
-      const gameChatInput = document.getElementById("game-chat-input");
-      const gameChatSendBtn = document.getElementById("game-chat-send-btn");
-
-      // Game Over Chat
-      const gameOverScreen = document.getElementById("game-over-screen");
-      const gameOverChatMessages = document.getElementById(
-        "game-over-chat-messages",
-      );
-      const gameOverChatForm = document.getElementById("game-over-chat-form");
-      const gameOverChatInput = document.getElementById("game-over-chat-input");
-      const gameOverChatSendBtn = document.getElementById(
-        "game-over-chat-send-btn",
-      );
-
-      // --- Functions ---
+      // --- Helper Functions ---
       function logMessage(message) {
         let div = document.createElement("div");
         div.innerHTML = message;
-        logPanel.prepend(div);
+        els.log.prepend(div);
       }
 
       function updateAdminControls() {
         if (isAdmin) {
-          adminControlsIngame.style.display = "block";
-          adminNextPhaseBtn.style.display = "block";
-
+          els.adminControls.style.display = "block";
           const pauseBtn = document.getElementById("admin-pause-timer-btn");
           if (pauseBtn) {
-            if (timersDisabled) {
-              pauseBtn.textContent = "Resume Timers ▶️";
-              pauseBtn.style.backgroundColor = "#ff9800"; // Orange warning color
-            } else {
-              pauseBtn.textContent = "Pause Timers ⏸️";
-              pauseBtn.style.backgroundColor = ""; // Default color
-            }
+            pauseBtn.textContent = timersDisabled
+              ? "Resume Timers ▶️"
+              : "Pause Timers ⏸️";
+            pauseBtn.style.backgroundColor = timersDisabled ? "#ff9800" : "";
           }
         } else {
-          adminControlsIngame.style.display = "none";
+          els.adminControls.style.display = "none";
         }
       }
 
@@ -588,30 +475,31 @@
           placeholder = "sleepy quiet time...zzz";
           isChatDisabled = true;
         } else if (!isChatDisabled) {
-          if (!isAlive) {
-            gameChatTitle.textContent = "Ghost Chat 👻";
-            placeholder = "Whisper to the other side...";
-          } else {
-            gameChatTitle.textContent = "Living Chat";
-            placeholder = "Type a message...";
-          }
+          els.gameChatTitle.textContent = !isAlive
+            ? "Ghost Chat 👻"
+            : "Living Chat";
+          placeholder = !isAlive
+            ? "Whisper to the other side..."
+            : "Type a message...";
         }
 
-        gameChatSendBtn.disabled = isChatDisabled;
-        gameChatInput.placeholder = placeholder;
-        gameOverChatSendBtn.disabled = isChatDisabled;
-        gameOverChatInput.placeholder = placeholder;
+        [els.gameChatSendBtn, els.gameOverChatSendBtn].forEach(
+          (btn) => (btn.disabled = isChatDisabled),
+        );
+        [els.gameChatInput, els.gameOverChatInput].forEach(
+          (inp) => (inp.placeholder = placeholder),
+        );
 
-        adminChatToggleBtn.classList.toggle("btn-active", isAdminOnly);
+        els.adminChatToggle.classList.toggle("btn-active", isAdminOnly);
       }
+
+      // --- Pass-and-Play (PnP) Logic ---
       function requestGameSync() {
-        // Asks server for current state (refreshes Hub in PnP)
         socket.emit("client_ready_for_game");
       }
 
-      // --- PHASE 4: Pass-and-Play Logic ---
       function renderHub(allPlayers) {
-        gameInterface.innerHTML =
+        els.pnp.innerHTML =
           `<h2>Night Phase: Who are you?</h2><div class="pnp-grid">` +
           allPlayers
             .map((p) => {
@@ -627,77 +515,58 @@
           `</div>`;
       }
 
-      // 2. Confirmation Flow
       function startConfirmFlow(pid, name) {
-        gameInterface.innerHTML = `
-                    <div class="confirm-box">
-                        <h3>Are you ${name}?</h3>
-                        <button onclick="confirmLevel2('${pid}', '${name}')">Yes, I am ${name}</button>
-                        <button class="cancel" onclick="requestGameSync()">No, go back</button>
-                    </div>`;
+        els.pnp.innerHTML = `
+            <div class="confirm-box">
+                <h3>Are you ${name}?</h3>
+                <button onclick="confirmLevel2('${pid}', '${name}')">Yes, I am ${name}</button>
+                <button class="cancel" onclick="requestGameSync()">No, go back</button>
+            </div>`;
       }
 
       function confirmLevel2(pid, name) {
-        // Level 2 Confirm (Double Check)
-        gameInterface.innerHTML = `
-                    <div class="confirm-box" style="border-color: #f44336">
-                        <h3 style="color:#f44336">CONFIRM IDENTITY</h3>
-                        <p>Pass device to <strong>${name}</strong>.</p>
-                        <p>You are about to see secret info.</p>
-                        <button onclick="loadPrivateData('${pid}')">I am ready</button>
-                        <button class="cancel" onclick="requestGameSync()">Cancel</button>
-                    </div>`;
+        els.pnp.innerHTML = `
+            <div class="confirm-box" style="border-color: #f44336">
+                <h3 style="color:#f44336">CONFIRM IDENTITY</h3>
+                <p>Pass device to <strong>${name}</strong>.</p>
+                <button onclick="socket.emit('pnp_request_state', { player_id: '${pid}' })">I am ready</button>
+                <button class="cancel" onclick="requestGameSync()">Cancel</button>
+            </div>`;
       }
 
-      // 3. Load Data & Render Action
-      function loadPrivateData(pid) {
-        socket.emit("pnp_request_state", { player_id: pid });
-      }
-
-      // Response from server with role data
       socket.on("pnp_state_received", (data) => {
         // Render Role & Prompt (Silly or Serious)
-        let roleName = data.role_name.toUpperCase();
-        let html = `
-                    <div class="role-header">
-                        <h2>You are: ${roleName}</h2>
-                        <p style="font-size:1.2em; color:#fdd835">${data.prompt}</p>
-                    </div>
-                    <div class="target-grid">`;
-
-        // Render targets (including self if returned by backend)
-        html += data.targets
-          .map(
-            (t) =>
-              `<button onclick="submitPnPAction('${data.id}', '${t.id}')">${t.name}</button>`,
-          )
-          .join("");
-
-        // Add "Skip/No Action" button if applicable?
-        html += `</div>`;
-        gameInterface.innerHTML = html;
+        let html =
+          `
+            <div class="role-header">
+                <h2>You are: ${data.role_name.toUpperCase()}</h2>
+                <p style="font-size:1.2em; color:#fdd835">${data.prompt}</p>
+            </div>
+            <div class="target-grid">` +
+          data.targets
+            .map(
+              (t) =>
+                `<button onclick="submitPnPAction('${data.id}', '${t.id}')">${t.name}</button>`,
+            )
+            .join("") +
+          `</div>`;
+        els.pnp.innerHTML = html;
       });
 
-      // 4. Submit & Return
       function submitPnPAction(actorId, targetId) {
         socket.emit("pnp_submit_action", {
           actor_id: actorId,
           target_id: targetId,
         });
-        hasActed.add(actorId); // Mark local
-
-        gameInterface.innerHTML = `<div class="confirm-box"><h3>Action Recorded.</h3><p>Please pass the device.</p></div>`;
+        hasActed.add(actorId);
+        els.pnp.innerHTML = `<div class="confirm-box"><h3>Action Recorded.</h3><p>Please pass the device.</p></div>`;
         setTimeout(() => requestGameSync(), 2000);
       }
 
       // --- Standard UI Logic ---
-
       function submitLynchVote(vote) {
-        // 1. Send vote to server
         socket.emit("cast_lynch_vote", { vote: vote });
-        // 2. Update local state immediately
         myLynchVote = vote;
-        // 3. Re-render UI to show the "You voted" message
         renderActionUI(PHASE_LYNCH);
       }
 
@@ -709,34 +578,58 @@
       ) {
         const select = document.getElementById(elementId);
         if (!select) return;
-        select.innerHTML = "";
+        select.innerHTML = includeNobody
+          ? `<option value="">Nobody</option>`
+          : "";
+        [...players]
+          .sort(() => 0.5 - Math.random())
+          .forEach((p) => {
+            if (!includeSelf && p.id === socket.id) return;
+            select.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+          });
+      }
 
-        if (includeNobody) {
-          select.innerHTML += `<option value="">Nobody</option>`;
+      // Consolidate Night Action Submission
+      function submitNightAction(uiData) {
+        const select = document.getElementById("action-select");
+        const select2 = document.getElementById("action-select-2");
+        const val1 = select ? select.value : null;
+        const val2 = select2 ? select2.value : null;
+
+        if (val1 && val2 && val1 === val2 && val1 !== "Nobody") {
+          alert("Cannot select the same person twice!");
+          return;
         }
 
-        // shuffle player dropdown for less bias
-        const shuffledPlayers = [...players];
-        shuffledPlayers.sort(() => 0.5 - Math.random());
+        const payload = { target_id: val1 };
+        if (val2 !== null) {
+          payload.metadata = uiData.potions
+            ? { potion: val2 }
+            : { target_id2: val2 };
+        }
+        socket.emit("hero_choice", payload);
 
-        shuffledPlayers.forEach((p) => {
-          if (!includeSelf && p.id === socket.id) {
-            return;
-          }
-          select.innerHTML += `<option value="${p.id}">${p.name}</option>`;
-        });
+        // Optimistic UI Update
+        const p1 =
+          select && select.selectedIndex >= 0
+            ? select.options[select.selectedIndex].text
+            : "Nobody";
+        const p2 =
+          select2 && select2.selectedIndex >= 0
+            ? select2.options[select2.selectedIndex].text
+            : "Nobody";
+        els.action.innerHTML = uiData.post
+          .replace("${playerPicked}", p1)
+          .replace("${playerPicked2}", p2);
       }
 
       function renderNightUI(uiData) {
         if (myNightTargetId === null) {
-          // 1. Safety Check
           if (!uiData || !uiData.pre) {
-            actionArea.innerHTML = "<p>Sleeping...</p>";
+            els.action.innerHTML = "<p>Sleeping...</p>";
             return;
           }
-          // 2. Render the Form (Server-Driven HTML)
-          actionArea.innerHTML = uiData.pre;
-          // 3. Populate Dropdown (if exists)
+          els.action.innerHTML = uiData.pre;
           // 1st dropdown
           if (uiData.targets) {
             populateSelect(
@@ -746,246 +639,167 @@
               true,
             );
             // 2nd dropdown
-            if (uiData.potions) {
+            if (uiData.potions)
               populateSelect("action-select-2", uiData.potions, false, false);
-            } else if (document.getElementById("action-select-2")) {
+            else if (document.getElementById("action-select-2"))
               populateSelect(
                 "action-select-2",
                 uiData.targets,
                 uiData.can_skip,
                 true,
               );
-            }
           }
           // 4. Handle Button Click
-          const actionBtn = document.getElementById("action-btn");
-          if (actionBtn) {
-            actionBtn.onclick = () => {
-              const select = document.getElementById("action-select");
-              const select2 = document.getElementById("action-select-2");
-
-              const val1 = select ? select.value : null;
-              const val2 = select2 ? select2.value : null;
-
-              // --- FIX: Prevent Same Target Selection (Cupid) ---
-              if (val1 && val2 && val1 === val2 && val1 !== "Nobody") {
-                alert(
-                  "Cannot select the same person twice! Pick two different persons.",
-                );
-                return; // Stop execution here
-              }
-              // Construct Payload
-              const payload = { target_id: val1 };
-
-              // Add Metadata if a second selection exists
-              if (val2 !== null) {
-                payload.metadata = {};
-                if (uiData.potions) {
-                  // It's the Witch -> second value is potion
-                  payload.metadata.potion = val2;
-                } else {
-                  // It's Cupid -> second value is second target
-                  payload.metadata.target_id2 = val2;
-                }
-              }
-
-              socket.emit("hero_choice", payload);
-              // Render Post-Action Message
-              const playerPicked =
-                select && select.selectedIndex >= 0
-                  ? select.options[select.selectedIndex].text
-                  : "Nobody";
-
-              const playerPicked2 =
-                select2 && select2.selectedIndex >= 0
-                  ? select2.options[select2.selectedIndex].text
-                  : "Nobody";
-
-              let msg = uiData.post;
-              msg = msg.replace("${playerPicked}", playerPicked);
-              msg = msg.replace("${playerPicked2}", playerPicked2);
-              actionArea.innerHTML = msg;
-            };
-          }
+          const btn = document.getElementById("action-btn");
+          if (btn) btn.onclick = () => submitNightAction(uiData);
         } else {
           // Night Action already performed
           if (lastSeerResult) {
-            actionArea.innerHTML = `<p>${lastSeerResult}</p>`;
+            els.action.innerHTML = `<p>${lastSeerResult}</p>`;
             return;
           }
-          const target = allPlayers.find((p) => p.id === myNightTargetId);
-          const playerPicked = target ? target.name : "Nobody";
-          let playerPicked2 = "Unknown";
-
-          if (myNightMetadata && myNightMetadata.potion) {
-            // Map 'heal' -> 'Heal Potion' for display
-            playerPicked2 =
+          // Reconstruct status message
+          let p2 = "Unknown";
+          if (myNightMetadata && myNightMetadata.potion)
+            p2 =
               myNightMetadata.potion === "heal"
                 ? "Heal Potion"
                 : myNightMetadata.potion === "poison"
                 ? "Poison Potion"
                 : "Nothing";
-          }
           // If Cupid: metadata.target_id2
-          else if (myNightMetadata && myNightMetadata.target_id2) {
-            const target2 = allPlayers.find(
-              (p) => p.id === myNightMetadata.target_id2,
-            );
-            playerPicked2 = target2 ? target2.name : "Nobody";
-          }
+          else if (myNightMetadata && myNightMetadata.target_id2)
+            p2 =
+              allPlayers.find((p) => p.id === myNightMetadata.target_id2)
+                ?.name || "Nobody";
 
-          let msg = uiData.post || "<p>Action submitted.</p>";
-          msg = msg.replace("${playerPicked}", playerPicked);
-          msg = msg.replace("${playerPicked2}", playerPicked2);
-          actionArea.innerHTML = msg;
+          const target = allPlayers.find((p) => p.id === myNightTargetId);
+          els.action.innerHTML = (uiData.post || "<p>Action submitted.</p>")
+            .replace("${playerPicked}", target ? target.name : "Nobody")
+            .replace("${playerPicked2}", p2);
         }
       }
 
       function renderAccusationUI(currentDuration) {
         if (sleepButtonTimeout) clearTimeout(sleepButtonTimeout);
 
-        let accusationHTML = "";
-        // Check if already accused (considering "Nobody" as a valid accusation)
+        let html = ""; // 1. Build the HTML string first
+
+        // --- Accusation Section ---
         if (myAccusationId !== null) {
           const target = allPlayers.find((p) => p.id === myAccusationId);
-          const playerPicked = target ? target.name : "Nobody";
-          accusationHTML = `<h3>You have accused <span
-            style="color:#ff5252">${playerPicked}</span>.</h3><p>Waiting for others...</p>`;
+          html += `<h3>You have accused <span style="color:#ff5252">${
+            target ? target.name : "Nobody"
+          }</span>.</h3><p>Waiting for others...</p>`;
         } else {
-          accusationHTML = `
-                        <h4>Who is the Werewolf? Time for discussion!</h4>
-                        <select id="accuse-select"></select>
-                        <button id="accuse-btn">Accuse</button>`;
+          html += `
+                <h4>Who is the Werewolf? Time for discussion!</h4>
+                <select id="accuse-select"></select>
+                <button id="accuse-btn">Accuse</button>`;
         }
 
-        // Check if already voted to sleep
-        let sleepBtnState = "disabled";
-        let sleepBtnText = "💤 Vote to Sleep (30s)";
-        if (mySleepVote) {
-          sleepBtnText = "Voted to Sleep 💤";
-        } else {
-          const timeToEnable =
-            (currentDuration || totalAccusationDuration) -
-            (totalAccusationDuration - 30);
-          if (timeToEnable <= 0) {
-            // Time has passed, enable immediately
-            sleepBtnState = "";
-          } else {
-            // Must wait for timeout
-            sleepBtnText = `Vote to Sleep (${timeToEnable.toFixed(1)}s)`;
+        // --- Sleep Section ---
+        const timeToEnable =
+          (currentDuration || totalAccusationDuration) -
+          (totalAccusationDuration - 30);
+        let btnState = mySleepVote
+          ? "disabled"
+          : timeToEnable <= 0
+          ? ""
+          : "disabled";
+        let btnText = mySleepVote
+          ? "Voted to Sleep 💤"
+          : timeToEnable <= 0
+          ? "💤 Vote to Sleep"
+          : `Vote to Sleep (${timeToEnable.toFixed(1)}s)`;
 
-            // Set timer to enable it automatically
-            sleepButtonTimeout = setTimeout(() => {
-              const btn = document.getElementById("vote-end-day-btn");
-              if (btn) {
-                btn.disabled = false;
-                btn.textContent = "💤 Vote to Sleep";
-              }
-            }, timeToEnable * 1000);
+        html += `<hr style="border-color: #444; margin: 15px 0;">
+             <div id="sleep-section"><h4>Ready for Night?</h4><button id="vote-end-day-btn" ${btnState}>${btnText}</button><span id="end-day-vote-counter" style="margin-left:10px; font-size:0.9em; color:#aaa"></span></div>`;
+
+        // 2. Render to DOM ONCE
+        els.action.innerHTML = html;
+
+        // 3. Attach Listeners (Now that elements are stable)
+        if (myAccusationId === null) {
+          populateSelect("accuse-select", livingPlayers, true, true);
+          const accBtn = document.getElementById("accuse-btn");
+          if (accBtn) {
+            accBtn.onclick = () =>
+              socket.emit("accuse_player", {
+                target_id: document.getElementById("accuse-select").value,
+              });
           }
         }
 
-        // Combine Sections
-        actionArea.innerHTML = `
-                   <div id="accusation-section">${accusationHTML}</div>
-                   <hr style="border-color: #444; margin: 15px 0;">
-                   <div id="sleep-section">
-                      <h4>Ready for Night?</h4>
-                      <button id="vote-end-day-btn" ${sleepBtnState}>${sleepBtnText}</button>
-                      <span id="end-day-vote-counter" style="margin-left:10px; font-size:0.9em; color:#aaa"></span>
-                   </div>
-                `;
-
-        // --- SECTION C: Event Listeners ---
-
-        // 1. Accusation Logic (Only if dropdown exists)
-        if (myAccusationId === null) {
-          populateSelect("accuse-select", livingPlayers, true, true);
-          document.getElementById("accuse-btn").onclick = () => {
-            const select = document.getElementById("accuse-select");
-            if (select)
-              socket.emit("accuse_player", { target_id: select.value });
-          };
-        }
-
-        // 2. Sleep Button Logic
-        // Only attach logic if we haven't voted yet
+        // Sleep Button Logic
         const voteBtn = document.getElementById("vote-end-day-btn");
-        if (voteBtn && !mySleepVote) {
+        if (voteBtn && !mySleepVote && timeToEnable > 0) {
+          sleepButtonTimeout = setTimeout(() => {
+            const b = document.getElementById("vote-end-day-btn");
+            if (b) {
+              b.disabled = false;
+              b.textContent = "💤 Vote to Sleep";
+            }
+          }, timeToEnable * 1000);
+        }
+        if (voteBtn && !mySleepVote)
           voteBtn.onclick = function () {
             socket.emit("vote_to_end_day");
             this.disabled = true;
             this.textContent = "Voted to Sleep 💤";
             mySleepVote = true;
           };
-        }
       }
 
       function renderLynchVoteUI() {
-        const voted = myLynchVote === "yes" || myLynchVote === "no";
-        if (voted) {
-          const voteText = myLynchVote === "yes" ? "YES" : "NO";
-          const color = myLynchVote === "yes" ? "red" : "green";
-          actionArea.innerHTML = `<h3>You voted: <span style="color:${color}">${voteText}</span></h3><p>Waiting for result...</p>`;
+        if (myLynchVote === "yes" || myLynchVote === "no") {
+          els.action.innerHTML = `<h3>You voted: <span style="color:${
+            myLynchVote === "yes" ? "red" : "green"
+          }">${myLynchVote.toUpperCase()}</span></h3><p>Waiting for result...</p>`;
         } else {
           // If not voted, SHOW BUTTONS (Moved from lynch_vote_started)
-          actionArea.innerHTML = `
-                   <h4>Will you lynch <span style="color:#bb86fc">${currentLynchTargetName}</span>?</h4>
-                   <button id="vote-yes-btn" onclick="submitLynchVote('yes')" class="vote-btn-yes">YES</button>
-                   <button id="vote-no-btn" onclick="submitLynchVote('no')" class="vote-btn-no">NO</button>
-                 `;
+          els.action.innerHTML = `
+             <h4>Will you lynch <span style="color:#bb86fc">${currentLynchTargetName}</span>?</h4>
+             <button onclick="submitLynchVote('yes')" class="vote-btn-yes">YES</button>
+             <button onclick="submitLynchVote('no')" class="vote-btn-no">NO</button>`;
         }
       }
 
       function renderActionUI(phase, currentDuration = 0) {
-        actionArea.innerHTML = "";
-
+        els.action.innerHTML = "";
         // DEAD VIEW
         if (!isAlive) {
-          actionArea.innerHTML =
+          els.action.innerHTML =
             "<h3>You are dead 💀 You can observe the game in silence.</h3>";
           return;
         }
-
-        switch (phase) {
-          case PHASE_NIGHT:
-            renderNightUI(currentNightUI);
-            break;
-          case PHASE_ACCUSATION:
-            renderAccusationUI(currentDuration);
-            break;
-          case PHASE_LYNCH:
-            renderLynchVoteUI();
-            break;
-          default:
-            actionArea.innerHTML = "<p>Please wait...</p>";
-        }
+        if (phase === PHASE_NIGHT) renderNightUI(currentNightUI);
+        else if (phase === PHASE_ACCUSATION)
+          renderAccusationUI(currentDuration);
+        else if (phase === PHASE_LYNCH) renderLynchVoteUI();
+        else els.action.innerHTML = "<p>Please wait...</p>";
       }
 
       function startTimer(endTimeStamp) {
         if (timerInterval) clearInterval(timerInterval);
-        timerDisplay.textContent = "";
+        els.timer.textContent = "";
         if (timersDisabled) {
-          timerDisplay.textContent = "Timer ♾️";
+          els.timer.textContent = "Timer ♾️";
           return;
         }
-
         if (!endTimeStamp) return;
 
         const update = () => {
-          // Calculate remaining seconds: (Target - Now)
-          const now = Date.now() / 1000; // Convert ms to seconds
-          const timeLeft = Math.max(0, Math.ceil(endTimeStamp - now));
-
-          const minutes = Math.floor(timeLeft / 60);
-          const seconds = Math.floor(timeLeft % 60);
-          timerDisplay.textContent = `Time left: ${minutes}:${(
-            "0" + seconds
-          ).slice(-2)}`;
-
+          const timeLeft = Math.max(
+            0,
+            Math.ceil(endTimeStamp - Date.now() / 1000),
+          );
+          const m = Math.floor(timeLeft / 60),
+            s = Math.floor(timeLeft % 60);
+          els.timer.textContent = `Time left: ${m}:${("0" + s).slice(-2)}`;
           if (timeLeft <= 0) {
             clearInterval(timerInterval);
-            timerDisplay.textContent = "Time's up!";
+            els.timer.textContent = "Time's up!";
           }
         };
         update();
@@ -994,95 +808,63 @@
 
       function showGameOverScreen(data, rematchInfo = {}) {
         if (timerInterval) clearInterval(timerInterval);
-
         document.querySelector(".game-container").style.display = "none";
-        gameOverScreen.style.display = "flex";
-
-        const winner = data.winning_team;
-        const titleEl = document.getElementById("game-over-title");
-
-        if (winner === "Villagers" || winner === "Werewolves") {
-          titleEl.textContent = `The ${winner} Win!`;
-        } else {
-          // Solo winner (e.g., "PlayerName Won!")
-          titleEl.textContent = `${winner} Won!`;
-        }
-
+        els.gameOverScreen.style.display = "flex";
+        document.getElementById("game-over-title").textContent =
+          data.winning_team === "Villagers" ||
+          data.winning_team === "Werewolves"
+            ? `The ${data.winning_team} Win!`
+            : `${data.winning_team} Won!`;
         // Populate game over data...
-
         document.getElementById("game-over-reason").textContent = data.reason;
 
-        const rolesList = document.getElementById("final-roles-list");
-        rolesList.innerHTML = "";
+        const list = document.getElementById("final-roles-list");
+        list.innerHTML = "";
         data.final_player_states.forEach((p) => {
-          let isWinner = false;
-
-          // Check standard teams
-          if (winner === "Villagers" && p.team === "villager") isWinner = true;
-          else if (winner === "Werewolves" && p.team === "werewolf")
-            isWinner = true;
-          // Check solo winner (Winner name matches player name)
-          else if (winner === p.name) isWinner = true;
-
-          const trophy = isWinner ? " 🏆" : "";
-          const deadStatus = p.is_alive ? "" : " 💀";
-
-          rolesList.innerHTML += `<li><strong>${p.name}</strong>${trophy} was a ${p.role}${deadStatus}</li>`;
+          const isWinner =
+            (data.winning_team === "Villagers" && p.team === "villager") ||
+            (data.winning_team === "Werewolves" && p.team === "werewolf") ||
+            data.winning_team === p.name;
+          list.innerHTML += `<li><strong>${p.name}</strong>${
+            isWinner ? " 🏆" : ""
+          } was a ${p.role}${p.is_alive ? "" : " 💀"}</li>`;
         });
 
-        const mainLog = document.getElementById("log-panel"); // Used correct ID from previous fix
+        const mainLog = document.getElementById("log-panel");
         const gameOverLog = document.getElementById("game-over-log");
-        if (mainLog && gameOverLog) {
-          gameOverLog.innerHTML = mainLog.innerHTML;
-        }
+        if (mainLog && gameOverLog) gameOverLog.innerHTML = mainLog.innerHTML;
 
-        const returnBtn = document.getElementById("return-to-lobby-btn");
-
-        returnBtn.onclick = (event) => {
+        const btn = document.getElementById("return-to-lobby-btn");
+        btn.onclick = (e) => {
           socket.emit("vote_for_rematch");
-          event.target.disabled = true;
-          event.target.textContent = "Voted!";
+          e.target.disabled = true;
+          e.target.textContent = "Voted!";
         };
+        btn.disabled = rematchInfo.hasVoted;
+        btn.textContent = rematchInfo.hasVoted
+          ? "Voted!"
+          : "Vote to Return to Lobby";
 
-        if (rematchInfo.hasVoted) {
-          returnBtn.disabled = true;
-          returnBtn.textContent = "Voted!";
-        } else {
-          returnBtn.disabled = false;
-          returnBtn.textContent = "Vote to Return to Lobby";
-        }
+        const status = document.getElementById("rematch-vote-status");
+        if (status && rematchInfo.count !== undefined)
+          status.textContent = `${rematchInfo.count} / ${rematchInfo.total} players have voted to return.`;
 
-        // --- FIX: Handle Count Text ---
-        const statusEl = document.getElementById("rematch-vote-status");
-        if (statusEl && rematchInfo.count !== undefined) {
-          statusEl.textContent = `${rematchInfo.count} / ${rematchInfo.total} players have voted to return.`;
-        }
-
-        const chatContainer = document.getElementById(
-          "game-over-chat-container",
-        );
-        if (isPassAndPlay) {
-          if (chatContainer) chatContainer.style.display = "none";
-        } else {
-          if (chatContainer) chatContainer.style.display = "flex";
-        }
+        document.getElementById("game-over-chat-container").style.display =
+          isPassAndPlay ? "none" : "flex";
       }
 
       // --- Socket Events ---
-
       socket.on("connect", () => {
-        console.log("[DEBUG] Client connected to /game page.");
         socket.emit("client_ready_for_game");
       });
 
-      // Unified State Update
       socket.on("game_state_sync", (data) => {
+        // Sync Globals
         myRole = data.your_role;
         isAdmin = data.is_admin;
         isAlive = data.is_alive;
         livingPlayers = data.living_players;
         allPlayers = data.all_players;
-        validTargets = data.valid_targets || [];
         timersDisabled = data.timers_disabled;
         myNightTargetId = data.my_night_target_id;
         myNightMetadata = data.my_night_metadata || {};
@@ -1091,29 +873,19 @@
         mySleepVote = data.my_sleep_vote;
         myLynchVote = data.my_lynch_vote;
         currentLynchTargetName = data.lynch_target_name || "Unknown";
-
-        const logContainer = document.getElementById("log-panel");
-
-        // Only refill if we have history and the log is currently empty (or to force sync)
-        if (data.message_history && logContainer.innerHTML.trim() === "") {
-          data.message_history.forEach((msg) => {
-            logMessage(msg);
-          });
-          // Scroll to bottom
-          logContainer.scrollTop = logContainer.scrollHeight;
-        }
-
-        if (myNightTargetId === null) {
-          lastSeerResult = null;
-        }
-        if (data.total_accusation_duration) {
+        if (data.total_accusation_duration)
           totalAccusationDuration = data.total_accusation_duration;
+
+        // Log Sync
+        if (data.message_history && els.log.innerHTML.trim() === "") {
+          data.message_history.forEach(logMessage);
+          // Scroll to bottom
+          els.log.scrollTop = els.log.scrollHeight;
         }
 
-        // Determine Mode
+        if (myNightTargetId === null) lastSeerResult = null;
         isPassAndPlay = data.mode === "pass_and_play";
 
-        // Handle Game Over
         if (data.phase === PHASE_GAME_OVER && data.game_over_data) {
           showGameOverScreen(data.game_over_data, {
             hasVoted: data.my_rematch_vote,
@@ -1124,57 +896,46 @@
           return;
         }
 
-        // PHASE 4 Logic: Toggle Interfaces
+        // Phase UI Switch
         if (isPassAndPlay && data.phase === PHASE_NIGHT) {
-          // Hide Chat, Hide Standard Action
-          sidePanel.style.display = "none"; // Hide chat & player list
-          actionArea.style.display = "none";
-          gameInterface.style.display = "block";
-          phaseDisplay.textContent = "Night (Pass Device)";
+          els.sidePanel.style.display = "none";
+          els.action.style.display = "none";
+          els.pnp.style.display = "block";
+          els.phase.textContent = "Night (Pass Device)";
           renderHub(allPlayers);
         } else {
           // Standard Mode / Day Phase
-          sidePanel.style.display = "flex"; // Show chat
-          actionArea.style.display = "block";
-          gameInterface.style.display = "none";
-
-          myRoleDisplay.textContent =
+          els.sidePanel.style.display = "flex";
+          els.action.style.display = "block";
+          els.pnp.style.display = "none";
+          els.role.textContent =
             (myRole === "Random_Seer" ? "Seer" : myRole) +
             (isAdmin ? " 👑" : "");
-          if (data.phase)
-            phaseDisplay.textContent = data.phase.replace(/_/g, " ");
-
+          if (data.phase) els.phase.textContent = data.phase.replace(/_/g, " ");
           renderActionUI(data.phase, data.duration);
-
-          adminChatToggleBtn.style.display = "block";
+          els.adminChatToggle.style.display = "block";
           // Clear local PnP history if phase changed to Day
           if (data.phase !== PHASE_NIGHT) hasActed.clear();
         }
 
-        phaseDisplay.textContent = data.phase.replace(/_/g, " ");
-        renderActionUI(data.phase, data.duration);
-
+        // Accusation Counter
         if (data.phase === PHASE_ACCUSATION) {
+          const needed =
+            1 +
+            Math.floor(data.living_players.length / 2) -
+            (data.sleep_vote_count || 0);
           const counter = document.getElementById("end-day-vote-counter");
-          const currentVotes = data.sleep_vote_count || 0;
-          const totalLiving = data.living_players.length;
-
-          // Formula: (Living / 2) + 1 - CurrentVotes
-          const needed = 1 + Math.floor(totalLiving / 2) - currentVotes;
-
-          if (counter && needed > 0) {
+          if (counter && needed > 0)
             counter.innerHTML = `<strong>${needed}</strong> more votes needed to sleep!`;
-          }
         }
 
         updatePlayerListView(data.accusation_counts || {});
         updateAdminControls();
         setChatMode(data.admin_only_chat, data.phase);
         startTimer(data.phase_end_time);
-        adminChatToggleBtn.classList.toggle("btn-active", data.admin_only_chat);
       });
 
-      // Also listen for simple phase change updates
+      // Simple Phase Change
       socket.on("phase_change", (data) => {
         logMessage(
           `A new phase has begun: <strong>${data.phase.replace(
@@ -1182,190 +943,121 @@
             " ",
           )}</strong>.`,
         );
-
-        if (data.phase === PHASE_ACCUSATION) {
-          totalAccusationDuration = data.duration;
-        }
-        livingPlayers = data.living_players;
-        if (data.all_players) allPlayers = data.all_players;
-        timersDisabled = data.timers_disabled;
-        phaseDisplay.textContent = data.phase.replace(/_/g, " ");
-        renderActionUI(data.phase, data.duration);
-        updatePlayerListView();
-        updateAdminControls();
-        setChatMode(data.admin_only_chat, data.phase);
-        startTimer(data.phase_end_time);
-        adminChatToggleBtn.classList.toggle("btn-active", data.admin_only_chat);
-        socket.emit("client_ready_for_game"); // Trigger full sync to handle UI logic
+        // Refactor Note: We rely on the full sync to handle complex UI state updates to reduce duplication
+        socket.emit("client_ready_for_game");
       });
 
-      // Messages
+      // Unified Message Handlers
       socket.on("message", (data) => logMessage(data.text));
-
       socket.on("new_message", (data) => {
-        const messageEl = document.createElement("div");
-        messageEl.innerHTML = data.text;
+        const div = document.createElement("div");
+        div.innerHTML = data.text;
+        const target = document.getElementById("game-chat-messages");
+        const overTarget = document.getElementById("game-over-chat-messages");
 
         if (data.channel === "announcement") {
-          messageEl.classList.add("announcement");
-          gameChatMessages.prepend(messageEl.cloneNode(true));
-          gameOverChatMessages.prepend(messageEl.cloneNode(true));
-          return;
-        }
-
-        if (data.channel === "lobby") {
-          gameOverChatMessages.prepend(messageEl);
-          return;
-        }
-
-        if (isAlive && data.channel === "living") {
-          gameChatMessages.prepend(messageEl);
-        } else if (!isAlive && data.channel === "ghost") {
-          messageEl.classList.add("ghost-chat");
-          gameChatMessages.prepend(messageEl);
+          div.classList.add("announcement");
+          if (target) target.prepend(div.cloneNode(true));
+          if (overTarget) overTarget.prepend(div.cloneNode(true));
+        } else if (data.channel === "lobby" && overTarget) {
+          overTarget.prepend(div);
+        } else if (isAlive && data.channel === "living" && target) {
+          target.prepend(div);
+        } else if (!isAlive && data.channel === "ghost" && target) {
+          div.classList.add("ghost-chat");
+          target.prepend(div);
         }
       });
 
-      // Actions
-
+      // Specific Events
       socket.on("chat_mode_update", (data) => {
         setChatMode(data.admin_only_chat, data.phase);
-        adminChatToggleBtn.classList.toggle("btn-active", data.admin_only_chat);
+      });
+
+      socket.on("seer_result", (data) => {
+        const m = `Your vision reveals that <strong>${data.name}</strong> is <strong>${data.role}</strong>.`;
+        logMessage(m);
+        lastSeerResult = m;
+        els.action.innerHTML = `<p>${m}</p>`;
       });
 
       socket.on("night_result_kill", (data) => {
-        if (data.message) {
-          logMessage(data.message);
-        }
+        if (data.message) logMessage(data.message);
         // Update local state if I am the one who died
         if (data.killed_player && myPlayerId === data.killed_player.id) {
           isAlive = false;
           setChatMode(data.admin_only_chat, data.phase);
         }
       });
-
-      socket.on("seer_result", (data) => {
-        const msg = `Your vision reveals that <strong>${data.name}</strong> is <strong>${data.role}</strong>.`;
-        logMessage(msg);
-        lastSeerResult = msg;
-        actionArea.innerHTML = `<p>${msg}</p>`;
-      });
-
-      socket.on("werewolf_team_info", (data) => {
-        if (data.teammates.length > 0) {
-          logMessage(
-            `You are a Werewolf. Your fellow Werewolves are: <strong>${data.teammates.join(
-              ", ",
-            )}</strong>.`,
-          );
-        } else {
-          logMessage(`You are the lone Werewolf.`);
-        }
-      });
-
+      socket.on("werewolf_team_info", (data) =>
+        logMessage(
+          data.teammates.length
+            ? `You are a Werewolf. Your fellow Werewolves are: <strong>${data.teammates.join(
+                ", ",
+              )}</strong>.`
+            : "You are the lone Werewolf.",
+        ),
+      );
       socket.on("lynch_vote_result", (data) => {
-        let fullMessage = data.message;
-        if (data.summary) {
-          fullMessage += `<div class="vote-summary">Voted Yes: ${
-            data.summary.yes.join(", ") || "None"
-          }<br>Voted No: ${data.summary.no.join(", ") || "None"}</div>`;
-        }
-        logMessage(fullMessage);
-        if (data.killed_id && data.killed_id === myPlayerId) {
+        logMessage(
+          data.message +
+            (data.summary
+              ? `<div class="vote-summary">Voted Yes: ${
+                  data.summary.yes.join(", ") || "None"
+                }<br>Voted No: ${data.summary.no.join(", ") || "None"}</div>`
+              : ""),
+        );
+        if (data.killed_id === myPlayerId) {
           isAlive = false;
           setChatMode(data.admin_only_chat, data.phase);
         }
-      });
-
-      socket.on("error", (data) => {
-        alert("Error: " + data.message);
       });
 
       socket.on("force_phase_update", () =>
         socket.emit("client_ready_for_game"),
       );
 
-      // Admin & Utils
-      function updatePlayerListView(accusationCounts = {}) {
-        playerListEl.innerHTML = "";
-        const livingIds = livingPlayers.map((p) => p.id);
-        allPlayers.forEach((p) => {
-          const li = document.createElement("li");
-          const nameSpan = document.createElement("span");
-          nameSpan.textContent = p.name + (p.id === myPlayerId ? " (You)" : "");
-          li.appendChild(nameSpan);
-          const count = accusationCounts[p.id] || 0;
-          if (count > 0) {
-            const countBadge = document.createElement("span");
-            countBadge.className = "accusation-count";
-            countBadge.textContent = count;
-            li.appendChild(countBadge);
-          }
-          if (!livingIds.includes(p.id)) {
-            li.classList.add("dead");
-            nameSpan.textContent += " 💀";
-          }
-          playerListEl.appendChild(li);
-        });
-      }
-
       socket.on("accusation_made", (data) => {
         logMessage(
           `<strong>${data.accuser_name}</strong> accuses <strong>${data.accused_name}</strong>!`,
         );
         if (
-          myPlayerId &&
           allPlayers.find((p) => p.id === myPlayerId)?.name ===
-            data.accuser_name
+          data.accuser_name
         ) {
-          const accuseBtn = document.getElementById("accuse-btn");
-          if (accuseBtn) {
-            accuseBtn.disabled = true;
-            accuseBtn.textContent = "Accused";
+          const b = document.getElementById("accuse-btn");
+          if (b) {
+            b.disabled = true;
+            b.textContent = "Accused";
           }
         }
       });
 
       socket.on("accusation_update", (data) => updatePlayerListView(data));
-
       socket.on("end_day_vote_update", (data) => {
-        const counter = document.getElementById("end-day-vote-counter");
-        if (counter)
-          counter.innerHTML = `<strong>${
+        const c = document.getElementById("end-day-vote-counter");
+        if (c)
+          c.innerHTML = `<strong>${
             1 + Math.floor(data.total / 2) - data.count
           }</strong> more votes needed to sleep!`;
       });
-
       socket.on("lynch_vote_started", (data) => {
         logMessage(`<strong>${data.target_name}</strong> is on trial!`);
 
         // Update Local State
         currentLynchTargetName = data.target_name;
-        phaseDisplay.textContent = "Lynch Vote";
-
+        els.phase.textContent = "Lynch Vote"; // Fix: Restore immediate phase text update
         renderActionUI(PHASE_LYNCH);
-
         startTimer(data.phase_end_time);
       });
-
-      // listener waits for 'game_over' message from server.
-      // Then hides main game area and displays results screen,
-      // populating it with the winner, reason, and list of roles from the server.
       socket.on("game_over", (data) => {
         showGameOverScreen(data);
       });
-
-      // listens for updates on the rematch vote count and
-      // displays the status to the players.
       socket.on("rematch_vote_update", (data) => {
-        const statusEl = document.getElementById("rematch-vote-status");
-        if (statusEl) {
-          statusEl.textContent = `${data.count} / ${data.total} players have voted to return.`;
-        }
+        const s = document.getElementById("rematch-vote-status");
+        if (s)
+          s.textContent = `${data.count} / ${data.total} players have voted to return.`;
       });
-
-      // listens for final signal from server, sent
-      // upon vote passes, then performs lobby redirect.
       socket.on("redirect_to_lobby", () => {
         logMessage("Majority vote reached! Returning to lobby...");
         window.location.href = "/lobby";
@@ -1373,46 +1065,59 @@
 
       socket.on("force_relogin", (data) => {
         alert(
-          `Admin has set a new game code.\nYou will now be returned to the login screen.`,
+          `New game code set.\nYou will now be returned to the login screen.`,
         );
         window.location.href = "/";
       });
+      socket.on("error", (data) => alert("Error: " + data.message));
 
-      // --- Event Listeners ---
-      adminChatToggleBtn.addEventListener("click", () => {
-        socket.emit("admin_toggle_chat");
-        //adminChatToggleBtn.classList.toggle("btn-active", data.admin_only_chat);
-      });
-
-      adminNextPhaseBtn.addEventListener("click", () => {
-        socket.emit("admin_next_phase");
-        //adminChatToggleBtn.classList.toggle("btn-active", data.admin_only_chat);
-      });
-
-      const adminPauseBtn = document.getElementById("admin-pause-timer-btn");
-      if (adminPauseBtn) {
-        adminPauseBtn.addEventListener("click", () => {
-          // Toggle the current state
-          const newState = !timersDisabled;
-          socket.emit("admin_set_timers", { timers_disabled: newState });
+      function updatePlayerListView(accusationCounts = {}) {
+        els.playerList.innerHTML = "";
+        const livingIds = livingPlayers.map((p) => p.id);
+        allPlayers.forEach((p) => {
+          const li = document.createElement("li");
+          li.innerHTML =
+            `<span>${p.name}${p.id === myPlayerId ? " (You)" : ""}</span>` +
+            (accusationCounts[p.id]
+              ? `<span class="accusation-count">${
+                  accusationCounts[p.id]
+                }</span>`
+              : "");
+          if (!livingIds.includes(p.id)) {
+            li.classList.add("dead");
+            li.firstChild.textContent += " 💀";
+          }
+          els.playerList.appendChild(li);
         });
       }
 
-      gameChatForm.addEventListener("submit", (e) => {
-        e.preventDefault();
-        if (gameChatInput.value.trim())
-          socket.emit("send_message", { message: gameChatInput.value });
-        gameChatInput.value = "";
-      });
-
-      gameOverChatForm.addEventListener("submit", (e) => {
-        e.preventDefault();
-        const message = gameOverChatInput.value.trim();
-        if (message) {
-          socket.emit("send_message", { message: message });
-          gameOverChatInput.value = "";
+      // --- Setup Handlers ---
+      function bindChatHandler(formId, inputId) {
+        const form = document.getElementById(formId);
+        const input = document.getElementById(inputId);
+        if (form && input) {
+          form.addEventListener("submit", (e) => {
+            e.preventDefault();
+            if (input.value.trim())
+              socket.emit("send_message", { message: input.value });
+            input.value = "";
+          });
         }
-      });
+      }
+      bindChatHandler("game-chat-form", "game-chat-input");
+      bindChatHandler("game-over-chat-form", "game-over-chat-input");
+
+      els.adminChatToggle.addEventListener("click", () =>
+        socket.emit("admin_toggle_chat"),
+      );
+      document
+        .getElementById("admin-next-phase-btn")
+        .addEventListener("click", () => socket.emit("admin_next_phase"));
+      const adminPauseBtn = document.getElementById("admin-pause-timer-btn");
+      if (adminPauseBtn)
+        adminPauseBtn.addEventListener("click", () =>
+          socket.emit("admin_set_timers", { timers_disabled: !timersDisabled }),
+        );
     </script>
   </body>
 </html>
