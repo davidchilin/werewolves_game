@@ -416,22 +416,22 @@
           Your Role: <strong id="my-role">Unknown</strong>
         </div>
 
-        <div id="admin-controls-ingame" style="display: none">
-          <button
-            id="admin-next-phase-btn"
-            style="width: 100%; margin-top: 5px"
-          >
+        <div
+          id="admin-controls-ingame"
+          style="display: none; align-items: center"
+        >
+          <button id="admin-next-phase-btn" style="width: 80%; margin-top: 5px">
             Next Phase
           </button>
           <button
             id="admin-pause-timer-btn"
-            style="width: 100%; margin-top: 5px"
+            style="width: 80%; margin-top: 5px"
           >
             Pause Timers ⏸️
           </button>
           <button
             id="admin-chat-toggle-btn"
-            style="width: 100%; margin-top: 5px"
+            style="width: 80%; margin-top: 5px"
           >
             Toggle Admin Chat
           </button>
@@ -1250,10 +1250,6 @@
         lastSeerResult = msg;
         actionArea.innerHTML = `<p>${msg}</p>`;
       });
-
-      socket.on("night_result_no_kill", () =>
-        logMessage("🌞 The sun rises, and no one was killed."),
-      );
 
       socket.on("werewolf_team_info", (data) => {
         if (data.teammates.length > 0) {

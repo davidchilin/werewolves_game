@@ -629,11 +629,10 @@ def resolve_lynch():
 
     if result.get("announcements"):
         for ann in result["announcements"]:
-            print("Debug: anouncement resolve_lynch: {ann}")
+            print(f"Debug: anouncement resolve_lynch: {ann}")
             game_instance.message_history.append(ann)
-            socketio.emit("new_message", {
+            socketio.emit("message", {
                 "text": ann,
-                "channel": "announcement"
             }, to=game["game_code"])
 
     # 2. Notify
@@ -914,9 +913,8 @@ def resolve_night():
             elif event_type == "announcement":
                 msg = event["message"]
                 game_instance.message_history.append(msg)
-                socketio.emit("new_message", {
+                socketio.emit("message", {
                     "text": msg,
-                    "channel": "announcement" # Shows in purple/bold usually
                 }, to=game["game_code"])
             elif event_type == "death":
                 actual_death = True
@@ -955,9 +953,10 @@ def resolve_night():
                 living_wolves = game_instance.get_living_players("werewolf")
                 for werewolf in living_wolves:
                     send_werewolf_info(werewolf.id)
-
+# todo delete game.html night_result_no_kill function
     if not actual_death:
-        socketio.emit("night_result_no_kill", {}, to=game["game_code"])
+        msg = "🌞 The sun rises, and no one was killed."
+        socketio.emit("message", {"text": msg}, to=game["game_code"])
 
     socketio.sleep(4)  # Short pause for effect
     check_game_over_or_next_phase()

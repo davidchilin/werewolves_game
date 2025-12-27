@@ -436,6 +436,8 @@ class Game:
 
             # 4. Handle Results
             if result:
+                if result.get("type") == "announcement":
+                    notifications.append(result)
                 # Need to resolve the target player object from ID
                 action_type = result.get("action")
                 effect = result.get("effect")
@@ -532,8 +534,8 @@ class Game:
 
         # if tie, restart accusations once
         if len(most_common) > 1 and most_common[0][1] == most_common[1][1]:
-            mayor = next(p for p in self.players.values() if p.is_alive and
-                         getattr(p.role, "next_mayor_id", None))
+            mayor = next((p for p in self.players.values() if p.is_alive and
+                         getattr(p.role, "next_mayor_id", None)), None)
             if mayor:
                 mayor_vote = self.accusations.get(mayor.id)
                 tied_candidate_1 = most_common[0][0]
@@ -542,7 +544,7 @@ class Game:
                 if mayor_vote == tied_candidate_1 or mayor_vote == tied_candidate_2:
                     self.lynch_target_id = mayor_vote
 
-                    tie_msg = f"⚖️ <strong>Tie Vote!</strong> The Mayor broke the tie against {self.players[mayor_vote].name}!"
+                    tie_msg = f"⚖️ <strong>Tie Vote!</strong> The Mayor broke the tie against <strong>{self.players[mayor_vote].name}!</strong>"
                     self.message_history.append(tie_msg)
 
                     self.set_phase(PHASE_LYNCH)
@@ -556,7 +558,7 @@ class Game:
             if self.accusation_restarts == 0:
                 self.accusation_restarts += 1
                 self.accusations = {}
-                return {"result": "restart", "message": "Tie vote! Re-discuss."}
+                return {"result": "restart", "message": "⚖️ Tie vote! Re-discuss."}
             else:
                 self.set_phase(PHASE_NIGHT)
                 return {"result": "night", "message": "Deadlock tie. No one lynched."}

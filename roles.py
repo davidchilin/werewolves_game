@@ -558,20 +558,22 @@ class Mayor(Villager):
         self.name_key = ROLE_MAYOR
         self.description_key = "desc_mayor"
         self.team = "villager"
+        self.priority = 12
         self.is_night_active = True
         self.next_mayor_id = "not_set_yet"
 
     def night_action(self, player_obj, target_player_obj, game_context):
         self.is_night_active = False
         self.next_mayor_id = target_player_obj.id
-        # todo announce to all, next mayor has been selected.
-        print(f"Next mayor selected: {target_player_obj.name} promoted to Mayor-Elect!")
-        return {}
+        return {
+                "type": "announcement",
+                "message": f"🗳️ Next mayor selected: <strong>{target_player_obj.name}</strong> promoted to <strong>Mayor-Elect!</strong>",
+                }
 
     def get_night_ui_schema(self, player_obj, game_context):
         return {
             "pre": '<h4>Mayor, who will be the next mayor?</h4><select id="action-select"></select> <button id="action-btn">Elect</button>',
-            "post": '<p><span style="color: turquoise">${playerPicked}</span>: Politics is great ;)</p>',
+            "post": '<p>Politics is great, right <span style="color: turquoise">${playerPicked}</span> ;)</p>',
             "targets": [
                 {"id": p.id, "name": p.name}
                 for p in self.get_valid_targets(game_context)
@@ -595,20 +597,20 @@ class Mayor(Villager):
         new_mayor = next((p for p in game_context["players"] if p.is_alive and p.id == self.next_mayor_id), None)
 
         if new_mayor:
-            new_mayor.next_mayor_id = "not_set_yet"
+            new_mayor.role.next_mayor_id = "not_set_yet"
             # only GOOD_MAYORS can pass on mayor title
             if new_mayor.role.name_key in GOOD_MAYORS:
                 new_mayor.role.is_night_active = True
+                new_mayor.role.next_mayor_id = "not_set_yet"
                 # bind mayor functions
                 new_mayor.role.night_action = Mayor.night_action.__get__(new_mayor.role, type(new_mayor.role))
                 new_mayor.role.get_night_ui_schema = Mayor.get_night_ui_schema.__get__(new_mayor.role, type(new_mayor.role))
                 new_mayor.role.on_death = Mayor.on_death.__get__(new_mayor.role, type(new_mayor.role))
                 new_mayor.role.on_night_start = Mayor.on_night_start.__get__(new_mayor.role, type(new_mayor.role))
                 # announce to all next mayor name has been elected
-                print(f"ELECTION: {new_mayor.name} promoted to Mayor!")
-                return {
+            return {
                 "type": "announcement",
-                "message": f"🎩 The Mayor is dead! Long live Mayor <strong>{new_mayor.name}</strong>!"
+                "message": f"🎩 The Mayor is dead! Long live Mayor <strong>{new_mayor.name}</strong>!",
             }
         return {}
 
