@@ -1,5 +1,5 @@
-<!-- Version: 4.4.9 -->
-<!DOCTYPE html>
+<!-- Version: 4.6.0 -->
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -7,8 +7,9 @@
     <title>Werewolves Lobby</title>
     <style>
       body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          Helvetica, Arial, sans-serif;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+          Arial, sans-serif;
         background-color: #121212;
         color: #e0e0e0;
         min-height: 100vh;
@@ -150,7 +151,20 @@
       </p>
       <h3>Players:</h3>
       <ul id="player-list"></ul>
-
+      <div
+        id="role-summary-container"
+        style="
+          background: #2c2c2c;
+          padding: 10px;
+          margin: 10px 0;
+          border: 1px solid #444;
+          border-radius: 5px;
+          color: #e0e0e0;
+        "
+      >
+        <strong style="color: #90caf9">ROLE COUNT:</strong>
+        <span id="role-summary-text">Waiting for players...</span>
+      </div>
       <div class="chat-container">
         <h4>Lobby Chat</h4>
         <div id="chat-messages" class="chat-messages"></div>
@@ -252,7 +266,9 @@
       const ROLE_FOOL = "Fool";
       const ROLE_HONEYPOT = "Honeypot";
       const ROLE_HUNTER = "Hunter";
+      const ROLE_LAWYER = "Lawyer";
       const ROLE_MARTYR = "Martyr";
+      const ROLE_MAYOR = "Mayor";
       const ROLE_MONSTER = "Monster";
       const ROLE_PROSTITUTE = "Prostitute";
       const ROLE_RANDOM_SEER = "Random_Seer";
@@ -302,6 +318,18 @@
             checkbox.name = "selected_roles";
             checkbox.value = role.name_key; // e.g. "role_werewolf"
 
+            checkbox.classList.add("role-checkbox");
+            checkbox.addEventListener("change", () => {
+              if (isPlayerAdmin) {
+                const selected = Array.from(
+                  document.querySelectorAll(".role-checkbox:checked"),
+                ).map((cb) => cb.value);
+                socket.emit("admin_update_roles", { roles: selected });
+              }
+
+              updateRoleSummary();
+            });
+
             const defaultRoles = [ROLE_VILLAGER, ROLE_WEREWOLF, ROLE_SEER];
             if (defaultRoles.includes(role.name_key)) {
               checkbox.checked = true;
@@ -320,6 +348,7 @@
             wrapper.appendChild(desc);
             roleContainer.appendChild(wrapper);
           });
+          updateRoleSummary();
         } catch (err) {
           console.error("Failed to load roles", err);
           roleContainer.innerHTML =
@@ -391,6 +420,16 @@
           "[DEBUG] 'game_started' event received. Redirecting to /game page.",
         );
         window.location.href = "/game";
+      });
+
+      socket.on("sync_roles", function (data) {
+        const checkboxes = document.querySelectorAll(".role-checkbox");
+        checkboxes.forEach((cb) => {
+          // Update the checkbox visual state based on server data
+          cb.checked = data.roles.includes(cb.value);
+        });
+        // Recalculate the text summary
+        updateRoleSummary();
       });
 
       socket.on("update_player_list", (data) => {
@@ -544,6 +583,120 @@
             excludePlayer(e.target.dataset.playerId);
           }
         });
+
+      // ROLE COUNT Calculation:
+      // CONSTANTS (Must match your Python constants)
+      const SPECIAL_WEREWOLVES = [
+        "Backlash_Werewolf",
+        "Tough_Werewolf",
+        "Alpha_Werewolf",
+      ];
+
+      function updateRoleSummary() {
+        const playerList = document.getElementById("player-list");
+        const numPlayers = playerList ? playerList.children.length : 0;
+        const summaryElement = document.getElementById("role-summary-text");
+        const startGameBtn = document.getElementById("start-game-btn");
+
+        // 1. Basic Check
+        if (numPlayers < 1) {
+          summaryElement.textContent = "Waiting for players...";
+          summaryElement.style.color = "#aaa";
+          return;
+        }
+
+        // 2. Get Selected Roles
+        const checkboxes = document.querySelectorAll(".role-checkbox:checked");
+        let selectedSpecials = [];
+        checkboxes.forEach((cb) => {
+          selectedSpecials.push(cb.value);
+        });
+
+        // 3. Calculate Required Wolf Slots
+        let totalWolvesAllowed = 0;
+        if (numPlayers >= 4 && numPlayers <= 6) {
+          totalWolvesAllowed = 1;
+        } else if (numPlayers >= 7 && numPlayers <= 8) {
+          totalWolvesAllowed = 2;
+        } else if (numPlayers >= 9 && numPlayers <= 11) {
+          totalWolvesAllowed = 3;
+        } else if (numPlayers >= 12 && numPlayers <= 16) {
+          totalWolvesAllowed = 4;
+        } else {
+          totalWolvesAllowed = Math.max(1, Math.floor(numPlayers * 0.25));
+        }
+
+        // 4. Check how many wolves are already covered by selections
+        // (Both Special Wolves and standard "Werewolf" checkbox count towards the requirement)
+        let wolvesInSelection = 0;
+        selectedSpecials.forEach((role) => {
+          if (SPECIAL_WEREWOLVES.includes(role) || role === ROLE_WEREWOLF) {
+            wolvesInSelection++;
+          }
+        });
+
+        // We only add EXTRA wolves if we haven't met the minimum requirement
+        let extraWolvesNeeded = Math.max(
+          0,
+          totalWolvesAllowed - wolvesInSelection,
+        );
+
+        // 5. VALIDATION: Check for Over-Subscription
+        // Total slots needed = explicitly selected roles + mandatory extra wolves
+        const totalSlotsNeeded = selectedSpecials.length + extraWolvesNeeded;
+
+        if (totalSlotsNeeded > numPlayers) {
+          const diff = totalSlotsNeeded - numPlayers;
+          summaryElement.innerHTML = `<strong>⚠️ Too many roles selected!</strong> Deselect ${diff} role(s).`;
+          summaryElement.style.color = "#ff8a80"; // Red Warning
+          startGameBtn.disabled = true; // Prevent starting
+          return;
+        }
+
+        // 6. If Valid: Build the Display List
+        startGameBtn.disabled = numPlayers < 4; // Re-enable if player count is valid
+        summaryElement.style.color = "#e0e0e0"; // Reset color
+
+        let finalRoleCounts = {};
+
+        // A. Add selections
+        selectedSpecials.forEach((role) => {
+          finalRoleCounts[role] = (finalRoleCounts[role] || 0) + 1;
+        });
+
+        // B. Add mandatory wolves
+        if (extraWolvesNeeded > 0) {
+          finalRoleCounts[ROLE_WEREWOLF] =
+            (finalRoleCounts[ROLE_WEREWOLF] || 0) + extraWolvesNeeded;
+        }
+
+        // C. Fill remainder with Villagers
+        let currentCount = 0;
+        for (let r in finalRoleCounts) currentCount += finalRoleCounts[r];
+
+        let villagersNeeded = Math.max(0, numPlayers - currentCount);
+        if (villagersNeeded > 0) {
+          finalRoleCounts[ROLE_VILLAGER] =
+            (finalRoleCounts[ROLE_VILLAGER] || 0) + villagersNeeded;
+        }
+
+        // D. Format Text
+        let outputParts = [];
+        for (const [role, count] of Object.entries(finalRoleCounts)) {
+          let displayRole = role.replace(/_/g, " ");
+          if (count > 1) displayRole += "s";
+          if (count > 0) {
+            outputParts.push(
+              count === 1 ? displayRole : `${count} ${displayRole}`,
+            );
+          }
+        }
+
+        summaryElement.textContent = outputParts.join(", ");
+      }
+      socket.on("update_player_list", function (data) {
+        updateRoleSummary();
+      });
     </script>
   </body>
 </html>

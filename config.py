@@ -1,6 +1,6 @@
 """
 config.py
-Version: 4.4.9
+Version: 4.6.0
 Central location for all game defaults and timer settings.
 """
 

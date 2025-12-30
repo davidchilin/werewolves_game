@@ -1,5 +1,5 @@
-<!-- Version: 4.5.3 -->
-<!DOCTYPE html>
+<!-- Version: 4.6.0 -->
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -261,6 +261,7 @@
               margin-top: 15px;
               text-align: left;
               display: flex;
+              flex-direction: column-reverse;
               font-size: 0.9em;
             }
             .game-over-log div {
@@ -665,8 +666,8 @@
               myNightMetadata.potion === "heal"
                 ? "Heal Potion"
                 : myNightMetadata.potion === "poison"
-                ? "Poison Potion"
-                : "Nothing";
+                  ? "Poison Potion"
+                  : "Nothing";
           // If Cupid: metadata.target_id2
           else if (myNightMetadata && myNightMetadata.target_id2)
             p2 =
@@ -705,13 +706,13 @@
         let btnState = mySleepVote
           ? "disabled"
           : timeToEnable <= 0
-          ? ""
-          : "disabled";
+            ? ""
+            : "disabled";
         let btnText = mySleepVote
           ? "Voted to Sleep 💤"
           : timeToEnable <= 0
-          ? "💤 Vote to Sleep"
-          : `Vote to Sleep (${timeToEnable.toFixed(1)}s)`;
+            ? "💤 Vote to Sleep"
+            : `Vote to Sleep (${timeToEnable.toFixed(1)}s)`;
 
         html += `<hr style="border-color: #444; margin: 15px 0;">
              <div id="sleep-section"><h4>Ready for Night?</h4><button id="vote-end-day-btn" ${btnState}>${btnText}</button><span id="end-day-vote-counter" style="margin-left:10px; font-size:0.9em; color:#aaa"></span></div>`;
@@ -975,7 +976,7 @@
       });
 
       socket.on("seer_result", (data) => {
-        const m = `Your vision reveals that <strong>${data.name}</strong> is <strong>${data.role}</strong>.`;
+        const m = `Your vision reveals that <strong>${data.name}</strong> is a <strong>${data.role}</strong>.`;
         logMessage(m);
         lastSeerResult = m;
         els.action.innerHTML = `<p>${m}</p>`;
