@@ -871,6 +871,12 @@ class Serial_Killer(Role):
             "can_skip": False,
         }
 
+    def get_valid_targets(self, game_context):
+        """Returns a list of valid player IDs this role can target, exclude self."""
+        return [
+            p for p in game_context["players"] if p.is_alive and p.id != self.player_id
+        ]
+
 
 @register_role
 class Sorcerer(Role):
@@ -883,7 +889,12 @@ class Sorcerer(Role):
 
     def investigate(self, target_player):
         # Looks for Magic users
-        if target_player.role.name_key in [ROLE_SEER, ROLE_WITCH, ROLE_RANDOM_SEER]:
+        if target_player.role.name_key in [
+            ROLE_SEER,
+            ROLE_WITCH,
+            ROLE_RANDOM_SEER,
+            ROLE_REVEALER,
+        ]:
             return "Magic User"
         return "Human"
 

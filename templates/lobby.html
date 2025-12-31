@@ -16,12 +16,13 @@
       }
       .lobby-container {
         width: 90%;
-        max-width: 800px; /* Increased width for Role Grid */
+        max-width: 800px;
         margin: 20px auto;
         padding: 20px;
         background-color: #1e1e1e;
         border: 1px solid #333;
         border-radius: 8px;
+        display: grid;
       }
       #player-list {
         padding-left: 0;
@@ -60,7 +61,7 @@
         border-radius: 5px;
         border: none;
         background-color: #3f51b5;
-        color: #ffffff;
+        color: #dddddd;
         cursor: pointer;
         transition: background-color 0.2s;
       }
@@ -82,30 +83,126 @@
       .timer-setting input {
         width: 80px;
       }
-      /* --- New Styles for Phase 3 --- */
-      .role-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-        gap: 10px;
-        margin-top: 10px;
+
+      /* --- Role Grid Styles --- */
+      #roles-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        justify-content: center;
+        padding: 20px;
       }
-      .role-item {
+
+      /* Individual Role Tile */
+      .role-tile {
+        position: relative; /* Crucial for positioning the tooltip */
+        background-color: #161616;
+        border: 1px solid #888;
+        border-radius: 6px;
+        width: 220px;
         padding: 8px;
-        background: #2c2c2c;
-        border: 1px solid #444;
-        border-radius: 4px;
-      }
-      .role-item label {
+        text-align: center;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        transition:
+          transform 0.2s,
+          background-color 0.2s;
+        display: flex;
+        flex-direction: column; /* Ensure vertical stacking */
+        align-items: center;
         cursor: pointer;
-        display: block;
-        font-weight: bold;
       }
-      .role-item small {
-        display: block;
-        color: #aaa;
-        font-size: 0.8em;
+      /* Position the checkbox in the top-left or right */
+      .role-tile input[type="checkbox"] {
+        transform: scale(1.2); /* Make checkbox bigger */
+        margin: 0;
+        accent-color: #222;
+        position: absolute;
+        bottom: 8px;
+        right: 8px;
+      }
+
+      /* Highlight selected tiles */
+      .role-tile.selected {
+        border: 1px solid #660099;
+        background-color: #1b1b1b;
+      }
+      /* Darken background slightly on selected hover for contrast */
+      .role-tile.selected:hover {
+        background-color: #111;
+      }
+      .role-tile:hover {
+        transform: translateY(-4px); /* Slight lift on hover */
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        background-color: #333;
+        border-color: #ff5522;
+      }
+      .role-tile h3 {
         margin-top: 4px;
+        margin-bottom: 2px;
+        font-size: 1.2em;
+        color: #dddddd;
+        width: 100%;
       }
+      .role-short-desc {
+        font-size: 0.9em;
+        font-weight: bold;
+        margin-top: 4px;
+        margin-bottom: 2px;
+        line-height: 1.2;
+        /* Color is set via inline JS based on rating */
+      }
+
+      /* --- Tooltip Styles --- */
+      .role-tooltip {
+        visibility: hidden;
+        opacity: 0;
+        width: 260px;
+        background-color: #222;
+        color: #fff;
+        text-align: left;
+        border-radius: 6px;
+        padding: 12px;
+
+        /* Position the tooltip above the tile */
+        position: absolute;
+        bottom: 110%;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 100; /* Ensure it floats on top of everything */
+        transition: opacity 0.3s;
+        font-size: 0.85rem;
+        line-height: 1.4;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        pointer-events: none; /* Prevents tooltip from blocking mouse events */
+      }
+
+      /* The little triangle arrow at the bottom of the tooltip */
+      .role-tooltip::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: #222 transparent transparent transparent;
+      }
+
+      /* Show tooltip on hover */
+      .role-tile:hover .role-tooltip {
+        visibility: visible;
+        opacity: 1;
+      }
+      .tooltip-rating {
+        display: block;
+        margin-top: 5px;
+        padding-top: 5px;
+        border-top: 1px solid #555;
+        font-weight: bold;
+        text-align: right;
+      }
+
+      /* --- Chat Styles --- */
       .chat-container {
         margin-top: 20px;
         border-top: 1px solid #444;
@@ -127,7 +224,7 @@
         border-bottom: 1px solid #333;
       }
       .chat-messages .announcement {
-        color: #bb86fc;
+        color: #bb88cc;
         font-weight: bold;
       }
       #chat-form {
@@ -140,8 +237,19 @@
       .timer-options {
         display: block;
       }
+      @media (max-width: 768px) {
+        .lobby-container {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (max-width: 480px) {
+        .lobby-container {
+          grid-template-columns: 1fr;
+        }
+      }
     </style>
     <script src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='role_data.js') }}"></script>
   </head>
   <body>
     <div class="lobby-container">
@@ -162,7 +270,7 @@
           color: #e0e0e0;
         "
       >
-        <strong style="color: #90caf9">ROLE COUNT:</strong>
+        <strong style="color: #bb88ff">ROLE COUNT:</strong>
         <span id="role-summary-text">Waiting for players...</span>
       </div>
       <div class="chat-container">
@@ -202,7 +310,7 @@
 
         <div class="admin-controls">
           <h4>Roles</h4>
-          <div id="role-container" class="role-grid">
+          <div id="roles-grid">
             <p>Loading roles...</p>
           </div>
         </div>
@@ -239,8 +347,9 @@
           </div>
           <button id="set-timers-btn">Set Timers</button>
         </div>
+
         <div class="admin-controls">
-          <label for="new-game-code">Set New Game Code:</label>
+          <label for="new-game-code-input">Set New Game Code:</label>
           <input type="text" id="new-game-code-input" placeholder="New Code" />
           <button id="set-code-btn">Set Code</button>
           <button id="toggle-chat-btn" style="margin-left: 10px">
@@ -299,139 +408,134 @@
       const timerOptionsDiv = document.getElementById("timer-options");
       const setTimersButton = document.getElementById("set-timers-btn");
 
-      const roleContainer = document.getElementById("role-container");
-
-      // --- 1. Phase 3: Role Loading ---
+      // --- 1. Role Loading ---
       async function loadRoles() {
         try {
           const response = await fetch("/get_roles");
           const roles = await response.json();
-          roleContainer.innerHTML = "";
+          const container = document.getElementById("roles-grid"); // Target the grid directly
+
+          // Safety check for ROLE_DATA
+          if (typeof ROLE_DATA === "undefined") {
+            console.error("ROLE_DATA missing. Check static imports.");
+            container.innerHTML =
+              '<p style="color:red">Error: Role data missing.</p>';
+            return;
+          }
+
+          container.innerHTML = ""; // Clear "Loading roles..." text
 
           roles.forEach((role) => {
-            const wrapper = document.createElement("div");
-            wrapper.className = "role-item";
+            // 1. Match Server Key to ROLE_DATA Key
+            const dataKey = role.name_key.replace(/_/g, " ");
+            const roleData = ROLE_DATA[dataKey] || {
+              short: role.description_key,
+              long: "Description unavailable.",
+              rating: 0,
+              color: "#fff",
+            };
 
-            const label = document.createElement("label");
+            // 2. Create the Tile
+            const tile = document.createElement("div");
+            tile.className = "role-tile";
+
+            // 3. Create Checkbox
             const checkbox = document.createElement("input");
             checkbox.type = "checkbox";
             checkbox.name = "selected_roles";
-            checkbox.value = role.name_key; // e.g. "role_werewolf"
-
+            checkbox.value = role.name_key;
             checkbox.classList.add("role-checkbox");
-            checkbox.addEventListener("change", () => {
+
+            // Set default checks
+            const defaultRoles = [ROLE_VILLAGER, ROLE_WEREWOLF, ROLE_SEER];
+            if (defaultRoles.includes(role.name_key)) {
+              checkbox.checked = true;
+              tile.classList.add("selected");
+            }
+
+            // Add Event Listener for Checkbox Logic
+            checkbox.addEventListener("change", (e) => {
+              // Toggle visual style
+              if (e.target.checked) tile.classList.add("selected");
+              else tile.classList.remove("selected");
+
+              // Admin socket update
               if (isPlayerAdmin) {
                 const selected = Array.from(
                   document.querySelectorAll(".role-checkbox:checked"),
                 ).map((cb) => cb.value);
                 socket.emit("admin_update_roles", { roles: selected });
               }
-
               updateRoleSummary();
             });
 
-            const defaultRoles = [ROLE_VILLAGER, ROLE_WEREWOLF, ROLE_SEER];
-            if (defaultRoles.includes(role.name_key)) {
-              checkbox.checked = true;
-            }
+            // 4. Build Tile Content
+            const title = document.createElement("h3");
+            title.innerText = dataKey;
 
-            const displayName = role.name_key.replace("_", " ").toUpperCase();
+            // Short Desc
+            const shortDesc = document.createElement("p");
+            shortDesc.className = "role-short-desc";
+            shortDesc.innerText = roleData.short;
+            shortDesc.style.color = roleData.color;
 
-            label.appendChild(checkbox);
-            label.appendChild(document.createTextNode(` ${displayName}`));
+            // Tooltip
+            const tooltip = document.createElement("div");
+            tooltip.className = "role-tooltip";
+            tooltip.innerHTML = `
+        ${roleData.long}
+        <span class="tooltip-rating" style="color: ${roleData.color}">
+            ${roleData.rating}
+        </span>
+      `;
 
-            // Description mapping (could be moved to a util function later)
-            const desc = document.createElement("small");
-            desc.textContent = role.description_key;
+            // 5. Assemble
+            // We wrap the checkbox in a label or just append it.
+            // Appending directly allows clicking the box specifically.
+            tile.appendChild(checkbox);
+            tile.appendChild(title);
+            tile.appendChild(shortDesc);
+            tile.appendChild(tooltip);
 
-            wrapper.appendChild(label);
-            wrapper.appendChild(desc);
-            roleContainer.appendChild(wrapper);
+            // Make the whole tile clickable to toggle checkbox
+            tile.addEventListener("click", (e) => {
+              // Prevent infinite loop if clicking the checkbox itself
+              if (e.target !== checkbox) {
+                checkbox.checked = !checkbox.checked;
+                checkbox.dispatchEvent(new Event("change"));
+              }
+            });
+
+            container.appendChild(tile);
           });
+
           updateRoleSummary();
         } catch (err) {
           console.error("Failed to load roles", err);
-          roleContainer.innerHTML =
+          document.getElementById("roles-grid").innerHTML =
             '<p style="color:red">Error loading roles</p>';
         }
       }
 
-      // --- 2. Phase 3: Start Game Logic (Aggregates Data) ---
-      document.getElementById("start-game-btn").onclick = () => {
-        // A. Get Roles
-        const checkboxes = document.querySelectorAll(
-          'input[name="selected_roles"]:checked',
-        );
-        const selectedRoles = Array.from(checkboxes).map((cb) => cb.value);
-
-        // B. Get Mode
-        const passAndPlay =
-          document.getElementById("mode-pass-and-play").checked;
-
-        // C. Get Timers
-        const timers = {
-          timers_disabled: disableTimersCheckbox.checked,
-          night: document.getElementById("night-timer-input").value,
-          accusation: document.getElementById("accusation-timer-input").value,
-          lynch_vote: document.getElementById("lynch-vote-timer-input").value,
-        };
-
-        // D. Build Payload
-        const payload = {
-          roles: selectedRoles,
-          settings: {
-            mode: passAndPlay ? "pass_and_play" : "standard",
-            timers: timers,
-          },
-        };
-
-        console.log("Starting game with:", payload);
-        socket.emit("start_game", payload);
-      };
-
-      // --- 3. Original Logic Preserved ---
-      function excludePlayer(playerId) {
-        if (confirm("Exclude this player?")) {
-          socket.emit("admin_exclude_player", { player_id: playerId });
-        }
-      }
-
-      function setChatMode(isAdminOnly) {
-        if (isAdminOnly && !isPlayerAdmin) {
-          chatSendBtn.disabled = true;
-          chatInput.placeholder = "Chat is admin-only";
-        } else {
-          chatSendBtn.disabled = false;
-          chatInput.placeholder = "Type a message...";
-        }
-      }
+      // --- 2. Socket Events ---
 
       socket.on("connect", () => {
-        console.log(
-          "[DEBUG] Connected to Lobby, server with session ID:",
-          currentPlayerId,
-        );
-        // Trigger role load on connect
         loadRoles();
       });
 
-      socket.on("game_started", () => {
-        console.log(
-          "[DEBUG] 'game_started' event received. Redirecting to /game page.",
-        );
-        window.location.href = "/game";
-      });
-
+      // Merged sync logic: Updates checkbox state AND summary
       socket.on("sync_roles", function (data) {
         const checkboxes = document.querySelectorAll(".role-checkbox");
         checkboxes.forEach((cb) => {
-          // Update the checkbox visual state based on server data
           cb.checked = data.roles.includes(cb.value);
+          // Find parent tile and update class
+          if (cb.checked) cb.closest(".role-tile").classList.add("selected");
+          else cb.closest(".role-tile").classList.remove("selected");
         });
-        // Recalculate the text summary
         updateRoleSummary();
       });
 
+      // Merged player list update: Handles list, admin check, AND summary update
       socket.on("update_player_list", (data) => {
         const playerList = document.getElementById("player-list");
         const adminPanel = document.getElementById("admin-panel");
@@ -475,9 +579,15 @@
         // Enable start button if enough players
         startGameBtn.disabled = data.players.length < 4;
         setChatMode(data.admin_only_chat);
+
+        // Recalculate roles based on new player count
+        updateRoleSummary();
       });
 
-      // Events from original file
+      socket.on("game_started", () => {
+        window.location.href = "/game";
+      });
+
       socket.on("force_kick", () => {
         alert("You have been dropped from the lobby.");
         window.location.href = "/";
@@ -485,30 +595,24 @@
 
       socket.on("admin_timers_updated", (data) => {
         const timers = data.timers;
-
-        // Update the input fields with the values returned by the server.
-        // If the admin entered '25', the server returned '30', which updates here.
-        if (timers.night) {
+        if (timers.night)
           document.getElementById("night-timer-input").value = timers.night;
-        }
-        if (timers.accusation) {
+        if (timers.accusation)
           document.getElementById("accusation-timer-input").value =
             timers.accusation;
-        }
-        if (timers.lynch_vote) {
+        if (timers.lynch_vote)
           document.getElementById("lynch-vote-timer-input").value =
             timers.lynch_vote;
-        }
       });
 
       socket.on("force_relogin", (data) => {
         alert("New code set. Re-login required.");
         window.location.href = "/";
       });
+
       socket.on("message", (data) => alert(data.text));
-      socket.on("error", (data) => {
-        alert("Error: " + data.message);
-      });
+
+      socket.on("error", (data) => alert("Error: " + data.message));
 
       socket.on("new_message", (data) => {
         if (data.channel === "lobby" || data.channel === "announcement") {
@@ -524,6 +628,36 @@
         setChatMode(data.admin_only);
       });
 
+      // --- 3. UI Event Listeners ---
+
+      document.getElementById("start-game-btn").onclick = () => {
+        // A. Get Roles
+        const checkboxes = document.querySelectorAll(
+          'input[name="selected_roles"]:checked',
+        );
+        const selectedRoles = Array.from(checkboxes).map((cb) => cb.value);
+
+        // B. Get Mode
+        const passAndPlay =
+          document.getElementById("mode-pass-and-play").checked;
+
+        // C. Get Timers
+        const timers = {
+          timers_disabled: disableTimersCheckbox.checked,
+          night: document.getElementById("night-timer-input").value,
+          accusation: document.getElementById("accusation-timer-input").value,
+          lynch_vote: document.getElementById("lynch-vote-timer-input").value,
+        };
+
+        socket.emit("start_game", {
+          roles: selectedRoles,
+          settings: {
+            mode: passAndPlay ? "pass_and_play" : "standard",
+            timers: timers,
+          },
+        });
+      };
+
       chatForm.addEventListener("submit", (e) => {
         e.preventDefault();
         const message = chatInput.value.trim();
@@ -535,15 +669,9 @@
 
       disableTimersCheckbox.addEventListener("change", (e) => {
         const isDisabled = e.target.checked;
-
         timerOptionsDiv.style.display = isDisabled ? "none" : "block";
         setTimersButton.style.display = isDisabled ? "none" : "block";
-
-        // We send the flag to the server right now so it takes effect instantly.
-        console.log("Auto-updating timers_disabled:", isDisabled);
-        socket.emit("admin_set_timers", {
-          timers_disabled: isDisabled,
-        });
+        socket.emit("admin_set_timers", { timers_disabled: isDisabled });
       });
 
       // Admin Utils
@@ -553,26 +681,21 @@
           .value.trim()
           .toUpperCase();
         if (newCode) socket.emit("admin_set_new_code", { new_code: newCode });
-        else {
-          alert("Please enter a new code.");
-        }
+        else alert("Please enter a new code.");
       };
+
       document.getElementById("toggle-chat-btn").onclick = () => {
         socket.emit("admin_toggle_chat");
       };
 
       document.getElementById("set-timers-btn").onclick = () => {
-        const timersPayload = {
+        socket.emit("admin_set_timers", {
           timers_disabled: document.getElementById("disable-timers-checkbox")
             .checked,
           night: document.getElementById("night-timer-input").value,
           accusation: document.getElementById("accusation-timer-input").value,
           lynch_vote: document.getElementById("lynch-vote-timer-input").value,
-        };
-
-        // 2. Send to server
-        console.log("Setting timers:", timersPayload);
-        socket.emit("admin_set_timers", timersPayload);
+        });
       };
 
       // Handle Exclude Click
@@ -583,6 +706,24 @@
             excludePlayer(e.target.dataset.playerId);
           }
         });
+
+      // --- 4. Helpers & Utilities ---
+
+      function excludePlayer(playerId) {
+        if (confirm("Exclude this player?")) {
+          socket.emit("admin_exclude_player", { player_id: playerId });
+        }
+      }
+
+      function setChatMode(isAdminOnly) {
+        if (isAdminOnly && !isPlayerAdmin) {
+          chatSendBtn.disabled = true;
+          chatInput.placeholder = "Chat is admin-only";
+        } else {
+          chatSendBtn.disabled = false;
+          chatInput.placeholder = "Type a message...";
+        }
+      }
 
       // ROLE COUNT Calculation:
       // CONSTANTS (Must match your Python constants)
@@ -608,26 +749,17 @@
         // 2. Get Selected Roles
         const checkboxes = document.querySelectorAll(".role-checkbox:checked");
         let selectedSpecials = [];
-        checkboxes.forEach((cb) => {
-          selectedSpecials.push(cb.value);
-        });
+        checkboxes.forEach((cb) => selectedSpecials.push(cb.value));
 
         // 3. Calculate Required Wolf Slots
         let totalWolvesAllowed = 0;
-        if (numPlayers >= 4 && numPlayers <= 6) {
-          totalWolvesAllowed = 1;
-        } else if (numPlayers >= 7 && numPlayers <= 8) {
-          totalWolvesAllowed = 2;
-        } else if (numPlayers >= 9 && numPlayers <= 11) {
-          totalWolvesAllowed = 3;
-        } else if (numPlayers >= 12 && numPlayers <= 16) {
-          totalWolvesAllowed = 4;
-        } else {
-          totalWolvesAllowed = Math.max(1, Math.floor(numPlayers * 0.25));
-        }
+        if (numPlayers >= 4 && numPlayers <= 6) totalWolvesAllowed = 1;
+        else if (numPlayers >= 7 && numPlayers <= 8) totalWolvesAllowed = 2;
+        else if (numPlayers >= 9 && numPlayers <= 11) totalWolvesAllowed = 3;
+        else if (numPlayers >= 12 && numPlayers <= 16) totalWolvesAllowed = 4;
+        else totalWolvesAllowed = Math.max(1, Math.floor(numPlayers * 0.25));
 
-        // 4. Check how many wolves are already covered by selections
-        // (Both Special Wolves and standard "Werewolf" checkbox count towards the requirement)
+        // Count selected wolves
         let wolvesInSelection = 0;
         selectedSpecials.forEach((role) => {
           if (SPECIAL_WEREWOLVES.includes(role) || role === ROLE_WEREWOLF) {
@@ -635,27 +767,24 @@
           }
         });
 
-        // We only add EXTRA wolves if we haven't met the minimum requirement
         let extraWolvesNeeded = Math.max(
           0,
           totalWolvesAllowed - wolvesInSelection,
         );
-
-        // 5. VALIDATION: Check for Over-Subscription
-        // Total slots needed = explicitly selected roles + mandatory extra wolves
         const totalSlotsNeeded = selectedSpecials.length + extraWolvesNeeded;
 
+        // Validation
         if (totalSlotsNeeded > numPlayers) {
           const diff = totalSlotsNeeded - numPlayers;
           summaryElement.innerHTML = `<strong>⚠️ Too many roles selected!</strong> Deselect ${diff} role(s).`;
-          summaryElement.style.color = "#ff8a80"; // Red Warning
+          summaryElement.style.color = "#ff8880"; // Red Warning
           startGameBtn.disabled = true; // Prevent starting
           return;
         }
 
-        // 6. If Valid: Build the Display List
-        startGameBtn.disabled = numPlayers < 4; // Re-enable if player count is valid
-        summaryElement.style.color = "#e0e0e0"; // Reset color
+        // Build Display List
+        startGameBtn.disabled = numPlayers < 4;
+        summaryElement.style.color = "#e0e0e0";
 
         let finalRoleCounts = {};
 
@@ -685,18 +814,13 @@
         for (const [role, count] of Object.entries(finalRoleCounts)) {
           let displayRole = role.replace(/_/g, " ");
           if (count > 1) displayRole += "s";
-          if (count > 0) {
+          if (count > 0)
             outputParts.push(
               count === 1 ? displayRole : `${count} ${displayRole}`,
             );
-          }
         }
-
         summaryElement.textContent = outputParts.join(", ");
       }
-      socket.on("update_player_list", function (data) {
-        updateRoleSummary();
-      });
     </script>
   </body>
 </html>

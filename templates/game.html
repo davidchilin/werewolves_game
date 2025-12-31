@@ -6,324 +6,356 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Werewolves - The Game</title>
     <style>
-            /* --- Base Styles --- */
-            body {
-              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-                Helvetica, Arial, sans-serif;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              margin: 0;
-              min-height: 100vh;
-              background-color: #111111;
-              color: #eeeecc;
-            }
-            .game-container {
-              width: 95%;
-              max-width: 800px;
-              display: flex;
-              gap: 20px;
-            }
-            .main-panel {
-              flex-grow: 1;
-              min-width: 0; /* Prevents flexbox overflow */
-            }
-            .side-panel {
-              width: 250px;
-              border-left: 1px solid #444;
-              padding-left: 20px;
-              flex-shrink: 0; /* Prevents side panel from shrinking */
-              display: flex;
-              flex-direction: column;
-            }
+                  /* --- Base Styles --- */
+                  body {
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                      Helvetica, Arial, sans-serif;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    margin: 0;
+                    min-height: 100vh;
+                    background-color: #111111;
+                    color: #eeeecc;
+                  }
+                  .game-container {
+                    width: 95%;
+                    max-width: 800px;
+                    display: flex;
+                    gap: 20px;
+                  }
+                  .main-panel {
+                    flex-grow: 1;
+                    min-width: 0; /* Prevents flexbox overflow */
+                  }
+                  .side-panel {
+                    width: 250px;
+                    border-left: 1px solid #444;
+                    padding-left: 20px;
+                    flex-shrink: 0; /* Prevents side panel from shrinking */
+                    display: flex;
+                    flex-direction: column;
+                  }
 
-            /* --- UI Components --- */
-            .player-list {
-              padding-left: 0;
-            }
-            .player-list li {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              list-style-type: none;
-              padding: 8px;
-              border-radius: 4px;
-              margin-bottom: 5px;
-              background-color: #2c2c2c;
-            }
-            .player-list li.dead {
-              text-decoration: line-through;
-              color: #777;
-              background-color: #222;
-            }
-            .accusation-count {
-              font-size: 0.9em;
-              font-weight: bold;
-              background-color: #c62828;
-              color: white;
-              padding: 2px 6px;
-              border-radius: 10px;
-              margin-left: auto;
-            }
-            .role-display {
-              padding: 10px;
-              background-color: #1e1e1e;
-              border: 1px solid #444;
-              border-radius: 5px;
-              text-align: center;
-              margin-bottom: 15px;
-            }
-            .phase-display {
-              font-size: 1.5em;
-              font-weight: bold;
-              text-align: center;
-              margin-bottom: 10px;
-              text-transform: capitalize;
-              color: #bb86fc;
-            }
-            .timer-display {
-              font-size: 1.2em;
-              text-align: center;
-              color: #fdd835;
-              margin-bottom: 20px;
-            }
+                  /* --- UI Components --- */
+                  .player-list {
+                    padding-left: 0;
+                  }
+                  .player-list li {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    list-style-type: none;
+                    padding: 8px;
+                    border-radius: 4px;
+                    margin-bottom: 5px;
+                    background-color: #2c2c2c;
+                  }
+                  .player-list li.dead {
+                    text-decoration: line-through;
+                    color: #777;
+                    background-color: #222;
+                  }
+                  .accusation-count {
+                    font-size: 0.9em;
+                    font-weight: bold;
+                    background-color: #c62828;
+                    color: white;
+                    padding: 2px 6px;
+                    border-radius: 10px;
+                    margin-left: auto;
+                  }
+                  .role-display {
+                    padding: 10px;
+                    background-color: #1e1e1e;
+                    border: 1px solid #444;
+                    border-radius: 5px;
+                    text-align: center;
+                    margin-bottom: 15px;
+                  }
+                  .phase-display {
+                    font-size: 1.5em;
+                    font-weight: bold;
+                    text-align: center;
+                    margin-bottom: 10px;
+                    text-transform: capitalize;
+                    color: #bb86fc;
+                  }
+                  .timer-display {
+                    font-size: 1.2em;
+                    text-align: center;
+                    color: #fdd835;
+                    margin-bottom: 20px;
+                  }
 
-            /* --- Action Area --- */
-            .action-area {
-              min-height: 100px;
-              border: 1px dashed #555;
-              padding: 15px;
-              border-radius: 5px;
-              background-color: #1e1e1e;
-            }
-            .action-area h4 {
-              margin-top: 0;
-            }
-            .action-area select,
-            .action-area button {
-              font-size: 1.1em;
-              margin: 10px 5px 0 0;
-              padding: 8px;
-              border-radius: 5px;
-              border: 1px solid #444;
-              background-color: #2c2c2c;
-              color: #e0e0e0;
-            }
-            .action-area button {
-              background-color: #3f51b5;
-              border: none;
-              cursor: pointer;
-            }
-            .action-area button:hover:not(:disabled) {
-              background-color: #5c6bc0;
-            }
-            .action-area button:disabled {
-              background-color: #333;
-              color: #777;
-              cursor: not-allowed;
-            }
-            .vote-btn-yes { background-color: #4caf50 !important; }
-            .vote-btn-yes:hover { background-color: #66bb6a !important; }
-            .vote-btn-no { background-color: #f44336 !important; }
-            .vote-btn-no:hover { background-color: #ef5350 !important; }
-            hr { border-color: #444; margin: 20px 0; }
+                  /* --- Action Area --- */
+                  .action-area {
+                    min-height: 100px;
+                    border: 1px dashed #555;
+                    padding: 15px;
+                    border-radius: 5px;
+                    background-color: #1e1e1e;
+                  }
+                  .action-area h4 {
+                    margin-top: 0;
+                  }
+                  .action-area select,
+                  .action-area button {
+                    font-size: 1.1em;
+                    margin: 10px 5px 0 0;
+                    padding: 8px;
+                    border-radius: 5px;
+                    border: 1px solid #444;
+                    background-color: #2c2c2c;
+                    color: #e0e0e0;
+                  }
+                  .action-area button {
+                    background-color: #3f51b5;
+                    border: none;
+                    cursor: pointer;
+                  }
+                  .action-area button:hover:not(:disabled) {
+                    background-color: #5c6bc0;
+                  }
+                  .action-area button:disabled {
+                    background-color: #333;
+                    color: #777;
+                    cursor: not-allowed;
+                  }
+                  .vote-btn-yes { background-color: #4caf50 !important; }
+                  .vote-btn-yes:hover { background-color: #66bb6a !important; }
+                  .vote-btn-no { background-color: #f44336 !important; }
+                  .vote-btn-no:hover { background-color: #ef5350 !important; }
+                  hr { border-color: #444; margin: 20px 0; }
 
-            /* --- PnP Styles --- */
-            #game-interface { display: none; }
-            .pnp-grid {
-              display: grid;
-              grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-              gap: 10px;
-              margin-top: 10px;
-            }
-            .pnp-btn {
-              width: 100%;
-              padding: 15px;
-              background-color: #3f51b5;
-              color: white;
-              border: none;
-              border-radius: 8px;
-              font-size: 1.1em;
-              cursor: pointer;
-              text-align: center;
-              transition: transform 0.1s;
-            }
-            .pnp-btn:active { transform: scale(0.98); }
-            .confirm-box {
-              border: 2px solid #fdd835;
-              padding: 20px;
-              text-align: center;
-              background: #222;
-              border-radius: 10px;
-              margin-top: 20px;
-            }
-            .confirm-box h3 { margin-top: 0; color: #fdd835; }
-            .confirm-box button {
-              margin: 10px;
-              padding: 10px 20px;
-              font-size: 1.1em;
-              cursor: pointer;
-              border-radius: 5px;
-              border: none;
-            }
-            .confirm-box button:first-of-type { background-color: #4caf50; color: white; }
-            .confirm-box button.cancel { background-color: #f44336; color: white; }
-            .role-header {
-              text-align: center;
-              margin-bottom: 20px;
-              border-bottom: 1px solid #444;
-              padding-bottom: 10px;
-            }
-            .target-grid {
-              display: flex;
-              flex-wrap: wrap;
-              gap: 10px;
-              justify-content: center;
-            }
-            .target-grid button {
-              padding: 12px 20px;
-              background-color: #444;
-              border: 1px solid #666;
-              color: white;
-              cursor: pointer;
-              border-radius: 6px;
-            }
-            .target-grid button:hover { background-color: #666; }
+                  /* --- PnP Styles --- */
+                  #game-interface { display: none; }
+                  .pnp-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                    gap: 10px;
+                    margin-top: 10px;
+                  }
+                  .pnp-btn {
+                    width: 100%;
+                    padding: 15px;
+                    background-color: #3f51b5;
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    font-size: 1.1em;
+                    cursor: pointer;
+                    text-align: center;
+                    transition: transform 0.1s;
+                  }
+                  .pnp-btn:active { transform: scale(0.98); }
+                  .confirm-box {
+                    border: 2px solid #fdd835;
+                    padding: 20px;
+                    text-align: center;
+                    background: #222;
+                    border-radius: 10px;
+                    margin-top: 20px;
+                  }
+                  .confirm-box h3 { margin-top: 0; color: #fdd835; }
+                  .confirm-box button {
+                    margin: 10px;
+                    padding: 10px 20px;
+                    font-size: 1.1em;
+                    cursor: pointer;
+                    border-radius: 5px;
+                    border: none;
+                  }
+                  .confirm-box button:first-of-type { background-color: #4caf50; color: white; }
+                  .confirm-box button.cancel { background-color: #f44336; color: white; }
+                  .role-header {
+                    text-align: center;
+                    margin-bottom: 20px;
+                    border-bottom: 1px solid #444;
+                    padding-bottom: 10px;
+                  }
+                  .target-grid {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 10px;
+                    justify-content: center;
+                  }
+                  .target-grid button {
+                    padding: 12px 20px;
+                    background-color: #444;
+                    border: 1px solid #666;
+                    color: white;
+                    cursor: pointer;
+                    border-radius: 6px;
+                  }
+                  .target-grid button:hover { background-color: #666; }
 
-            /* --- Chat & Logs --- */
-            .log-panel {
-              height: 200px;
-              overflow-y: scroll;
-              border: 1px solid #333;
-              padding: 10px;
-              background: #1e1e1e;
-              margin-top: 20px;
-              display: flex;
-              flex-direction: column-reverse;
-            }
-            .log-panel div {
-              padding-bottom: 5px;
-              margin-bottom: 5px;
-              border-bottom: 1px solid #333;
-            }
-            .log-panel .vote-summary { font-size: 0.9em; color: #aaa; }
-            .chat-container {
-              margin-top: 20px;
-              display: flex;
-              flex-direction: column;
-            }
-            .chat-messages {
-              height: 150px;
-              overflow-y: auto;
-              border: 1px solid #333;
-              padding: 10px;
-              background: #1e1e1e;
-              margin-bottom: 10px;
-              display: flex;
-              flex-direction: column-reverse;
-            }
-            .chat-form { display: flex; }
-            .chat-input { flex-grow: 1; margin-right: 10px; }
-            .ghost-chat { color: #a0a0ff; font-style: italic; }
-            .announcement { color: #bb86fc; font-weight: bold; }
+                  /* --- Chat & Logs --- */
+                  .log-panel {
+                    height: 200px;
+                    overflow-y: scroll;
+                    border: 1px solid #333;
+                    padding: 10px;
+                    background: #1e1e1e;
+                    margin-top: 20px;
+                    display: flex;
+                    flex-direction: column-reverse;
+                  }
+                  .log-panel div {
+                    padding-bottom: 5px;
+                    margin-bottom: 5px;
+                    border-bottom: 1px solid #333;
+                  }
+                  .log-panel .vote-summary { font-size: 0.9em; color: #aaa; }
+                  .chat-container {
+                    margin-top: 20px;
+                    display: flex;
+                    flex-direction: column;
+                  }
+                  .chat-messages {
+                    height: 150px;
+                    overflow-y: auto;
+                    border: 1px solid #333;
+                    padding: 10px;
+                    background: #1e1e1e;
+                    margin-bottom: 10px;
+                    display: flex;
+                    flex-direction: column-reverse;
+                  }
+                  .chat-form { display: flex; }
+                  .chat-input { flex-grow: 1; margin-right: 10px; }
+                  .ghost-chat { color: #a0a0ff; font-style: italic; }
+                  .announcement { color: #bb86fc; font-weight: bold; }
 
-            /* --- Game Over Overlay --- */
-            #game-over-screen {
-              display: none; /* Keep it hidden by default */
-              flex-direction: column;
-              align-items: center;
-              position: fixed;
-              top: 0; left: 0;
-              width: 100%; height: 100%;
-              background-color: rgba(18, 18, 18, 0.95);
-              z-index: 100;
-              overflow-y: auto; /* Allow scrolling on small screens */
-            }
-            .game-over-box {
-              width: 90%;
-              max-width: 500px;
-              padding: 20px;
-              margin: auto;
-              background-color: #1e1e1e;
-              border: 1px solid #bb86fc; /* Purple highlight border */
-              border-radius: 12px;
-              text-align: center;
-              box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-              margin-top: 20px;
-              margin-bottom: 20px;
-            }
-            .game-over-log {
-              height: 150px;
-              overflow-y: auto;
-              border: 1px solid #444;
-              background: #111;
-              padding: 10px;
-              margin-top: 15px;
-              text-align: left;
-              display: flex;
-              flex-direction: column-reverse;
-              font-size: 0.9em;
-            }
-            .game-over-log div {
-              border-bottom: 1px solid #333;
-              padding-bottom: 4px;
-              margin-bottom: 4px;
-            }
-            #game-over-title { color: #bb86fc; margin-top: 0; font-size: 2.5em; }
-            #final-roles-list {
-              list-style-type: none;
-              padding: 0;
-              margin-top: 20px;
-              max-width: 300px;
-              margin-left: auto;
-              margin-right: auto;
-              text-align: left;
-            }
-            #final-roles-list li {
-              background-color: #2c2c2c;
-              padding: 10px;
-              margin-bottom: 8px;
-              border-radius: 5px;
-            }
-            #return-to-lobby-btn {
-              margin-top: 25px;
-              padding: 12px 24px;
-              font-size: 1.1em;
-              color: white;
-              background-color: #3f51b5;
-              border: none;
-              border-radius: 5px;
-              cursor: pointer;
-            }
-            #return-to-lobby-btn:disabled { background-color: #333; cursor: not-allowed; }
-            #rematch-vote-status {
-              margin-top: 15px;
-              font-size: 0.9em;
-              color: #aaa;
-              min-height: 20px;
-            }
-            .chat-messages div {
-              padding-bottom: 5px;
-              margin-bottom: 5px;
-              border-bottom: 1px solid #333;
-            }
-      #admin-controls-ingame {
-              text-align: center;
-            }
-            #admin-controls-ingame button { margin: 5px auto; width: 80%; display: block; }
-            .btn-active { background-color: #dd6655; !important; }
+                  /* --- Game Over Overlay --- */
+                  #game-over-screen {
+                    display: none; /* Keep it hidden by default */
+                    flex-direction: column;
+                    align-items: center;
+                    position: fixed;
+                    top: 0; left: 0;
+                    width: 100%; height: 100%;
+                    background-color: rgba(18, 18, 18, 0.95);
+                    z-index: 100;
+                    overflow-y: auto; /* Allow scrolling on small screens */
+                  }
+                  .game-over-box {
+                    width: 90%;
+                    max-width: 500px;
+                    padding: 20px;
+                    margin: auto;
+                    background-color: #1e1e1e;
+                    border: 1px solid #bb86fc; /* Purple highlight border */
+                    border-radius: 12px;
+                    text-align: center;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+                    margin-top: 20px;
+                    margin-bottom: 20px;
+                  }
+                  .game-over-log {
+                    height: 150px;
+                    overflow-y: auto;
+                    border: 1px solid #444;
+                    background: #111;
+                    padding: 10px;
+                    margin-top: 15px;
+                    text-align: left;
+                    display: flex;
+                    flex-direction: column-reverse;
+                    font-size: 0.9em;
+                  }
+                  .game-over-log div {
+                    border-bottom: 1px solid #333;
+                    padding-bottom: 4px;
+                    margin-bottom: 4px;
+                  }
+                  #game-over-title { color: #bb86fc; margin-top: 0; font-size: 2.5em; }
+                  #final-roles-list {
+                    list-style-type: none;
+                    padding: 0;
+                    margin-top: 20px;
+                    max-width: 300px;
+                    margin-left: auto;
+                    margin-right: auto;
+                    text-align: left;
+                  }
+                  #final-roles-list li {
+                    background-color: #2c2c2c;
+                    padding: 10px;
+                    margin-bottom: 8px;
+                    border-radius: 5px;
+                  }
+                  #return-to-lobby-btn {
+                    margin-top: 25px;
+                    padding: 12px 24px;
+                    font-size: 1.1em;
+                    color: white;
+                    background-color: #3f51b5;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                  }
+                  #return-to-lobby-btn:disabled { background-color: #333; cursor: not-allowed; }
+                  #rematch-vote-status {
+                    margin-top: 15px;
+                    font-size: 0.9em;
+                    color: #aaa;
+                    min-height: 20px;
+                  }
+                  .chat-messages div {
+                    padding-bottom: 5px;
+                    margin-bottom: 5px;
+                    border-bottom: 1px solid #333;
+                  }
+            #admin-controls-ingame {
+                    text-align: center;
+                  }
+                  #admin-controls-ingame button { margin: 5px auto; width: 80%; display: block; }
+                  .btn-active { background-color: #dd6655; !important; }
 
-            /* --- Mobile Responsive Styles --- */
-            @media (max-width: 768px) {
-              body { align-items: flex-start; padding-top: 15px; }
-              .game-container { flex-direction: column; gap: 0; }
-              .side-panel {
-                width: 100%; border-left: none; border-top: 1px solid #444;
-                padding-left: 0; padding-top: 20px; margin-top: 20px;
-              }
-            }
+                  /* --- Mobile Responsive Styles --- */
+                  @media (max-width: 768px) {
+                    body { align-items: flex-start; padding-top: 15px; }
+                    .game-container { flex-direction: column; gap: 0; }
+                    .side-panel {
+                      width: 100%; border-left: none; border-top: 1px solid #444;
+                      padding-left: 0; padding-top: 20px; margin-top: 20px;
+                    }
+                  }
+                  /* Container for the player's own role */
+      #my-role-display {
+          position: relative;
+          display: inline-block;
+          cursor: help;
+      }
+
+      /* Reuse the tooltip style from Lobby, or define simply here */
+      #my-role-tooltip {
+          visibility: hidden;
+          width: 300px;
+          background-color: rgba(0, 0, 0, 0.9);
+          color: #fff;
+          text-align: center;
+          border-radius: 6px;
+          padding: 15px;
+          position: absolute;
+          z-index: 1000;
+          top: 120%; /* Show below the text */
+          left: 50%;
+          transform: translateX(-50%);
+          opacity: 0;
+          transition: opacity 0.3s;
+          font-size: 1rem;
+          pointer-events: none; /* Let clicks pass through if needed */
+      }
+
+      #my-role-display:hover #my-role-tooltip {
+          visibility: visible;
+          opacity: 1;
+      }
     </style>
     <script src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='role_data.js') }}"></script>
   </head>
   <body>
     <div class="game-container">
@@ -338,7 +370,10 @@
 
       <div class="side-panel" id="side-panel">
         <div id="role-display" class="role-display">
-          Your Role: <strong id="my-role">Unknown</strong>
+          <span id="my-role-display">
+            Your Role: <strong id="my-role">Unknown</strong> ✨
+            <div id="my-role-tooltip">Loading info...</div>
+          </span>
         </div>
 
         <div id="admin-controls-ingame" style="display: none">
@@ -909,9 +944,38 @@
           els.sidePanel.style.display = "flex";
           els.action.style.display = "block";
           els.pnp.style.display = "none";
-          els.role.textContent =
-            (myRole === "Random_Seer" ? "Seer" : myRole) +
-            (isAdmin ? " 👑" : "");
+
+          // 1. Standard Role Text Update
+          const displayRole = myRole === "Random_Seer" ? "Seer" : myRole;
+          els.role.textContent = displayRole + (isAdmin ? " 👑" : "");
+
+          // 2. NEW: Tooltip Population Logic
+          if (typeof ROLE_DATA !== "undefined") {
+            // Convert role key (e.g. "Alpha_Werewolf") to Data Key (e.g. "Alpha Werewolf")
+            const roleKey = displayRole.replace(/_/g, " ");
+
+            // Find data or fallback
+            const rData = ROLE_DATA[roleKey] || {
+              long: "Description unavailable.",
+              rating: "?",
+              color: "#fff",
+            };
+
+            const tooltipEl = document.getElementById("my-role-tooltip");
+            if (tooltipEl) {
+              tooltipEl.innerHTML = `
+      <strong style="color: ${rData.color || "#bb86fc"}; font-size: 1.2em; display:block; margin-bottom:8px;">
+          ${roleKey}
+      </strong>
+      <div style="text-align: left; margin-bottom: 8px; line-height: 1.4;">
+          ${rData.long}
+      </div>
+      <div style="font-size:0.85em; color:#aaa; border-top:1px solid #555; padding-top:5px; text-align:left;">
+         ${rData.rating}
+      </div>
+    `;
+            }
+          }
           if (data.phase) els.phase.textContent = data.phase.replace(/_/g, " ");
           renderActionUI(data.phase, data.duration);
           els.adminChatToggle.style.display = "block";
