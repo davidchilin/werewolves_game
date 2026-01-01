@@ -202,6 +202,7 @@ def broadcast_game_state():
             "all_players": all_players_data,
             "duration": remaining_time,
             "game_over_data": game_instance.game_over_data,
+            "ghost_mode_active": game_instance.is_ghost_mode_active(),
             "is_admin": player_wrapper.is_admin,
             "is_alive": is_alive,
             "living_players": [
@@ -640,8 +641,16 @@ def handle_start_game(data):
         game_loop_running = True
         socketio.start_background_task(background_game_loop)
 
-    # conigure engine
-    game_instance.mode = data.get("settings", {}).get("mode", "standard")
+    # configure engine
+    settings = data.get("settings", {})
+    game_instance.settings = settings
+    game_instance.mode = settings.get("mode", "standard")
+
+    # Optional: Apply timer settings immediately if they exist
+    if "timers" in settings:
+        game_instance.timers_disabled = settings["timers"].get("timers_disabled", False)
+        # You can add logic here to parse specific durations if needed
+
     game_instance.players = {}
     for pid, obj in game["players"].items():
         game_instance.add_player(pid, obj.name)
@@ -906,8 +915,15 @@ def handle_accuse_player(data):
     # 1. Update Engine
     all_voted = game_instance.process_accusation(pid, tid)
 
+    if pid not in game_instance.accusations:
+        return  # Vote failed or invalid, do not broadcast
+
     # 2. Broadcast Update
     accuser = game_instance.players[pid]
+    accuser_name = accuser.name
+    if not accuser.is_alive:
+        accuser_name = "Ghost"
+
     if tid:
         target = game_instance.players.get(tid)
         target_name = target.name if target else "Unknown"
@@ -1071,9 +1087,9 @@ def handle_vote_for_rematch():
 
         # Check if a majority has been reached or admin forces
         if num_votes > total_players / 2 or p.is_admin:
-            old_mode = game_instance.mode
+            old_settings = getattr(game_instance, "settings", {})
 
-            game_instance = Game("main_game", mode=old_mode)
+            game_instance = Game("main_game", settings=old_settings)
 
             game_instance.players = {}
             for pid, obj in game["players"].items():

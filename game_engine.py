@@ -48,10 +48,12 @@ class Player:
 
 
 class Game:
-    def __init__(self, game_id, mode="standard"):
+    def __init__(self, game_id, settings=None, mode="standard"):
         self.game_id = game_id
-        self.mode = mode
-        self.isPassAndPlay = mode == "pass_and_play"
+        self.settings = settings or {}
+        self.mode = self.settings.get("mode", mode)
+        self.isPassAndPlay = self.mode == "pass_and_play"
+        self.ghost_mode = self.settings.get("ghost_mode", False)
         self.lock = RLock()
         self.message_history = []
 
@@ -81,10 +83,18 @@ class Game:
         # Admin/Meta Data
         self.admin_only_chat = False
         self.timers_disabled = False
+
+        timers_settings = self.settings.get("timers", {})
+        self.timers_disabled = timers_settings.get("timers_disabled", False)
+
         self.timer_durations = {
-            PHASE_NIGHT: GAME_DEFAULTS["TIME_NIGHT"],
-            PHASE_ACCUSATION: GAME_DEFAULTS["TIME_ACCUSATION"],
-            PHASE_LYNCH: GAME_DEFAULTS["TIME_LYNCH"],
+            PHASE_NIGHT: int(timers_settings.get("night", GAME_DEFAULTS["TIME_NIGHT"])),
+            PHASE_ACCUSATION: int(
+                timers_settings.get("accusation", GAME_DEFAULTS["TIME_ACCUSATION"])
+            ),
+            PHASE_LYNCH: int(
+                timers_settings.get("lynch_vote", GAME_DEFAULTS["TIME_LYNCH"])
+            ),
         }
         self.current_timer_id = 0  # increment id to invalidate old async timers
 
@@ -179,6 +189,11 @@ class Game:
             print(f"Assigned {role_class.__name__} to {player_obj.name}")
 
         print(f"Roles assigned for Game {self.game_id} (Mode: {self.mode})")
+
+    def is_ghost_mode_active(self):
+        """Active only if setting enabled AND 2 or more players are dead."""
+        dead_count = len(self.players) - len(self.get_living_players())
+        return self.ghost_mode and dead_count >= 2
 
     def get_living_players(self, role_team=None):
         living_players = [p for p in self.players.values() if p.is_alive]
@@ -436,7 +451,7 @@ class Game:
                     {
                         "id": player_obj.id,
                         "type": "blocked",
-                        "message": "💋 You were visited by the Prostitute and were too distracted to perform your action!",
+                        "message": "💋 You were visited by the Prostitute and were too distracted to perform your night action!",
                     }
                 )
                 continue
@@ -577,19 +592,31 @@ class Game:
         with self.lock:
             if self.phase != PHASE_ACCUSATION:
                 return False
-            if accuser_id in self.accusations:
-                return False  # Already accused
 
-            self.accusations[accuser_id] = target_id
-            return len(self.accusations) >= len(self.get_living_players())
-
-    def vote_to_sleep(self, player_id):
-        """Returns True if majority wants to sleep."""
-        with self.lock:
-            if self.phase != PHASE_ACCUSATION:
+            player = self.players.get(accuser_id)
+            if not player:
                 return False
-            self.end_day_votes.add(player_id)
-            return len(self.end_day_votes) > (len(self.get_living_players()) / 2)
+
+            # GHOST LOGIC
+            if not player.is_alive:
+                if not self.is_ghost_mode_active():
+                    return False  # Dead cannot vote if ghost mode inactive
+
+                # 25% Chance check
+                if random.random() > 0.25:
+                    return False  # Failed the roll, vote discarded
+
+            # Record the vote (if not already voted)
+            if accuser_id not in self.accusations:
+                self.accusations[accuser_id] = target_id
+
+            # CHECK: Have all LIVING players voted?
+            living_voters = [
+                pid for pid in self.accusations.keys() if self.players[pid].is_alive
+            ]
+            living_total = len(self.get_living_players())
+
+            return len(living_voters) >= living_total
 
     def tally_accusations(self):
         valid_votes = [
@@ -657,8 +684,30 @@ class Game:
             if vote not in ["yes", "no"]:
                 return False
 
+            player = self.players.get(voter_id)
+            if not player:
+                return False
+
+            # GHOST LOGIC
+            if not player.is_alive:
+                if not self.is_ghost_mode_active():
+                    return False
+
+                # 10% Chance check
+                if random.random() > 0.10:
+                    return False # Failed roll
+
+            # Record vote
             self.lynch_votes[voter_id] = vote
-            return len(self.lynch_votes) >= len(self.get_living_players())
+
+            # CHECK: Have all LIVING players voted?
+            living_voters = [
+                pid for pid in self.lynch_votes.keys()
+                if self.players[pid].is_alive
+            ]
+            living_total = len(self.get_living_players())
+
+            return len(living_voters) >= living_total
 
     def resolve_lynch_vote(self):
         """
@@ -786,16 +835,23 @@ class Game:
 
                 # Handle Fool Win immediately
                 if target_player_obj.role.name_key == ROLE_FOOL:
-                    self.winner = target_player_obj.name
-                    self.game_over_data = {
-                        "winning_team": target_player_obj.name,
-                        "reason": "The Fool tricked you all and got lynched!",
-                        "final_player_states": [
-                            p.to_dict() for p in self.players.values()
-                        ],
-                    }
-                    result_data["game_over"] = True
-                    return result_data
+                    solo_win_continues = self.settings.get("solo_win_continues", False)
+                    if solo_win_continues:
+                        if "solo_win" not in target_player_obj.status_effects:
+                            target_player_obj.status_effects.append("solo_win")
+                            msg = f"🤡 The Fool {target_player_obj.name} was lynched and achieved a Solo Win! 🥇"
+                            result_data["announcements"].append(msg)
+                    else:
+                        self.winner = target_player_obj.name
+                        self.game_over_data = {
+                            "winning_team": target_player_obj.name,
+                            "reason": "The Fool tricked you all and got lynched!",
+                            "final_player_states": [
+                                p.to_dict() for p in self.players.values()
+                            ],
+                        }
+                        result_data["game_over"] = True
+                        return result_data
 
             if self.check_game_over():
                 result_data["game_over"] = True
@@ -807,6 +863,8 @@ class Game:
         Checks all win conditions.
         Priority: 1. Solo Roles (Alpha_Werewolf, Fool) 2. Teams
         """
+        solo_win_continues = self.settings.get("solo_win_continues", False)
+
         if self.winner:
             return True
 
@@ -821,22 +879,30 @@ class Game:
             if player_obj.role and player_obj.role.check_win_condition(
                 player_obj, game_context
             ):
-                self.winner = player_obj.name
-                reason = f"Solo Winner {player_obj.role.name_key} {self.winner} has met their goals!"
+                # last_man = player_obj.role.name_key in SOLO_LAST_MAN
+                if solo_win_continues:  # and not last_man:
+                    if "solo_win" not in player_obj.status_effects:
+                        player_obj.status_effects.append("solo_win")
+                        msg = f"🥇 {player_obj.role.name_key} has achieved a Solo Win!"
+                        self.message_history.append(msg)
+                else:
+                    self.winner = player_obj.name
+                    reason = f"Solo Winner <span style='color: #fdd835'>{player_obj.role.name_key} {self.winner}</span> has met their goals!"
 
         # 2. Check Team Win Conditions
-        wolves = self.get_living_players("werewolf")
-        non_wolves_count = len(active_player_objs) - len(wolves)
+        if not self.winner:
+            wolves = self.get_living_players("werewolf")
+            non_wolves_count = len(active_player_objs) - len(wolves)
 
-        # Villagers win if no wolves left
-        if len(wolves) == 0:
-            self.winner = "Villagers"
-            reason = "All of the werewolves have been eradicated."
+            # Villagers win if no wolves left
+            if len(wolves) == 0:
+                self.winner = "Villagers"
+                reason = "All of the werewolves have been eradicated."
 
-        # Wolves win if they outnumber villagers (or equal)
-        elif len(wolves) >= non_wolves_count:
-            self.winner = "Werewolves"
-            reason = "The werewolves have taken over the village."
+            # Wolves win if they outnumber villagers (or equal)
+            elif len(wolves) >= non_wolves_count:
+                self.winner = "Werewolves"
+                reason = "The werewolves have taken over the village."
 
         if self.winner:
             self.phase = PHASE_GAME_OVER

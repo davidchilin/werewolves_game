@@ -444,6 +444,7 @@
       let livingPlayers = [],
         allPlayers = [],
         isAdmin = false;
+      let ghostModeActive = false;
       let timerInterval,
         timersDisabled = false;
       let currentNightUI = null;
@@ -805,8 +806,13 @@
         els.action.innerHTML = "";
         // DEAD VIEW
         if (!isAlive) {
+          if (!ghostModeActive) {
+            els.action.innerHTML =
+              "<h3>You are dead 💀 You can observe the game in silence.</h3>";
+            return;
+          }
           els.action.innerHTML =
-            "<h3>You are dead 💀 You can observe the game in silence.</h3>";
+            "<h4 style='color: #777'>👻 Ghost Mode Active: Your votes may count...</h4>";
           return;
         }
         if (phase === PHASE_NIGHT) renderNightUI(currentNightUI);
@@ -852,7 +858,7 @@
             ? `The ${data.winning_team} Win!`
             : `${data.winning_team} Won!`;
         // Populate game over data...
-        document.getElementById("game-over-reason").textContent = data.reason;
+        document.getElementById("game-over-reason").innerHTML = data.reason;
 
         const list = document.getElementById("final-roles-list");
         list.innerHTML = "";
@@ -861,9 +867,16 @@
             (data.winning_team === "Villagers" && p.team === "villager") ||
             (data.winning_team === "Werewolves" && p.team === "werewolf") ||
             data.winning_team === p.name;
-          list.innerHTML += `<li><strong>${p.name}</strong>${
-            isWinner ? " 🏆" : ""
-          } was a ${p.role}${p.is_alive ? "" : " 💀"}</li>`;
+
+          const isSoloWinner =
+            p.status_effects && p.status_effects.includes("solo_win");
+
+          let badges = "";
+          if (isWinner) badges += " 🏆";
+          if (isSoloWinner) badges += " 🥇";
+          if (!p.is_alive) badges += " 💀";
+
+          list.innerHTML += `<li><strong>${p.name}</strong>${badges} was a ${p.role}</li>`;
         });
 
         const mainLog = document.getElementById("log-panel");
@@ -908,6 +921,7 @@
         currentNightUI = data.night_ui;
         mySleepVote = data.my_sleep_vote;
         myLynchVote = data.my_lynch_vote;
+        ghostModeActive = data.ghost_mode_active;
         currentLynchTargetName = data.lynch_target_name || "Unknown";
         if (data.total_accusation_duration)
           totalAccusationDuration = data.total_accusation_duration;

@@ -42,6 +42,12 @@ GOOD_MAYORS = [
     ROLE_MAYOR,
 ]
 SPECIAL_WEREWOLVES = [ROLE_ALPHA_WEREWOLF, ROLE_TOUGH_WEREWOLF, ROLE_BACKLASH_WEREWOLF]
+SOLO_LAST_MAN = [
+    ROLE_ALPHA_WEREWOLF,
+    ROLE_DEMENTED_VILLAGER,
+    ROLE_MONSTER,
+    ROLE_SERIAL_KILLER,
+]
 
 # 1. Global Registry to keep track of all available roles
 AVAILABLE_ROLES = {}
@@ -235,18 +241,24 @@ class Seer(Role):
 
 
 @register_role
-class Alpha_Werewolf(Werewolf):  # Inherits from Werewolf!
-    # Wins if last one alive
+class Alpha_Werewolf(Werewolf):
+    # Wins if is the ONLY one left alive with max one non-monster alive
     def __init__(self):
         super().__init__()
         self.name_key = ROLE_ALPHA_WEREWOLF
 
     def check_win_condition(self, player_obj, game_context):
-        # Wins if is the ONLY one left alive
+        if not player_obj.is_alive:
+            return False
+
         living_players = [p for p in game_context["players"] if p.is_alive]
-        if len(living_players) == 1 and player_obj.is_alive:
-            return True
-        return False
+        werewolves = [p for p in living_players if p.role.team == "Werewolves"]
+        if len(werewolves) > 1:
+            return False
+
+        non_monsters = [p for p in living_players if p.role.name_key != "Monster"]
+
+        return len(non_monsters) <= 2  # werewolf is a nonmonster as well
 
 
 @register_role
@@ -360,10 +372,18 @@ class Demented(Villager):
         self.team = "neutral"  # Wins alone
 
     def check_win_condition(self, player_obj, game_context):
-        living = [p for p in game_context["players"] if p.is_alive]
-        if player_obj.is_alive and len(living) == 1:
-            return True
-        return False
+        # win if alive and max one non serial killer villager alive
+        if not player_obj.is_alive:
+            return False
+
+        living_players = [p for p in game_context["players"].values() if p.is_alive]
+        villagers = [
+            p
+            for p in living_players
+            if p.role.team == "Villagers" and p.role.name_key != "Serial_Killer"
+        ]
+
+        return len(villagers) <= 1
 
 
 @register_role
@@ -726,11 +746,26 @@ class Monster(Villager):
     def __init__(self):
         super().__init__()
         self.name_key = ROLE_MONSTER
-        self.team = "monster"
+        self.team = "Monster"
 
     def on_assign(self, player_obj):
         # This is checked by the Engine when calculating deaths
         player_obj.status_effects.append("immune_to_wolf")
+
+    def check_win_condition(self, player_obj, game_context):
+        # Monster win if alive and max one werewolf alive.
+        if not player_obj.is_alive:
+            return False
+
+        living_players = [p for p in game_context["players"] if p.is_alive]
+        werewolves = [p for p in living_players if p.role.team == "Werewolves"]
+
+        if len(living_players) == 1:
+            return True
+        elif len(living_players) == 2 and len(werewolves) == 1:
+            return True
+
+        return False
 
 
 @register_role
@@ -843,7 +878,7 @@ class Serial_Killer(Role):
     def __init__(self):
         super().__init__()
         self.name_key = "Serial_Killer"
-        self.team = "neutral"
+        self.team = "Serial_Killer"
         self.priority = 14  # Kills before wolves
         self.is_night_active = True
 
@@ -855,10 +890,20 @@ class Serial_Killer(Role):
         }
 
     def check_win_condition(self, player_obj, game_context):
-        living = [p for p in game_context["players"] if p.is_alive]
-        if player_obj.is_alive and len(living) == 1:
-            return True
-        return False
+        # win if alive and max one non-wolf non-monster alive
+        if not player_obj.is_alive:
+            return False
+
+        living_players = [p for p in game_context["players"] if p.is_alive]
+        targets = [
+            p
+            for p in living_players
+            if p.role.team != "Werewolves" and p.role.name_key != "Monster"
+        ]
+
+        return (
+            len(targets) <= 2
+        )  # serial_killer is in targets + max 1 non-wolf non-monster
 
     def get_night_ui_schema(self, player_obj, game_context):
         return {
@@ -1008,11 +1053,10 @@ class Wild_Child(Villager):
 
 
 @register_role
-class Witch(Role):
+class Witch(Villager):
     def __init__(self):
         super().__init__()
         self.name_key = ROLE_WITCH
-        self.team = "villager"
         self.priority = 20  # After Seer, Before Wolves to set heal
         self.is_night_active = True
 
@@ -1048,11 +1092,11 @@ class Witch(Role):
                 "effect": "poisoned",
             }
 
-        return {}
+        return {"action": "villager_vote", "target": target_player_obj.id}
 
     def get_night_ui_schema(self, player_obj, game_context):
         if not self.has_heal_potion and not self.has_kill_potion:
-            return {"pre": "<p>You have used all your potions!</p>"}
+            return Villager.get_night_ui_schema(self, player_obj, game_context)
 
         # Format potions as {id, name} so populateSelect works
         potions = []

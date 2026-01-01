@@ -16,11 +16,11 @@
       }
       .lobby-container {
         width: 90%;
-        max-width: 800px;
+        max-width: 1025px;
         margin: 20px auto;
         padding: 20px;
         background-color: #1e1e1e;
-        border: 1px solid #333;
+        border: 1px solid #444;
         border-radius: 8px;
         display: grid;
       }
@@ -96,11 +96,11 @@
       /* Individual Role Tile */
       .role-tile {
         position: relative; /* Crucial for positioning the tooltip */
-        background-color: #161616;
-        border: 1px solid #888;
+        background-color: #111111;
+        border: 1px solid #aaa;
         border-radius: 6px;
         width: 220px;
-        padding: 8px;
+        padding: 6px;
         text-align: center;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         transition:
@@ -113,17 +113,39 @@
       }
       /* Position the checkbox in the top-left or right */
       .role-tile input[type="checkbox"] {
-        transform: scale(1.2); /* Make checkbox bigger */
-        margin: 0;
-        accent-color: #222;
+        appearance: none; /* Remove default system styling */
+        -webkit-appearance: none; /* Safari support */
         position: absolute;
-        bottom: 8px;
+        top: 8px;
         right: 8px;
-      }
+        width: 20px;
+        height: 20px;
 
+        border: 2px solid var(--role-color, #777);
+        border-radius: 4px;
+        cursor: pointer;
+        background-color: transparent;
+        transition: all 0.2s;
+        margin: 0; /* Reset margins */
+      }
+      .role-tile input[type="checkbox"]:checked {
+        background-color: var(--role-color, #777);
+        box-shadow: 0 0 5px var(--role-color); /* Optional glow */
+      }
+      .role-tile input[type="checkbox"]:checked::after {
+        content: "";
+        position: absolute;
+        left: 4px;
+        top: 0px;
+        width: 5px;
+        height: 10px;
+        border: solid #121212; /* Dark checkmark for contrast on bright colors */
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+      }
       /* Highlight selected tiles */
       .role-tile.selected {
-        border: 1px solid #660099;
+        border: 1px solid #aa00ff;
         background-color: #1b1b1b;
       }
       /* Darken background slightly on selected hover for contrast */
@@ -133,15 +155,19 @@
       .role-tile:hover {
         transform: translateY(-4px); /* Slight lift on hover */
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        background-color: #333;
-        border-color: #ff5522;
+        background-color: #181818;
+        border-color: #ff4422;
       }
       .role-tile h3 {
         margin-top: 4px;
         margin-bottom: 2px;
         font-size: 1.2em;
-        color: #dddddd;
+        color: #ccc;
         width: 100%;
+        transition: color 0.2s;
+      }
+      .role-tile:hover h3 {
+        color: var(--role-color);
       }
       .role-short-desc {
         font-size: 0.9em;
@@ -149,6 +175,7 @@
         margin-top: 4px;
         margin-bottom: 2px;
         line-height: 1.2;
+        color: #aaa;
         /* Color is set via inline JS based on rating */
       }
 
@@ -297,7 +324,14 @@
 
         <div class="admin-controls">
           <h4>Game Mode</h4>
-          <label style="display: flex; align-items: center; gap: 10px">
+          <label
+            style="
+              display: flex;
+              align-items: center;
+              gap: 10px;
+              margin-bottom: 10px;
+            "
+          >
             <input type="checkbox" id="mode-pass-and-play" />
             <div>
               <strong>Pass-and-Play Mode</strong><br />
@@ -306,13 +340,35 @@
               >
             </div>
           </label>
+          <label style="display: flex; align-items: center; gap: 10px">
+            <input type="checkbox" id="mode-solo-continues" />
+            <div>
+              <strong>Solo win ends game</strong><br />
+              <small style="color: #aaa"
+                >Standard Rules: Do not wait for team wins.</small
+              >
+            </div>
+          </label>
         </div>
 
         <div class="admin-controls">
           <h4>Roles</h4>
+          <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+            <input type="checkbox" id="ghost-mode-checkbox" />
+            <div>
+              <strong>Enable Ghost Mode</strong><br />
+              <small style="color: #aaa">If 2+ dead: Ghosts have 25% chance to accuse, 10% to lynch vote.</small>
+            </div>
+          </label>
+
+          <button id="random-roles-btn" onclick="selectRandomRoles()" style="width:100%; margin-bottom:15px; background-color:#7b1fa2; color: white;">
+            🎲 Select Random Balanced Roles
+          </button>
+
           <div id="roles-grid">
-            <p>Loading roles...</p>
+              <p>Loading roles...</p>
           </div>
+        </div>
         </div>
 
         <div class="admin-controls">
@@ -439,6 +495,8 @@
             const tile = document.createElement("div");
             tile.className = "role-tile";
 
+            tile.style.setProperty("--role-color", roleData.color || "#ddd");
+
             // 3. Create Checkbox
             const checkbox = document.createElement("input");
             checkbox.type = "checkbox";
@@ -471,13 +529,13 @@
 
             // 4. Build Tile Content
             const title = document.createElement("h3");
-            title.innerText = dataKey;
+            title.innerText = dataKey + ":";
 
             // Short Desc
             const shortDesc = document.createElement("p");
             shortDesc.className = "role-short-desc";
             shortDesc.innerText = roleData.short;
-            shortDesc.style.color = roleData.color;
+            //shortDesc.style.color = roleData.color;
 
             // Tooltip
             const tooltip = document.createElement("div");
@@ -636,10 +694,12 @@
           'input[name="selected_roles"]:checked',
         );
         const selectedRoles = Array.from(checkboxes).map((cb) => cb.value);
-
         // B. Get Mode
         const passAndPlay =
           document.getElementById("mode-pass-and-play").checked;
+        const soloContinues = document.getElementById(
+          "mode-solo-continues",
+        ).checked;
 
         // C. Get Timers
         const timers = {
@@ -653,9 +713,92 @@
           roles: selectedRoles,
           settings: {
             mode: passAndPlay ? "pass_and_play" : "standard",
+            solo_win_continues: !soloContinues,
             timers: timers,
           },
         });
+      };
+
+        const ghostMode = document.getElementById("ghost-mode-checkbox").checked;
+
+        // D. Build Payload
+        const payload = {
+          roles: selectedRoles,
+          settings: {
+            mode: passAndPlay ? "pass_and_play" : "standard",
+            timers: timers,
+            // NEW: Add to settings
+            ghost_mode: ghostMode
+          },
+        };
+
+      // --- Random Roles Logic ---
+      document.getElementById("random-roles-btn").onclick = () => {
+        const playerList = document.getElementById("player-list");
+        const numPlayers = playerList ? playerList.children.length : 0;
+
+        // Safety check
+        if (numPlayers < 4)
+          return alert("Need +4 players in lobby to calculate balance.");
+
+        const checkboxes = Array.from(
+          document.querySelectorAll(".role-checkbox"),
+        );
+        if (checkboxes.length === 0) return;
+
+        let attempts = 0;
+        const maxAttempts = 2000;
+
+        while (attempts < maxAttempts) {
+          attempts++;
+
+          // 1. Determine how many roles to pick (Between 2 and numPlayers)
+          // If numPlayers is small (e.g. 1), clamp min to 1
+          const maxPick = Math.min(checkboxes.length, numPlayers);
+          const minPick = Math.min(2, maxPick);
+          const countToPick =
+            Math.floor(Math.random() * (maxPick - minPick + 1)) + minPick;
+
+          // 2. Shuffle and Select
+          // We create a temporary random selection of checkboxes
+          const shuffled = checkboxes.slice().sort(() => 0.5 - Math.random());
+          const selectedSet = shuffled.slice(0, countToPick);
+
+          // 3. Calculate Rating Sum
+          let totalRating = 0;
+          selectedSet.forEach((cb) => {
+            const key = cb.value.replace(/_/g, " ");
+            const rData =
+              typeof ROLE_DATA !== "undefined" ? ROLE_DATA[key] : null;
+            if (rData && !isNaN(parseFloat(rData.rating))) {
+              totalRating += parseFloat(rData.rating);
+            }
+          });
+
+          // 4. Check Balance (-0.5 to +0.5)
+          if (totalRating >= -0.5 && totalRating <= 0.5) {
+            // Success! Apply selection
+            checkboxes.forEach((cb) => {
+              const shouldCheck = selectedSet.includes(cb);
+              cb.checked = shouldCheck;
+              // Update Visuals
+              if (shouldCheck)
+                cb.closest(".role-tile").classList.add("selected");
+              else cb.closest(".role-tile").classList.remove("selected");
+            });
+
+            // Sync UI and Server
+            updateRoleSummary();
+            if (isPlayerAdmin) {
+              const rolesPayload = selectedSet.map((cb) => cb.value);
+              socket.emit("admin_update_roles", { roles: rolesPayload });
+            }
+            return; // Exit function
+          }
+        }
+        alert(
+          `Could not find a balanced role set for ${numPlayers} players after ${maxAttempts} attempts.`,
+        );
       };
 
       chatForm.addEventListener("submit", (e) => {
