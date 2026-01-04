@@ -1,6 +1,6 @@
 """
 roles.py
-Version: 4.6.0
+Version: 4.7.0
 Defines the behavior of all roles using a generic base class and specific subclasses.
 """
 import random
@@ -65,11 +65,11 @@ class Role:
         # Basic Metadata
         self.name_key = "Unknown"
         self.description_key = "desc_generic"
-        self.team = "neutral"  # villager, werewolf, solo
+        self.team = "Neutral"  # Villager, Werewolf, Neutral
         self.player_id = None
 
         # Logic Settings
-        self.priority = 0  # 0 = First (e.g., Bodyguard), 50 = Last (e.g.,Werewolf)
+        self.priority = 8  # 0 = First (e.g., Bodyguard), 50 = Last (e.g.,Werewolf)
         self.is_night_active = False
 
     VILLAGER_PROMPTS = [
@@ -161,7 +161,7 @@ class Villager(Role):
         super().__init__()
         self.name_key = ROLE_VILLAGER
         self.description_key = "desc_villager"
-        self.team = "villager"
+        self.team = "Villagers"
         self.is_night_active = False
 
     def night_action(self, player_obj, target_player_obj, game_context):
@@ -180,7 +180,7 @@ class Werewolf(Role):
         super().__init__()
         self.name_key = ROLE_WEREWOLF
         self.description_key = "desc_werewolf"
-        self.team = "werewolf"
+        self.team = "Werewolves"
         self.priority = 45  # Wolves attack after defensive roles
         self.is_night_active = True
 
@@ -206,15 +206,15 @@ class Seer(Role):
         super().__init__()
         self.name_key = ROLE_SEER
         self.description_key = "desc_seer"
-        self.team = "villager"
-        self.priority = 5  # Seer acts early
+        self.team = "Villagers"
+        self.priority = 3  # Seer acts early
         self.is_night_active = True
 
     def investigate(self, target_player):
         """Central logic for determining what the Seer sees."""
         if (
-            target_player.role.team == "werewolf"
-            or target_player.role.team == "monster"
+            target_player.role.team == "Werewolves"
+            or target_player.role.team == "Monster"
         ):
             return ROLE_WEREWOLF
         return ROLE_VILLAGER
@@ -242,23 +242,28 @@ class Seer(Role):
 
 @register_role
 class Alpha_Werewolf(Werewolf):
-    # Wins if is the ONLY one left alive with max one non-monster alive
     def __init__(self):
         super().__init__()
         self.name_key = ROLE_ALPHA_WEREWOLF
 
     def check_win_condition(self, player_obj, game_context):
+        # Wins if is the ONLY one left alive with max one non-monster alive
         if not player_obj.is_alive:
             return False
 
         living_players = [p for p in game_context["players"] if p.is_alive]
+        if len(living_players) == 1:
+            return True
+
         werewolves = [p for p in living_players if p.role.team == "Werewolves"]
         if len(werewolves) > 1:
             return False
 
         non_monsters = [p for p in living_players if p.role.name_key != "Monster"]
 
-        return len(non_monsters) <= 2  # werewolf is a nonmonster as well
+        return (
+            len(living_players) == 2 and len(non_monsters) == 2
+        )  # werewolf is a nonmonster as well
 
 
 @register_role
@@ -267,8 +272,8 @@ class Bodyguard(Role):
         super().__init__()
         self.name_key = ROLE_BODYGUARD
         self.description_key = "desc_bodyguard"
-        self.team = "villager"
-        self.priority = 15  # Priority PROTECT BEFORE ATTACK
+        self.team = "Villagers"
+        self.priority = 17  # Priority PROTECT BEFORE ATTACK
         self.is_night_active = True
         self.last_protected_id = None
 
@@ -369,21 +374,32 @@ class Demented(Villager):
     def __init__(self):
         super().__init__()
         self.name_key = ROLE_DEMENTED_VILLAGER
-        self.team = "neutral"  # Wins alone
+        self.team = "Neutral"  # Wins alone
 
     def check_win_condition(self, player_obj, game_context):
         # win if alive and max one non serial killer villager alive
         if not player_obj.is_alive:
             return False
 
-        living_players = [p for p in game_context["players"].values() if p.is_alive]
-        villagers = [
-            p
-            for p in living_players
-            if p.role.team == "Villagers" and p.role.name_key != "Serial_Killer"
-        ]
+        living_players = [p for p in game_context["players"] if p.is_alive]
+        if len(living_players) == 1:
+            return True
 
-        return len(villagers) <= 1
+        werewolves = [p for p in living_players if p.role.team == "Werewolves"]
+
+        if len(werewolves) > 0:
+            return False
+
+        KILL_DEMENTED = [
+            ROLE_MONSTER,
+            ROLE_HONEYPOT,
+            ROLE_HUNTER,
+            ROLE_SERIAL_KILLER,
+            ROLE_WILD_CHILD,
+        ]
+        villagers = [p for p in living_players if p.role.name_key not in KILL_DEMENTED]
+
+        return len(living_players) == 2 and len(villagers) == 2
 
 
 @register_role
@@ -392,7 +408,7 @@ class Fool(Villager):
     def __init__(self):
         super().__init__()
         self.name_key = ROLE_FOOL
-        self.team = "neutral"
+        self.team = "Neutral"
         # Logic handled in game_engine.resolve_lynch_vote
 
 
@@ -401,7 +417,6 @@ class Honeypot(Villager):
     def __init__(self):
         super().__init__()
         self.name_key = "Honeypot"
-        self.team = "villager"
 
     def on_death(self, player_obj, game_context):
         reason = game_context.get("reason", "")
@@ -438,7 +453,7 @@ class Honeypot(Villager):
             wolves = [
                 p
                 for p in game_context["players"]
-                if p.is_alive and p.role.team == "werewolf"
+                if p.is_alive and p.role.team == "Werewolves"
             ]
             if wolves:
                 target = random.choice(wolves)
@@ -484,7 +499,7 @@ class Hunter(Role):
     def __init__(self):
         super().__init__()
         self.name_key = ROLE_HUNTER
-        self.team = "villager"
+        self.team = "Villagers"
         self.is_night_active = True
         self.failsafe_id = None
         self.priority = 48
@@ -520,11 +535,11 @@ class Hunter(Role):
 
 @register_role
 class Backlash_Werewolf(Hunter):
-    # Same logic as Hunter, just Wolf team
+    # Same logic as Hunter, just Werewolf team
     def __init__(self):
         super().__init__()
         self.name_key = ROLE_BACKLASH_WEREWOLF
-        self.team = "werewolf"
+        self.team = "Werewolves"
         self.priority = 50
         self.failsafe_id = None
 
@@ -576,9 +591,8 @@ class Lawyer(Villager):
         super().__init__()
         self.name_key = ROLE_LAWYER
         self.description_key = "desc_lawyer"
-        self.team = "villager"
         self.is_night_active = True
-        self.priority = 15  # Acts around the same time as Bodyguard
+        self.priority = 14  # Acts around the same time as Bodyguard
 
     def night_action(self, player_obj, target_player_obj, game_context):
         # Apply the protection effect
@@ -606,7 +620,6 @@ class Martyr(Villager):
     def __init__(self):
         super().__init__()
         self.name_key = "Martyr"
-        self.team = "villager"
         self.is_night_active = True
         self.failsafe_id = None
 
@@ -655,7 +668,6 @@ class Mayor(Villager):
         super().__init__()
         self.name_key = ROLE_MAYOR
         self.description_key = "desc_mayor"
-        self.team = "villager"
         self.priority = 12
         self.is_night_active = True
         self.next_mayor_id = "not_set_yet"
@@ -758,11 +770,12 @@ class Monster(Villager):
             return False
 
         living_players = [p for p in game_context["players"] if p.is_alive]
-        werewolves = [p for p in living_players if p.role.team == "Werewolves"]
-
         if len(living_players) == 1:
             return True
-        elif len(living_players) == 2 and len(werewolves) == 1:
+
+        werewolves = [p for p in living_players if p.role.team == "Werewolves"]
+
+        if len(living_players) == 2 and len(werewolves) == 1:
             return True
 
         return False
@@ -775,9 +788,9 @@ class Prostitute(Role):
         super().__init__()
         self.is_night_active = True
         self.name_key = ROLE_PROSTITUTE
-        self.priority = 10
+        self.priority = 5
         self.slept_with = set()
-        self.team = "villager"
+        self.team = "Villagers"
 
     def night_action(self, player_obj, target_player_obj, game_context):
         player_obj.visiting_id = target_player_obj.id
@@ -788,6 +801,7 @@ class Prostitute(Role):
 
     def check_win_condition(self, player_obj, game_context):
         # Wins if sleeps with (Total - 2) players, dead or alive
+        # called in resolve_night_deaths
         all_p = len(game_context["players"])
         if len(self.slept_with) >= (all_p - 2):
             return True
@@ -838,13 +852,13 @@ class Revealer(Role):
     def __init__(self):
         super().__init__()
         self.name_key = ROLE_REVEALER
-        self.team = "villager"
+        self.team = "Villagers"
         self.is_night_active = True
         self.priority = 25
 
     def night_action(self, player_obj, target_player_obj, game_context):
         # If wolf -> kill wolf. Else -> kill self.
-        if target_player_obj.role.team == "werewolf":
+        if target_player_obj.role.team == "Werewolves":
             return {
                 "action": "revealed_werewolf",
                 "reason": "revealed_werewolf",
@@ -879,7 +893,7 @@ class Serial_Killer(Role):
         super().__init__()
         self.name_key = "Serial_Killer"
         self.team = "Serial_Killer"
-        self.priority = 14  # Kills before wolves
+        self.priority = 15  # Kills before wolves
         self.is_night_active = True
 
     def night_action(self, player_obj, target_player_obj, game_context):
@@ -895,15 +909,20 @@ class Serial_Killer(Role):
             return False
 
         living_players = [p for p in game_context["players"] if p.is_alive]
-        targets = [
-            p
-            for p in living_players
-            if p.role.team != "Werewolves" and p.role.name_key != "Monster"
-        ]
 
-        return (
-            len(targets) <= 2
-        )  # serial_killer is in targets + max 1 non-wolf non-monster
+        if len(living_players) == 1:
+            return True
+
+        if len(living_players) == 2:
+            targets = [
+                p
+                for p in living_players
+                if p.role.team != "Werewolves" and p.role.name_key != "Monster"
+            ]
+            return (
+                len(targets) == 2
+            )  # serial_killer is in targets + max 1 non-wolf non-monster
+        return False
 
     def get_night_ui_schema(self, player_obj, game_context):
         return {
@@ -928,7 +947,7 @@ class Sorcerer(Role):
     def __init__(self):
         super().__init__()
         self.name_key = "Sorcerer"
-        self.team = "werewolf"  # Wins with wolves
+        self.team = "Werewolves"  # Wins with wolves
         self.priority = 11  # Acts around Seer time
         self.is_night_active = True
 
@@ -968,7 +987,6 @@ class Tough_Villager(Villager):
     def __init__(self):
         super().__init__()
         self.name_key = ROLE_TOUGH_VILLAGER
-        self.team = "villager"
 
     def on_assign(self, player_obj):
         player_obj.status_effects.append("2nd_life")
@@ -1007,7 +1025,7 @@ class Wild_Child(Villager):
             )
             if model and not model.is_alive:
                 self.transformed = True
-                self.team = "werewolf"
+                self.team = "Werewolves"
                 self.priority = 45
                 self.is_night_active = True
                 print("Wild Child transformed!")

@@ -1,4 +1,4 @@
-<!-- Version: 4.6.0 -->
+<!-- Version: 4.7.0 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -721,14 +721,20 @@
         if (sleepButtonTimeout) clearTimeout(sleepButtonTimeout);
 
         let html = ""; // 1. Build the HTML string first
+        if (!isAlive && ghostModeActive) {
+          html += "<h4 style='color: #a0a0ff'>👻 Ghost Mode Active: ...</h4>";
+        }
 
-        // --- Accusation Section ---
-        if (myAccusationId !== null) {
-          const target = allPlayers.find((p) => p.id === myAccusationId);
-          html += `<h3>You have accused <span style="color:#ff5252">${
-            target ? target.name : "Nobody"
-          }</span>.</h3><p>Waiting for others...</p>`;
-        } else {
+        if (myAccusationId !== null)
+          if (myAccusationId === "Ghost_Fail") {
+            html += `<h3 style="color: #a0a0ff; font-style: italic;">👻 Your ghostly wails went unheard...</h3><p>Vote failed.</p>`;
+          } else {
+            const target = allPlayers.find((p) => p.id === myAccusationId);
+            html += `<h3>You have accused <span style="color:#ff5252">${
+              target ? target.name : "Nobody"
+            }</span>.</h3><p>Waiting for others...</p>`;
+          }
+        else {
           html += `
                 <h4>Who is the Werewolf? Time for discussion!</h4>
                 <select id="accuse-select"></select>
@@ -789,9 +795,16 @@
       }
 
       function renderLynchVoteUI() {
+        let html = "";
+
+        // 1. Ghost Mode Indicator
+        if (!isAlive && ghostModeActive) {
+          html += "<h4 style='color: #a0a0ff'>👻 Ghost Mode Active: ...</h4>";
+        }
+
         if (myLynchVote === "yes" || myLynchVote === "no") {
           els.action.innerHTML = `<h3>You voted: <span style="color:${
-            myLynchVote === "yes" ? "red" : "green"
+            myLynchVote === "yes" ? "green" : "red"
           }">${myLynchVote.toUpperCase()}</span></h3><p>Waiting for result...</p>`;
         } else {
           // If not voted, SHOW BUTTONS (Moved from lynch_vote_started)
@@ -812,8 +825,7 @@
             return;
           }
           els.action.innerHTML =
-            "<h4 style='color: #777'>👻 Ghost Mode Active: Your votes may count...</h4>";
-          return;
+            "<h4 style='color: #777'>👻 Ghost Mode Active: ...</h4>";
         }
         if (phase === PHASE_NIGHT) renderNightUI(currentNightUI);
         else if (phase === PHASE_ACCUSATION)
@@ -864,8 +876,8 @@
         list.innerHTML = "";
         data.final_player_states.forEach((p) => {
           const isWinner =
-            (data.winning_team === "Villagers" && p.team === "villager") ||
-            (data.winning_team === "Werewolves" && p.team === "werewolf") ||
+            (data.winning_team === "Villagers" && p.team === "Villagers") ||
+            (data.winning_team === "Werewolves" && p.team === "Werewolves") ||
             data.winning_team === p.name;
 
           const isSoloWinner =
@@ -1100,14 +1112,15 @@
         logMessage(
           `<strong>${data.accuser_name}</strong> accuses <strong>${data.accused_name}</strong>!`,
         );
-        if (
-          allPlayers.find((p) => p.id === myPlayerId)?.name ===
-          data.accuser_name
-        ) {
+
+        if (myPlayerId === data.accuser_id) {
           const b = document.getElementById("accuse-btn");
           if (b) {
             b.disabled = true;
-            b.textContent = "Accused";
+            b.textContent = "Accuse";
+
+            myAccusationId =
+              data.accused_name === "Nobody" ? null : "Vote_Cast";
           }
         }
       });

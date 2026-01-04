@@ -1,6 +1,6 @@
 """
 game_engine.py
-# Version: 4.6.0
+# Version: 4.7.0
 Manages the game flow, player states, complex role interactions, and phase transitions.
 """
 import random
@@ -30,11 +30,10 @@ class Player:
         self.visiting_id = None  # for prostitue
 
     def reset_night_status(self):
-        PERSISTENT_EFFECTS = ["poisoned", "immune_to_wolf", "2nd_life"]
+        PERSISTENT_EFFECTS = ["poisoned", "immune_to_wolf", "2nd_life", "solo_win"]
         self.status_effects = [
             effect for effect in self.status_effects if effect in PERSISTENT_EFFECTS
         ]
-        self.visiting_id = None
 
     def to_dict(self):
         """Serialize for frontend."""
@@ -44,6 +43,7 @@ class Player:
             "is_alive": self.is_alive,
             "role": self.role.name_key if self.role else None,
             "team": self.role.team if self.role else None,
+            "status_effects": self.status_effects,
         }
 
 
@@ -230,6 +230,9 @@ class Game:
                         player_obj, {"players": list(self.players.values())}
                     )
         elif new_phase == PHASE_ACCUSATION:
+            for player_obj in self.players.values():
+                player_obj.visiting_id = None
+
             self.accusations = {}
             self.end_day_votes = set()
             self.lynch_target_id = None
@@ -385,14 +388,11 @@ class Game:
 
             for p in self.players.values():
                 if p.is_alive and p.role and p.role.name_key == ROLE_WILD_CHILD:
-                    # Check if the dying player is their Role Model
+                    # Check if the dying player is their Role Model, in case last werewolf
                     if getattr(p.role, "role_model_id", None) == player_id:
                         if not p.role.transformed:
-                            p.role.transformed = True
-                            p.role.team = "werewolf"
-                            p.role.is_night_active = True
-                            p.priority = 45
-                            print(f"Wild Child {p.name} transformed into a Werewolf!")
+                            game_context = {"players": list(self.players.values())}
+                            p.role.on_night_start(p, game_context)
 
             final_death_events.append(
                 {
@@ -431,17 +431,20 @@ class Game:
             if player_obj.linked_partner_id:
                 partner_player_obj = self.players.get(player_obj.linked_partner_id)
                 if partner_player_obj and partner_player_obj.is_alive:
-                    print(
-                        f"Lovers Pact: {partner_player_obj.name} dies of broken heart."
-                    )
-                    kill_recursive(partner_player_obj.id, "Love Pact")
+                    msg = f"💘 Lovers Pact: <strong>{partner_player_obj.name}</strong> dies of broken heart 💔"
+                    print(msg)
+                    kill_recursive(partner_player_obj.id, msg)
 
             # Prostitute Collateral Damage
             if player_obj.visiting_id:
                 visitor_player_obj = self.players.get(player_obj.visiting_id)
                 if visitor_player_obj and visitor_player_obj.is_alive:
-                    print(f"Date damage: {visitor_player_obj.name} dies too.")
-                    kill_recursive(visitor_player_obj.id, "Collateral Damage")
+                    msg = f"👠 Date damage: <strong>{visitor_player_obj.name}</strong> dies too 🔞  They were a <strong>{visitor_player_obj.role.name_key}</strong>"
+                    print(msg)
+                    kill_recursive(
+                        visitor_player_obj.id,
+                        msg,
+                    )
 
         # 1. Execute Actions
         for player_obj in active_player_objs:
@@ -451,7 +454,7 @@ class Game:
                     {
                         "id": player_obj.id,
                         "type": "blocked",
-                        "message": "💋 You were visited by the Prostitute and were too distracted to perform your night action!",
+                        "message": "💋 You were visited by the Prostitute and were too distracted to perform your night action!💦",
                     }
                 )
                 continue
@@ -486,6 +489,19 @@ class Game:
             if player_obj.role.name_key == "Prostitute" and target_player_obj:
                 print(f"BLOCKING: {target_player_obj.name} visited by Prostitute.")
                 blocked_player_ids.add(target_player_obj.id)
+                # Handle Prostitute solo win here
+                if player_obj.role.check_win_condition(player_obj, game_context):
+                    if "solo_win" not in player_obj.status_effects:
+                        player_obj.status_effects.append("solo_win")
+                        # todo fix message only sent after refresh
+                        msg = f'🥰 The <span style="color: #ff66aa">Prostitute {player_obj.name}</span> made a full circle and achieved a Solo Win! 🥇'
+                        print(msg)
+                        notifications.append(
+                            {
+                                "type": "announcement",
+                                "message": msg,
+                            }
+                        )
 
             # 4. Handle Results
             if result:
@@ -552,7 +568,7 @@ class Game:
 
         # 4. Resolve Werewolf Votes
         # Unanimous vote kills, else no kill
-        living_werewolves = self.get_living_players("werewolf")
+        living_werewolves = self.get_living_players("Werewolves")
         active_werewolves = [
             w
             for w in living_werewolves
@@ -568,17 +584,19 @@ class Game:
             if target_id in self.players:
                 victim_player_obj = self.players[target_id]
                 print(f"Werewolves selected: {victim_player_obj.name}")
-
-                if "protected" in victim_player_obj.status_effects:
-                    print(f"Attack on {victim_player_obj.name} blocked by protection!")
-                elif "healed" in victim_player_obj.status_effects:
-                    print(f"Attack on {victim_player_obj.name} healed by Witch!")
-                elif "immune_to_wolf" in victim_player_obj.status_effects:
-                    print(f"Attack on {victim_player_obj.name} failed (Immune)!")
-                else:
-                    pending_deaths.append(
-                        {"target_id": target_id, "reason": "Werewolf meat"}
-                    )
+                if victim_player_obj.is_alive:
+                    if "protected" in victim_player_obj.status_effects:
+                        print(
+                            f"Attack on {victim_player_obj.name} blocked by protection!"
+                        )
+                    elif "healed" in victim_player_obj.status_effects:
+                        print(f"Attack on {victim_player_obj.name} healed by Witch!")
+                    elif "immune_to_wolf" in victim_player_obj.status_effects:
+                        print(f"Attack on {victim_player_obj.name} failed (Immune)!")
+                    else:
+                        pending_deaths.append(
+                            {"target_id": target_id, "reason": "Werewolf meat"}
+                        )
         # 5. Process Deaths & Lovers Pact
         for death_record in pending_deaths:
             kill_recursive(death_record["target_id"], death_record["reason"])
@@ -598,17 +616,18 @@ class Game:
                 return False
 
             # GHOST LOGIC
+            vote_value = target_id
             if not player.is_alive:
                 if not self.is_ghost_mode_active():
                     return False  # Dead cannot vote if ghost mode inactive
 
                 # 25% Chance check
                 if random.random() > 0.25:
-                    return False  # Failed the roll, vote discarded
+                    vote_value = "Ghost_Fail"
 
             # Record the vote (if not already voted)
             if accuser_id not in self.accusations:
-                self.accusations[accuser_id] = target_id
+                self.accusations[accuser_id] = vote_value
 
             # CHECK: Have all LIVING players voted?
             living_voters = [
@@ -620,7 +639,9 @@ class Game:
 
     def tally_accusations(self):
         valid_votes = [
-            target_id for target_id in self.accusations.values() if target_id
+            target_id
+            for target_id in self.accusations.values()
+            if target_id and target_id != "Ghost_Fail"
         ]
 
         if not valid_votes:
@@ -689,21 +710,21 @@ class Game:
                 return False
 
             # GHOST LOGIC
+            vote_value = vote
             if not player.is_alive:
                 if not self.is_ghost_mode_active():
                     return False
 
                 # 10% Chance check
                 if random.random() > 0.10:
-                    return False # Failed roll
+                    vote_value = "Ghost_Fail"  # Failed roll
 
             # Record vote
             self.lynch_votes[voter_id] = vote
 
             # CHECK: Have all LIVING players voted?
             living_voters = [
-                pid for pid in self.lynch_votes.keys()
-                if self.players[pid].is_alive
+                pid for pid in self.lynch_votes.keys() if self.players[pid].is_alive
             ]
             living_total = len(self.get_living_players())
 
@@ -715,7 +736,8 @@ class Game:
         Returns result dict.
         """
         yes_count = list(self.lynch_votes.values()).count("yes")
-        total_votes = len(self.lynch_votes)
+        no_count = list(self.lynch_votes.values()).count("no")
+        total_valid_votes = yes_count + no_count
 
         result_data = {
             "summary": {"yes": [], "no": []},
@@ -728,9 +750,10 @@ class Game:
 
         # Populate summary names
         for player_id, vote in self.lynch_votes.items():
-            result_data["summary"][vote].append(self.players[player_id].name)
+            if vote in ["yes", "no"]:
+                result_data["summary"][vote].append(self.players[player_id].name)
 
-        if yes_count > (total_votes / 2):
+        if total_valid_votes > 0 and yes_count > (total_valid_votes / 2):
             # --- Lawyer Check ---
             target_obj = self.players[self.lynch_target_id]
             if "no_lynch" in target_obj.status_effects:
@@ -772,18 +795,13 @@ class Game:
                         }
                     )
 
-                # Wild Child Update
+                # Wild Child Update in case last werewolf died
                 for p in self.players.values():
                     if p.is_alive and p.role and p.role.name_key == ROLE_WILD_CHILD:
                         if getattr(p.role, "role_model_id", None) == player_id:
                             if not p.role.transformed:
-                                p.role.transformed = True
-                                p.role.team = "werewolf"
-                                p.role.is_night_active = True
-                                p.priority = 45
-                                print(
-                                    f"Wild Child {p.name} transformed into a Werewolf!"
-                                )
+                                game_context = {"players": list(self.players.values())}
+                                p.role.on_night_start(p, game_context)
 
                 ctx = {
                     "players": list(self.players.values()),
@@ -806,7 +824,7 @@ class Game:
                             )
                             if retaliation_target_obj:
                                 print(
-                                    f"Retaliation by {player_obj.name} on {retaliation_target_obj.name}!"
+                                    f"🪚 Retaliation by {player_obj.name} on {retaliation_target_obj.name}! 🪓"
                                 )
                             kill_recursive(retaliation_target_id, custom_reason)
                     if death_reaction.get("type") == "announcement":
@@ -823,8 +841,9 @@ class Game:
                 if player_obj.visiting_id:
                     host_obj = self.players.get(player_obj.visiting_id)
                     if host_obj and host_obj.is_alive:
-                        print(f"Date damage: {host_obj.name} dies too.")
-                        kill_recursive(host_obj.id, "Collateral Damage")
+                        msg = f"👠 Date damage: <strong>{host_obj.name}</strong> dies too 🔞  They were a <strong>{host_obj.role.name_key}</strong>"
+                        print(msg)
+                        kill_recursive(host_obj.id, msg)
 
             # Start the chain reaction
             kill_recursive(self.lynch_target_id, "Lynched")
@@ -836,16 +855,18 @@ class Game:
                 # Handle Fool Win immediately
                 if target_player_obj.role.name_key == ROLE_FOOL:
                     solo_win_continues = self.settings.get("solo_win_continues", False)
+                    msg = f"🤡 The Fool {target_player_obj.name} tricked you all and got lynched for a Solo Win! 🥇"
                     if solo_win_continues:
                         if "solo_win" not in target_player_obj.status_effects:
                             target_player_obj.status_effects.append("solo_win")
-                            msg = f"🤡 The Fool {target_player_obj.name} was lynched and achieved a Solo Win! 🥇"
                             result_data["announcements"].append(msg)
                     else:
+                        if "solo_win" not in target_player_obj.status_effects:
+                            target_player_obj.status_effects.append("solo_win")
                         self.winner = target_player_obj.name
                         self.game_over_data = {
                             "winning_team": target_player_obj.name,
-                            "reason": "The Fool tricked you all and got lynched!",
+                            "reason": msg,
                             "final_player_states": [
                                 p.to_dict() for p in self.players.values()
                             ],
@@ -861,7 +882,7 @@ class Game:
     def check_game_over(self):
         """
         Checks all win conditions.
-        Priority: 1. Solo Roles (Alpha_Werewolf, Fool) 2. Teams
+        Priority: 1. Solo Roles 2. Teams
         """
         solo_win_continues = self.settings.get("solo_win_continues", False)
 
@@ -880,10 +901,14 @@ class Game:
                 player_obj, game_context
             ):
                 # last_man = player_obj.role.name_key in SOLO_LAST_MAN
-                if solo_win_continues:  # and not last_man:
+                if (
+                    solo_win_continues and len(active_player_objs) > 2
+                ):  # and not last_man:
                     if "solo_win" not in player_obj.status_effects:
                         player_obj.status_effects.append("solo_win")
-                        msg = f"🥇 {player_obj.role.name_key} has achieved a Solo Win!"
+                        msg = f"🥇 <span style='color: #fdd835'>{player_obj.role.name_key}</span> has achieved a Solo Win!"
+                        print(msg)
+                        # todo fix message only sent after refresh
                         self.message_history.append(msg)
                 else:
                     self.winner = player_obj.name
@@ -891,18 +916,18 @@ class Game:
 
         # 2. Check Team Win Conditions
         if not self.winner:
-            wolves = self.get_living_players("werewolf")
+            wolves = self.get_living_players("Werewolves")
             non_wolves_count = len(active_player_objs) - len(wolves)
 
             # Villagers win if no wolves left
             if len(wolves) == 0:
                 self.winner = "Villagers"
-                reason = "All of the werewolves have been eradicated."
+                reason = "All of the <span style='color: #880808'>Werewolves</span> have been eradicated."
 
             # Wolves win if they outnumber villagers (or equal)
             elif len(wolves) >= non_wolves_count:
                 self.winner = "Werewolves"
-                reason = "The werewolves have taken over the village."
+                reason = "The <span style='color: #880808'>Werewolves</span> have taken over the village."
 
         if self.winner:
             self.phase = PHASE_GAME_OVER

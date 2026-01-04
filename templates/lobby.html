@@ -1,4 +1,4 @@
-<!-- Version: 4.6.0 -->
+<!-- Version: 4.7.0 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -266,7 +266,7 @@
       }
       @media (max-width: 768px) {
         .lobby-container {
-          grid-template-columns: repeat(2, 1fr);
+          grid-template-columns: 1fr;
         }
       }
       @media (max-width: 480px) {
@@ -292,7 +292,7 @@
           background: #2c2c2c;
           padding: 10px;
           margin: 10px 0;
-          border: 1px solid #444;
+          border: 1px solid #444:
           border-radius: 5px;
           color: #e0e0e0;
         "
@@ -340,8 +340,15 @@
               >
             </div>
           </label>
-          <label style="display: flex; align-items: center; gap: 10px">
-            <input type="checkbox" id="mode-solo-continues" />
+          <label
+            style="
+              display: flex;
+              align-items: center;
+              gap: 10px;
+              margin-bottom: 10px;
+            "
+          >
+            <input type="checkbox" id="mode-solo-ends-game" />
             <div>
               <strong>Solo win ends game</strong><br />
               <small style="color: #aaa"
@@ -349,26 +356,44 @@
               >
             </div>
           </label>
-        </div>
-
-        <div class="admin-controls">
-          <h4>Roles</h4>
-          <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+          <label
+            style="
+              display: flex;
+              align-items: center;
+              gap: 10px;
+              margin-bottom: 10px;
+            "
+          >
             <input type="checkbox" id="ghost-mode-checkbox" />
             <div>
               <strong>Enable Ghost Mode</strong><br />
-              <small style="color: #aaa">If 2+ dead: Ghosts have 25% chance to accuse, 10% to lynch vote.</small>
+              <small style="color: #aaa"
+                >Ghosts can participate in accusation and lynch
+                vote...sometimes</small
+              >
             </div>
           </label>
-
-          <button id="random-roles-btn" onclick="selectRandomRoles()" style="width:100%; margin-bottom:15px; background-color:#7b1fa2; color: white;">
-            🎲 Select Random Balanced Roles
-          </button>
-
-          <div id="roles-grid">
-              <p>Loading roles...</p>
-          </div>
         </div>
+
+        <div class="admin-controls">
+          <h4>
+            Roles
+            <button
+              id="random-roles-btn"
+              onclick="selectRandomRoles()"
+              style="
+                width: 28%;
+                margin-bottom: 5px;
+                background-color: #7b1fa2;
+                color: white;
+              "
+            >
+              🎲 Select Random Roles
+            </button>
+          </h4>
+          <div id="roles-grid">
+            <p>Loading roles...</p>
+          </div>
         </div>
 
         <div class="admin-controls">
@@ -448,6 +473,14 @@
       const ROLE_WILD_CHILD = "Wild_Child";
       const ROLE_WITCH = "Witch";
 
+      // ROLE COUNT Calculation:
+      // CONSTANTS (Must match your Python constants)
+      const SPECIAL_WEREWOLVES = [
+        "Backlash_Werewolf",
+        "Tough_Werewolf",
+        "Alpha_Werewolf",
+      ];
+
       const socket = io();
       // Ensure backend renders 'player_id' into the template
       let currentPlayerId = "{{ player_id }}";
@@ -505,10 +538,19 @@
             checkbox.classList.add("role-checkbox");
 
             // Set default checks
-            const defaultRoles = [ROLE_VILLAGER, ROLE_WEREWOLF, ROLE_SEER];
-            if (defaultRoles.includes(role.name_key)) {
-              checkbox.checked = true;
-              tile.classList.add("selected");
+            if (serverRoles !== null) {
+              // If we already heard from the server (Rematch), use that
+              if (serverRoles.includes(role.name_key)) {
+                checkbox.checked = true;
+                tile.classList.add("selected");
+              }
+            } else {
+              // Fresh Load: Use Defaults
+              const defaultRoles = [ROLE_VILLAGER, ROLE_WEREWOLF, ROLE_SEER];
+              if (defaultRoles.includes(role.name_key)) {
+                checkbox.checked = true;
+                tile.classList.add("selected");
+              }
             }
 
             // Add Event Listener for Checkbox Logic
@@ -581,16 +623,78 @@
         loadRoles();
       });
 
+      let serverRoles = null;
+
       // Merged sync logic: Updates checkbox state AND summary
       socket.on("sync_roles", function (data) {
+        console.log("Received roles from server:", data.roles);
+        serverRoles = data.roles;
+
         const checkboxes = document.querySelectorAll(".role-checkbox");
-        checkboxes.forEach((cb) => {
-          cb.checked = data.roles.includes(cb.value);
-          // Find parent tile and update class
-          if (cb.checked) cb.closest(".role-tile").classList.add("selected");
-          else cb.closest(".role-tile").classList.remove("selected");
-        });
-        updateRoleSummary();
+        if (checkboxes.length > 0) {
+          checkboxes.forEach((cb) => {
+            cb.checked = data.roles.includes(cb.value);
+            // Find parent tile and update class
+            if (cb.checked) cb.closest(".role-tile").classList.add("selected");
+            else cb.closest(".role-tile").classList.remove("selected");
+          });
+          updateRoleSummary();
+        }
+      });
+
+      // NEW: Restore Lobby Settings (Checkboxes & Timers)
+      socket.on("sync_settings", (settings) => {
+        if (!settings || Object.keys(settings).length === 0) return;
+
+        console.log("Restoring settings:", settings);
+
+        // 1. Restore Mode Checkboxes
+        if (settings.mode === "pass_and_play") {
+          document.getElementById("mode-pass-and-play").checked = true;
+        } else {
+          document.getElementById("mode-pass-and-play").checked = false;
+        }
+
+        // 2. Restore Solo Win (Logic Inverted)
+        // If "continues" is TRUE, "ends-game" checkbox must be FALSE
+        // If "continues" is FALSE, "ends-game" checkbox must be TRUE
+        const soloEndsGameCb = document.getElementById("mode-solo-ends-game");
+        if (soloEndsGameCb) {
+          if (settings.solo_win_continues === true) {
+            soloEndsGameCb.checked = false;
+          } else if (settings.solo_win_continues === false) {
+            soloEndsGameCb.checked = true;
+          }
+        }
+
+        // 3. Restore Ghost Mode
+        const ghostCb = document.getElementById("ghost-mode-checkbox");
+        if (ghostCb) {
+          ghostCb.checked = !!settings.ghost_mode;
+        }
+
+        // 4. Restore Timers
+        if (settings.timers) {
+          const t = settings.timers;
+
+          // Checkbox
+          const disableBox = document.getElementById("disable-timers-checkbox");
+          if (disableBox) {
+            disableBox.checked = !!t.timers_disabled;
+            // Trigger change event to hide/show options
+            disableBox.dispatchEvent(new Event("change"));
+          }
+
+          // Inputs
+          if (t.night)
+            document.getElementById("night-timer-input").value = t.night;
+          if (t.accusation)
+            document.getElementById("accusation-timer-input").value =
+              t.accusation;
+          if (t.lynch_vote)
+            document.getElementById("lynch-vote-timer-input").value =
+              t.lynch_vote;
+        }
       });
 
       // Merged player list update: Handles list, admin check, AND summary update
@@ -694,12 +798,20 @@
           'input[name="selected_roles"]:checked',
         );
         const selectedRoles = Array.from(checkboxes).map((cb) => cb.value);
+
         // B. Get Mode
         const passAndPlay =
           document.getElementById("mode-pass-and-play").checked;
-        const soloContinues = document.getElementById(
-          "mode-solo-continues",
-        ).checked;
+        const soloEndsGameCheckbox = document.getElementById(
+          "mode-solo-ends-game",
+        );
+        const soloContinues = soloEndsGameCheckbox
+          ? !soloEndsGameCheckbox.checked
+          : false;
+
+        // Handle Ghost Mode (Safe check in case element is missing)
+        const ghostCheckbox = document.getElementById("ghost-mode-checkbox");
+        const ghostMode = ghostCheckbox ? ghostCheckbox.checked : false;
 
         // C. Get Timers
         const timers = {
@@ -713,93 +825,117 @@
           roles: selectedRoles,
           settings: {
             mode: passAndPlay ? "pass_and_play" : "standard",
-            solo_win_continues: !soloContinues,
+            solo_win_continues: soloContinues,
+            ghost_mode: ghostMode,
             timers: timers,
           },
         });
       };
 
-        const ghostMode = document.getElementById("ghost-mode-checkbox").checked;
-
-        // D. Build Payload
-        const payload = {
-          roles: selectedRoles,
-          settings: {
-            mode: passAndPlay ? "pass_and_play" : "standard",
-            timers: timers,
-            // NEW: Add to settings
-            ghost_mode: ghostMode
-          },
-        };
-
       // --- Random Roles Logic ---
-      document.getElementById("random-roles-btn").onclick = () => {
-        const playerList = document.getElementById("player-list");
-        const numPlayers = playerList ? playerList.children.length : 0;
+      function selectRandomRoles() {
+        console.log("Random Roles: Button clicked.");
 
-        // Safety check
-        if (numPlayers < 4)
-          return alert("Need +4 players in lobby to calculate balance.");
+        try {
+          // 1. Determine Player Count
+          const playerList = document.getElementById("player-list");
+          let numPlayers = playerList ? playerList.children.length : 0;
 
-        const checkboxes = Array.from(
-          document.querySelectorAll(".role-checkbox"),
-        );
-        if (checkboxes.length === 0) return;
+          // Fallback for testing: If 0 or 1 players, pretend there are 5
+          if (numPlayers < 4) {
+            console.log(
+              "Player count low (" +
+                numPlayers +
+                "), defaulting to 5 for calculation.",
+            );
+            numPlayers = 4;
+          }
 
-        let attempts = 0;
-        const maxAttempts = 2000;
+          // 2. Get all checkboxes
+          const checkboxes = Array.from(
+            document.querySelectorAll(".role-checkbox"),
+          );
+          if (checkboxes.length === 0) {
+            alert("Roles are not loaded yet. Please wait.");
+            return;
+          }
 
-        while (attempts < maxAttempts) {
-          attempts++;
+          let bestSet = [];
+          let minDiff = Infinity; // Track the closest we get to 0 balance
 
-          // 1. Determine how many roles to pick (Between 2 and numPlayers)
-          // If numPlayers is small (e.g. 1), clamp min to 1
-          const maxPick = Math.min(checkboxes.length, numPlayers);
-          const minPick = Math.min(2, maxPick);
-          const countToPick =
-            Math.floor(Math.random() * (maxPick - minPick + 1)) + minPick;
+          // 3. Monte Carlo Simulation: Try 1000 combinations
+          const maxAttempts = 1000;
 
-          // 2. Shuffle and Select
-          // We create a temporary random selection of checkboxes
-          const shuffled = checkboxes.slice().sort(() => 0.5 - Math.random());
-          const selectedSet = shuffled.slice(0, countToPick);
+          for (let i = 0; i < maxAttempts; i++) {
+            // A. Pick random count (Between 2 and numPlayers)
+            const maxPick = Math.min(checkboxes.length, numPlayers);
+            const minPick = 2;
+            const countToPick =
+              Math.floor(Math.random() * (maxPick - minPick + 1)) + minPick;
 
-          // 3. Calculate Rating Sum
-          let totalRating = 0;
-          selectedSet.forEach((cb) => {
-            const key = cb.value.replace(/_/g, " ");
-            const rData =
-              typeof ROLE_DATA !== "undefined" ? ROLE_DATA[key] : null;
-            if (rData && !isNaN(parseFloat(rData.rating))) {
-              totalRating += parseFloat(rData.rating);
-            }
-          });
+            // B. Shuffle and Slice
+            const shuffled = checkboxes.slice().sort(() => 0.5 - Math.random());
+            const currentSet = shuffled.slice(0, countToPick);
 
-          // 4. Check Balance (-0.5 to +0.5)
-          if (totalRating >= -0.5 && totalRating <= 0.5) {
-            // Success! Apply selection
-            checkboxes.forEach((cb) => {
-              const shouldCheck = selectedSet.includes(cb);
-              cb.checked = shouldCheck;
-              // Update Visuals
-              if (shouldCheck)
-                cb.closest(".role-tile").classList.add("selected");
-              else cb.closest(".role-tile").classList.remove("selected");
+            // C. Calculate Rating Sum
+            let totalRating = 0;
+            currentSet.forEach((cb) => {
+              const key = cb.value.replace(/_/g, " ");
+              let rating = 0;
+              if (typeof ROLE_DATA !== "undefined" && ROLE_DATA[key]) {
+                rating = parseFloat(ROLE_DATA[key].rating);
+              }
+              if (isNaN(rating)) rating = 0;
+              totalRating += rating;
             });
 
-            // Sync UI and Server
+            // D. Check Balance (-0.5 to +0.5)
+            const diff = Math.abs(totalRating);
+
+            if (diff <= 0.5) {
+              bestSet = currentSet;
+              minDiff = diff;
+              break;
+            }
+
+            if (diff < minDiff) {
+              minDiff = diff;
+              bestSet = currentSet;
+            }
+          }
+
+          // 4. Apply the Best Selection Found
+          if (bestSet.length > 0) {
+            // Uncheck ALL first
+            checkboxes.forEach((cb) => {
+              cb.checked = false;
+              if (cb.closest(".role-tile"))
+                cb.closest(".role-tile").classList.remove("selected");
+            });
+
+            // Check winners
+            bestSet.forEach((cb) => {
+              cb.checked = true;
+              if (cb.closest(".role-tile"))
+                cb.closest(".role-tile").classList.add("selected");
+            });
+
             updateRoleSummary();
-            if (isPlayerAdmin) {
-              const rolesPayload = selectedSet.map((cb) => cb.value);
+            if (typeof isPlayerAdmin !== "undefined" && isPlayerAdmin) {
+              const rolesPayload = bestSet.map((cb) => cb.value);
               socket.emit("admin_update_roles", { roles: rolesPayload });
             }
-            return; // Exit function
+            console.log(
+              `Roles randomized. Count: ${bestSet.length}. Balance: ${minDiff.toFixed(1)}`,
+            );
+          } else {
+            alert("Could not generate a valid role set.");
           }
+        } catch (err) {
+          console.error("Error in selectRandomRoles:", err);
+          alert("An error occurred generating roles. Check console.");
         }
-        alert(
-          `Could not find a balanced role set for ${numPlayers} players after ${maxAttempts} attempts.`,
-        );
-      };
+      }
 
       chatForm.addEventListener("submit", (e) => {
         e.preventDefault();
@@ -867,14 +1003,6 @@
           chatInput.placeholder = "Type a message...";
         }
       }
-
-      // ROLE COUNT Calculation:
-      // CONSTANTS (Must match your Python constants)
-      const SPECIAL_WEREWOLVES = [
-        "Backlash_Werewolf",
-        "Tough_Werewolf",
-        "Alpha_Werewolf",
-      ];
 
       function updateRoleSummary() {
         const playerList = document.getElementById("player-list");

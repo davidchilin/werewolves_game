@@ -1,10 +1,10 @@
 // static/role_data.js
-// v 4.6.0
+// v 4.7.0
 
 const ROLE_DATA = {
   "Alpha Werewolf": {
     short: "Solo wins if last one standing.",
-    long: "You are the leader of the Werewolves. You vote with the pack to kill at night. However, your goal is to sit alone on your mountain. Solo win if only living werewolf and max one non-Monster alive.",
+    long: "You are the leader of the Werewolves. You vote with the pack to kill at night. However, your goal is to sit alone on your mountain. Solo win if only living werewolf with maximum of one living non-Monster.",
     rating: -0.5,
     color: "#C00040",
   },
@@ -28,7 +28,7 @@ const ROLE_DATA = {
   },
   "Demented Villager": {
     short: "Solo win if last one standing.",
-    long: "You have no special powers and appear as a Villager to the Seer. However, ChatGPT convinced you to kill everyone for the WIN.",
+    long: "You have no special powers and appear as a Villager to the Seer. However, ChatGPT convinced you to kill everyone for the WIN. Note you won't be last if left with a Monster, Honeypot, Hunter, Serial Killer, and Wild Child.",
     rating: 0.2,
     color: "#660099",
   },
@@ -58,19 +58,19 @@ const ROLE_DATA = {
   },
   Martyr: {
     short: "Gift a player to receive a 2nd life upon your death.",
-    long: "At night you can select a player to take your life force upon your death.",
+    long: "At night you can select a player to absorb your life force upon your death.",
     rating: 0.2,
     color: "#660099",
   },
   Mayor: {
     short: "Your vote can break a tie during accusations.",
-    long: "You are the leader of the village. Because of your political influence, your vote carries tie-breaking weight during the daily accusation. You can secretly announce your successor. Your successor can only name their successor if their role has no night actions.",
+    long: "You are the leader of the village. Because of your political influence, your vote carries tie-breaking weight during the daily accusation. You can secretly announce your successor. Your successor can only name their successor if their role has no night actions, like a Villager or Monster.",
     rating: 0.4,
     color: "#4D00B3",
   },
   Monster: {
     short: "Solo win if last one standing. Teamless",
-    long: "You are a supernatural beast. You are not on the Villager team or the Werewolf team; you are on your own. You are immune to the Werewolf attacks and are seen as a Werewolf. Solo win if alive and max one Werewolf is alive.",
+    long: "You are a supernatural beast. You are not on the Villager team or the Werewolf team; you are on your own. You are immune to the Werewolf attacks and are seen as a Werewolf. Solo win if alive with maximum of one living Werewolf.",
     rating: 0.3,
     color: "#5A00A6",
   },
@@ -95,19 +95,19 @@ const ROLE_DATA = {
   },
   Seer: {
     short: "See a player's sole at night! (Werewolf?)",
-    long: "You are the village's most powerful investigator. Every night, you select one player to reveal that player's team - werewolves or villagers.",
+    long: "You are the village's most powerful investigator. Every night, you select one player to reveal that player's team - werewolves or villagers. Note the Monster is seen as a Werewolf.",
     rating: 1.0,
     color: "#0000FF",
   },
   "Serial Killer": {
     short: "Kill one person nightly. Win if last one standing.",
-    long: "You are a third party. You do not win with the Village or the Werewolves. Every night, you choose a victim to mutilate. Your kills cannot be stopped by the Bodyguard.",
+    long: "You are a third party. You do not win with the Villagers or the Werewolves. Every night, you choose a victim to mutilate. Your kills cannot be stopped by the Bodyguard. You can only solo win with maximum of one other living human.",
     rating: -0.2,
     color: "#990066",
   },
   Sorcerer: {
     short: "Team Werewolf. Search for other magic roles.",
-    long: "You are on the Werewolf team but do not wake up with them to kill. Instead, you investigate players to identify who the Seer is or other magic users.",
+    long: "You are on the Werewolf team but do not wake up with them to kill. Instead, you investigate players to identify who the Seer is or other magic users like the Witch and the Revealer.",
     rating: -0.4,
     color: "#B3004D",
   },
