@@ -1,4 +1,4 @@
-<!-- Version: 4.7.0 -->
+<!-- Version: 4.8.3 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -6,369 +6,517 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Werewolves - The Game</title>
     <style>
-                  /* --- Base Styles --- */
-                  body {
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-                      Helvetica, Arial, sans-serif;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    margin: 0;
-                    min-height: 100vh;
-                    background-color: #111111;
-                    color: #eeeecc;
-                  }
-                  .game-container {
-                    width: 95%;
-                    max-width: 800px;
-                    display: flex;
-                    gap: 20px;
-                  }
-                  .main-panel {
-                    flex-grow: 1;
-                    min-width: 0; /* Prevents flexbox overflow */
-                  }
-                  .side-panel {
-                    width: 250px;
-                    border-left: 1px solid #444;
-                    padding-left: 20px;
-                    flex-shrink: 0; /* Prevents side panel from shrinking */
-                    display: flex;
-                    flex-direction: column;
-                  }
+      /* --- Base Styles --- */
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+          Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 0;
+        min-height: 100vh;
+        background-color: #111111;
+        color: #eeeecc;
+      }
+      .game-container {
+        width: 95%;
+        max-width: 800px;
+        display: flex;
+        gap: 20px;
+      }
+      .main-panel {
+        flex-grow: 1;
+        min-width: 0;
+      }
+      .side-panel {
+        width: 250px;
+        border-left: 1px solid #444;
+        padding-left: 20px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+      }
 
-                  /* --- UI Components --- */
-                  .player-list {
-                    padding-left: 0;
-                  }
-                  .player-list li {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    list-style-type: none;
-                    padding: 8px;
-                    border-radius: 4px;
-                    margin-bottom: 5px;
-                    background-color: #2c2c2c;
-                  }
-                  .player-list li.dead {
-                    text-decoration: line-through;
-                    color: #777;
-                    background-color: #222;
-                  }
-                  .accusation-count {
-                    font-size: 0.9em;
-                    font-weight: bold;
-                    background-color: #c62828;
-                    color: white;
-                    padding: 2px 6px;
-                    border-radius: 10px;
-                    margin-left: auto;
-                  }
-                  .role-display {
-                    padding: 10px;
-                    background-color: #1e1e1e;
-                    border: 1px solid #444;
-                    border-radius: 5px;
-                    text-align: center;
-                    margin-bottom: 15px;
-                  }
-                  .phase-display {
-                    font-size: 1.5em;
-                    font-weight: bold;
-                    text-align: center;
-                    margin-bottom: 10px;
-                    text-transform: capitalize;
-                    color: #bb86fc;
-                  }
-                  .timer-display {
-                    font-size: 1.2em;
-                    text-align: center;
-                    color: #fdd835;
-                    margin-bottom: 20px;
-                  }
+      /* --- UI Components --- */
+      .player-list {
+        padding-left: 0;
+      }
+      .player-list li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        list-style-type: none;
+        padding: 8px;
+        border-radius: 4px;
+        margin-bottom: 5px;
+        background-color: #2c2c2c;
+      }
+      .player-list li.dead {
+        text-decoration: line-through;
+        color: #777;
+        background-color: #222;
+      }
+      .accusation-count {
+        font-size: 0.9em;
+        font-weight: bold;
+        background-color: #c62828;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 10px;
+        margin-left: auto;
+      }
+      .role-display {
+        padding: 10px;
+        background-color: #1e1e1e;
+        border: 1px solid #444;
+        border-radius: 5px;
+        text-align: center;
+        margin-bottom: 15px;
+      }
+      .phase-display {
+        font-size: 1.5em;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 10px;
+        text-transform: capitalize;
+        color: #bb86fc;
+      }
+      .timer-display {
+        font-size: 1.2em;
+        text-align: center;
+        color: #fdd835;
+        margin-bottom: 20px;
+      }
 
-                  /* --- Action Area --- */
-                  .action-area {
-                    min-height: 100px;
-                    border: 1px dashed #555;
-                    padding: 15px;
-                    border-radius: 5px;
-                    background-color: #1e1e1e;
-                  }
-                  .action-area h4 {
-                    margin-top: 0;
-                  }
-                  .action-area select,
-                  .action-area button {
-                    font-size: 1.1em;
-                    margin: 10px 5px 0 0;
-                    padding: 8px;
-                    border-radius: 5px;
-                    border: 1px solid #444;
-                    background-color: #2c2c2c;
-                    color: #e0e0e0;
-                  }
-                  .action-area button {
-                    background-color: #3f51b5;
-                    border: none;
-                    cursor: pointer;
-                  }
-                  .action-area button:hover:not(:disabled) {
-                    background-color: #5c6bc0;
-                  }
-                  .action-area button:disabled {
-                    background-color: #333;
-                    color: #777;
-                    cursor: not-allowed;
-                  }
-                  .vote-btn-yes { background-color: #4caf50 !important; }
-                  .vote-btn-yes:hover { background-color: #66bb6a !important; }
-                  .vote-btn-no { background-color: #f44336 !important; }
-                  .vote-btn-no:hover { background-color: #ef5350 !important; }
-                  hr { border-color: #444; margin: 20px 0; }
+      /* --- Action Area --- */
+      .action-area {
+        min-height: 100px;
+        border: 1px dashed #555;
+        padding: 15px;
+        border-radius: 5px;
+        background-color: #1e1e1e;
+      }
+      .action-area h4 {
+        margin-top: 0;
+      }
+      .action-area select,
+      .action-area button {
+        font-size: 1.1em;
+        margin: 10px 5px 0 0;
+        padding: 8px;
+        border-radius: 5px;
+        border: 1px solid #444;
+        background-color: #2c2c2c;
+        color: #e0e0e0;
+      }
+      .action-area button {
+        background-color: #3f51b5;
+        border: none;
+        cursor: pointer;
+      }
+      .action-area button:hover:not(:disabled) {
+        background-color: #5c6bc0;
+      }
+      .action-area button:disabled {
+        background-color: #333;
+        color: #777;
+        cursor: not-allowed;
+      }
+      .vote-btn-yes {
+        background-color: #4caf50 !important;
+      }
+      .vote-btn-yes:hover {
+        background-color: #66bb6a !important;
+      }
+      .vote-btn-no {
+        background-color: #f44336 !important;
+      }
+      .vote-btn-no:hover {
+        background-color: #ef5350 !important;
+      }
+      hr {
+        border-color: #444;
+        margin: 20px 0;
+      }
 
-                  /* --- PnP Styles --- */
-                  #game-interface { display: none; }
-                  .pnp-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-                    gap: 10px;
-                    margin-top: 10px;
-                  }
-                  .pnp-btn {
-                    width: 100%;
-                    padding: 15px;
-                    background-color: #3f51b5;
-                    color: white;
-                    border: none;
-                    border-radius: 8px;
-                    font-size: 1.1em;
-                    cursor: pointer;
-                    text-align: center;
-                    transition: transform 0.1s;
-                  }
-                  .pnp-btn:active { transform: scale(0.98); }
-                  .confirm-box {
-                    border: 2px solid #fdd835;
-                    padding: 20px;
-                    text-align: center;
-                    background: #222;
-                    border-radius: 10px;
-                    margin-top: 20px;
-                  }
-                  .confirm-box h3 { margin-top: 0; color: #fdd835; }
-                  .confirm-box button {
-                    margin: 10px;
-                    padding: 10px 20px;
-                    font-size: 1.1em;
-                    cursor: pointer;
-                    border-radius: 5px;
-                    border: none;
-                  }
-                  .confirm-box button:first-of-type { background-color: #4caf50; color: white; }
-                  .confirm-box button.cancel { background-color: #f44336; color: white; }
-                  .role-header {
-                    text-align: center;
-                    margin-bottom: 20px;
-                    border-bottom: 1px solid #444;
-                    padding-bottom: 10px;
-                  }
-                  .target-grid {
-                    display: flex;
-                    flex-wrap: wrap;
-                    gap: 10px;
-                    justify-content: center;
-                  }
-                  .target-grid button {
-                    padding: 12px 20px;
-                    background-color: #444;
-                    border: 1px solid #666;
-                    color: white;
-                    cursor: pointer;
-                    border-radius: 6px;
-                  }
-                  .target-grid button:hover { background-color: #666; }
+      /* --- PnP Styles --- */
+      .pnp-hidden {
+        display: none !important;
+      }
 
-                  /* --- Chat & Logs --- */
-                  .log-panel {
-                    height: 200px;
-                    overflow-y: scroll;
-                    border: 1px solid #333;
-                    padding: 10px;
-                    background: #1e1e1e;
-                    margin-top: 20px;
-                    display: flex;
-                    flex-direction: column-reverse;
-                  }
-                  .log-panel div {
-                    padding-bottom: 5px;
-                    margin-bottom: 5px;
-                    border-bottom: 1px solid #333;
-                  }
-                  .log-panel .vote-summary { font-size: 0.9em; color: #aaa; }
-                  .chat-container {
-                    margin-top: 20px;
-                    display: flex;
-                    flex-direction: column;
-                  }
-                  .chat-messages {
-                    height: 150px;
-                    overflow-y: auto;
-                    border: 1px solid #333;
-                    padding: 10px;
-                    background: #1e1e1e;
-                    margin-bottom: 10px;
-                    display: flex;
-                    flex-direction: column-reverse;
-                  }
-                  .chat-form { display: flex; }
-                  .chat-input { flex-grow: 1; margin-right: 10px; }
-                  .ghost-chat { color: #a0a0ff; font-style: italic; }
-                  .announcement { color: #bb86fc; font-weight: bold; }
+      #pnp-hub {
+        display: none; /* Flex when active */
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #111;
+        z-index: 10;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
 
-                  /* --- Game Over Overlay --- */
-                  #game-over-screen {
-                    display: none; /* Keep it hidden by default */
-                    flex-direction: column;
-                    align-items: center;
-                    position: fixed;
-                    top: 0; left: 0;
-                    width: 100%; height: 100%;
-                    background-color: rgba(18, 18, 18, 0.95);
-                    z-index: 100;
-                    overflow-y: auto; /* Allow scrolling on small screens */
-                  }
-                  .game-over-box {
-                    width: 90%;
-                    max-width: 500px;
-                    padding: 20px;
-                    margin: auto;
-                    background-color: #1e1e1e;
-                    border: 1px solid #bb86fc; /* Purple highlight border */
-                    border-radius: 12px;
-                    text-align: center;
-                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-                    margin-top: 20px;
-                    margin-bottom: 20px;
-                  }
-                  .game-over-log {
-                    height: 150px;
-                    overflow-y: auto;
-                    border: 1px solid #444;
-                    background: #111;
-                    padding: 10px;
-                    margin-top: 15px;
-                    text-align: left;
-                    display: flex;
-                    flex-direction: column-reverse;
-                    font-size: 0.9em;
-                  }
-                  .game-over-log div {
-                    border-bottom: 1px solid #333;
-                    padding-bottom: 4px;
-                    margin-bottom: 4px;
-                  }
-                  #game-over-title { color: #bb86fc; margin-top: 0; font-size: 2.5em; }
-                  #final-roles-list {
-                    list-style-type: none;
-                    padding: 0;
-                    margin-top: 20px;
-                    max-width: 300px;
-                    margin-left: auto;
-                    margin-right: auto;
-                    text-align: left;
-                  }
-                  #final-roles-list li {
-                    background-color: #2c2c2c;
-                    padding: 10px;
-                    margin-bottom: 8px;
-                    border-radius: 5px;
-                  }
-                  #return-to-lobby-btn {
-                    margin-top: 25px;
-                    padding: 12px 24px;
-                    font-size: 1.1em;
-                    color: white;
-                    background-color: #3f51b5;
-                    border: none;
-                    border-radius: 5px;
-                    cursor: pointer;
-                  }
-                  #return-to-lobby-btn:disabled { background-color: #333; cursor: not-allowed; }
-                  #rematch-vote-status {
-                    margin-top: 15px;
-                    font-size: 0.9em;
-                    color: #aaa;
-                    min-height: 20px;
-                  }
-                  .chat-messages div {
-                    padding-bottom: 5px;
-                    margin-bottom: 5px;
-                    border-bottom: 1px solid #333;
-                  }
-            #admin-controls-ingame {
-                    text-align: center;
-                  }
-                  #admin-controls-ingame button { margin: 5px auto; width: 80%; display: block; }
-                  .btn-active { background-color: #dd6655; !important; }
+      .pnp-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 15px;
+        width: 100%;
+        max-width: 600px;
+        margin-top: 15px;
+      }
 
-                  /* --- Mobile Responsive Styles --- */
-                  @media (max-width: 768px) {
-                    body { align-items: flex-start; padding-top: 15px; }
-                    .game-container { flex-direction: column; gap: 0; }
-                    .side-panel {
-                      width: 100%; border-left: none; border-top: 1px solid #444;
-                      padding-left: 0; padding-top: 20px; margin-top: 20px;
-                    }
-                  }
-                  /* Container for the player's own role */
+      .pnp-btn {
+        padding: 10px;
+        background-color: #3f51b5;
+        color: white;
+        border: 1px solid #555;
+        border-radius: 8px;
+        font-size: 1.1em;
+        cursor: pointer;
+        text-align: center;
+        transition:
+          transform 0.1s,
+          background-color 0.2s;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      }
+      .pnp-btn:hover {
+        color: #551155;
+        background-color: #5c6bc0;
+        transform: translateY(-2px);
+      }
+      .pnp-btn:active {
+        transform: scale(0.98);
+      }
+      .pnp-btn.dead {
+        opacity: 0.5;
+        text-decoration: line-through;
+        background-color: #333;
+        border-color: #660000;
+      }
+
+      /* Confirm Overlay */
+      #pnp-overlay {
+        display: none; /* Flex when active */
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.95);
+        z-index: 2000;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+      }
+      .confirm-box {
+        background: #1e1e1e;
+        padding: 40px;
+        border-radius: 12px;
+        border: 2px solid #bb86fc;
+        max-width: 440px;
+        width: 90%;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      }
+      .confirm-box h2 {
+        margin-top: 0;
+        color: #bb86fc;
+      }
+      .confirm-box p {
+        font-size: 1.1em;
+        color: #ccc;
+        margin-bottom: 25px;
+      }
+
+      .big-btn {
+        width: 80%;
+        padding: 15px;
+        margin-top: 10px;
+        font-size: 1.2em;
+        background: #3f51b5;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      .big-btn.cancel {
+        background: #d32f2f;
+      }
+      .big-btn.secondary {
+        background: #555;
+      }
+      .big-btn.secondary:hover {
+        border: 1px solid #bb86fc;
+        color: #ff3311;
+      }
+
+      /* --- Chat & Logs --- */
+      .log-panel {
+        height: 200px;
+        overflow-y: scroll;
+        border: 1px solid #333;
+        padding: 10px;
+        background: #1e1e1e;
+        margin-top: 20px;
+        display: flex;
+        flex-direction: column-reverse;
+      }
+      .log-panel div {
+        padding-bottom: 5px;
+        margin-bottom: 5px;
+        border-bottom: 1px solid #333;
+      }
+      .log-panel .vote-summary {
+        font-size: 0.9em;
+        color: #aaa;
+      }
+      .chat-container {
+        margin-top: 20px;
+        display: flex;
+        flex-direction: column;
+      }
+      .chat-messages {
+        height: 150px;
+        overflow-y: auto;
+        border: 1px solid #333;
+        padding: 10px;
+        background: #1e1e1e;
+        margin-bottom: 10px;
+        display: flex;
+        flex-direction: column-reverse;
+      }
+      .chat-form {
+        display: flex;
+      }
+      .chat-input {
+        flex-grow: 1;
+        margin-right: 10px;
+      }
+      .ghost-chat {
+        color: #a0a0ff;
+        font-style: italic;
+      }
+      .announcement {
+        color: #bb86fc;
+        font-weight: bold;
+      }
+
+      /* --- Game Over Overlay --- */
+      #game-over-screen {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(18, 18, 18, 0.95);
+        z-index: 100;
+        overflow-y: auto;
+      }
+      .game-over-box {
+        width: 90%;
+        max-width: 500px;
+        padding: 20px;
+        margin: auto;
+        background-color: #1e1e1e;
+        border: 1px solid #bb86fc;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        margin-top: 20px;
+        margin-bottom: 20px;
+      }
+      .game-over-log {
+        height: 150px;
+        overflow-y: auto;
+        border: 1px solid #444;
+        background: #111;
+        padding: 10px;
+        margin-top: 15px;
+        text-align: left;
+        display: flex;
+        flex-direction: column-reverse;
+        font-size: 0.9em;
+      }
+      .game-over-log div {
+        border-bottom: 1px solid #333;
+        padding-bottom: 4px;
+        margin-bottom: 4px;
+      }
+      #game-over-title {
+        color: #bb86fc;
+        margin-top: 0;
+        font-size: 2.5em;
+      }
+      #final-roles-list {
+        list-style-type: none;
+        padding: 0;
+        margin-top: 20px;
+        max-width: 300px;
+        margin-left: auto;
+        margin-right: auto;
+        text-align: left;
+      }
+      #final-roles-list li {
+        background-color: #2c2c2c;
+        padding: 10px;
+        margin-bottom: 8px;
+        border-radius: 5px;
+      }
+      #return-to-lobby-btn {
+        margin-top: 25px;
+        padding: 12px 24px;
+        font-size: 1.1em;
+        color: white;
+        background-color: #3f51b5;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      #return-to-lobby-btn:disabled {
+        background-color: #333;
+        cursor: not-allowed;
+      }
+      #rematch-vote-status {
+        margin-top: 15px;
+        font-size: 0.9em;
+        color: #aaa;
+        min-height: 20px;
+      }
+      #admin-controls-ingame {
+        text-align: center;
+      }
+      #admin-controls-ingame button {
+        margin: 5px auto;
+        width: 80%;
+        display: block;
+      }
+      .btn-active {
+        background-color: #dd6655 !important;
+      }
+
+      /* Mobile */
+      @media (max-width: 768px) {
+        body {
+          align-items: flex-start;
+          padding-top: 15px;
+        }
+        .game-container {
+          flex-direction: column;
+          gap: 0;
+        }
+        .side-panel {
+          width: 100%;
+          border-left: none;
+          border-top: 1px solid #444;
+          padding-left: 0;
+          padding-top: 20px;
+          margin-top: 20px;
+        }
+      }
+
+      /* Role Tooltip */
       #my-role-display {
-          position: relative;
-          display: inline-block;
-          cursor: help;
+        position: relative;
+        display: inline-block;
+        cursor: help;
       }
-
-      /* Reuse the tooltip style from Lobby, or define simply here */
       #my-role-tooltip {
-          visibility: hidden;
-          width: 300px;
-          background-color: rgba(0, 0, 0, 0.9);
-          color: #fff;
-          text-align: center;
-          border-radius: 6px;
-          padding: 15px;
-          position: absolute;
-          z-index: 1000;
-          top: 120%; /* Show below the text */
-          left: 50%;
-          transform: translateX(-50%);
-          opacity: 0;
-          transition: opacity 0.3s;
-          font-size: 1rem;
-          pointer-events: none; /* Let clicks pass through if needed */
+        visibility: hidden;
+        width: 300px;
+        background-color: rgba(0, 0, 0, 0.9);
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 15px;
+        position: absolute;
+        z-index: 1000;
+        top: 120%;
+        left: 50%;
+        transform: translateX(-50%);
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-size: 1rem;
+        pointer-events: none;
       }
-
       #my-role-display:hover #my-role-tooltip {
-          visibility: visible;
-          opacity: 1;
+        visibility: visible;
+        opacity: 1;
       }
     </style>
     <script src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
     <script src="{{ url_for('static', filename='role_data.js') }}"></script>
   </head>
   <body>
+    <div id="pnp-hub">
+      <h2 style="margin-top: 0; color: #550088">Night Phase 🌙</h2>
+      <p style="color: #aaa">Select your name to perform player actions.</p>
+      <div id="pnp-grid" class="pnp-grid"></div>
+      <div
+        id="pnp-log-container"
+        style="width: 100%; max-width: 600px; margin-top: 20px"
+      >
+        <h3>Game Log</h3>
+      </div>
+      <div
+        style="
+          margin-top: 30px;
+          border-top: 1px solid #333;
+          padding-top: 15px;
+          width: 100%;
+          text-align: center;
+        "
+      >
+        <button
+          onclick="confirmAdvancePhase()"
+          class="big-btn secondary"
+          style="background-color: #d32f2f; width: auto; font-size: 1em"
+        >
+          Force Next Phase
+        </button>
+      </div>
+    </div>
+
+    <div id="pnp-overlay">
+      <div class="confirm-box">
+        <h2 id="overlay-title">Identity Check</h2>
+        <p id="overlay-msg">...</p>
+        <div id="overlay-actions"></div>
+        <div id="overlay-action-area"></div>
+      </div>
+    </div>
+
     <div class="game-container">
       <div class="main-panel">
         <div id="phase-display" class="phase-display">Loading...</div>
         <div id="timer-display" class="timer-display"></div>
         <div id="action-area" class="action-area"><p>Please wait...</p></div>
-        <div id="game-interface"></div>
+
         <h3>Game Log</h3>
         <div id="log-panel" class="log-panel"></div>
       </div>
 
       <div class="side-panel" id="side-panel">
+        <button
+          id="pnp-return-btn"
+          class="big-btn secondary pnp-hidden"
+          style="
+            margin-bottom: 15px;
+            width: auto;
+            align-self: center;
+            text-align: center;
+          "
+          onclick="requestGameSync()"
+        >
+          Done / Back
+        </button>
+
         <div id="role-display" class="role-display">
           <span id="my-role-display">
             Your Role: <strong id="my-role">Unknown</strong> ✨
@@ -439,7 +587,7 @@
       const socket = io();
       // Global State
       let myRole,
-        myPlayerId = "{{ player_id }}",
+        myPlayerId = "{{ player_id }}", // Injected by Flask
         isAlive = false;
       let livingPlayers = [],
         allPlayers = [],
@@ -450,7 +598,8 @@
       let currentNightUI = null;
 
       // Phase State
-      let isPassAndPlay = false;
+      let isPnP = false;
+      let currentPhase = "";
       let hasActed = new Set(),
         myNightTargetId = null,
         myNightMetadata = null,
@@ -460,14 +609,13 @@
         currentLynchTargetName = "Unknown",
         mySleepVote = false;
       let totalAccusationDuration = 90,
-        sleepButtonTimeout = null; // To clear old timers prevents bugs
+        sleepButtonTimeout = null;
 
       // --- DOM Elements ---
       const els = {
         phase: document.getElementById("phase-display"),
         timer: document.getElementById("timer-display"),
         action: document.getElementById("action-area"),
-        pnp: document.getElementById("game-interface"),
         log: document.getElementById("log-panel"),
         role: document.getElementById("my-role"),
         playerList: document.getElementById("player-list"),
@@ -476,10 +624,17 @@
         gameChatTitle: document.getElementById("chat-title"),
         gameChatSendBtn: document.getElementById("game-chat-send-btn"),
         gameChatInput: document.getElementById("game-chat-input"),
+        gameChatContainer: document.getElementById("game-chat-container"),
         gameOverScreen: document.getElementById("game-over-screen"),
         gameOverChatSendBtn: document.getElementById("game-over-chat-send-btn"),
         gameOverChatInput: document.getElementById("game-over-chat-input"),
         adminChatToggle: document.getElementById("admin-chat-toggle-btn"),
+        // PnP
+        pnpHub: document.getElementById("pnp-hub"),
+        pnpGrid: document.getElementById("pnp-grid"),
+        pnpOverlay: document.getElementById("pnp-overlay"),
+        pnpReturnBtn: document.getElementById("pnp-return-btn"),
+        gameContainer: document.querySelector(".game-container"),
       };
 
       // --- Helper Functions ---
@@ -490,7 +645,7 @@
       }
 
       function updateAdminControls() {
-        if (isAdmin) {
+        if (isAdmin && !isPnP) {
           els.adminControls.style.display = "block";
           const pauseBtn = document.getElementById("admin-pause-timer-btn");
           if (pauseBtn) {
@@ -505,6 +660,16 @@
       }
 
       function setChatMode(isAdminOnly, phase) {
+        // Force hide in PnP
+        if (isPnP) {
+          if (els.gameChatContainer)
+            els.gameChatContainer.classList.add("pnp-hidden");
+          return;
+        } else {
+          if (els.gameChatContainer)
+            els.gameChatContainer.classList.remove("pnp-hidden");
+        }
+
         let isChatDisabled = isAdminOnly && !isAdmin;
         let placeholder = "Chat is restricted.";
 
@@ -531,78 +696,185 @@
       }
 
       // --- Pass-and-Play (PnP) Logic ---
+      function confirmAdvancePhase() {
+        if (
+          confirm(
+            "⚠️ Are you sure you want to advance the game to the next phase?\n(This will skip remaining turns)",
+          )
+        ) {
+          socket.emit("admin_next_phase");
+        }
+      }
+
       function requestGameSync() {
         socket.emit("client_ready_for_game");
       }
 
-      function renderHub(allPlayers) {
-        els.pnp.innerHTML =
-          `<h2>Night Phase: Who are you?</h2><div class="pnp-grid">` +
-          allPlayers
-            .map((p) => {
-              if (!p.is_alive) return "";
-              // Check local history 'hasActed' to gray out buttons
-              const disabled = hasActed.has(p.id)
-                ? 'disabled style="opacity:0.5"'
-                : "";
-              const label = hasActed.has(p.id) ? `${p.name} (Done)` : p.name;
-              return `<button class="pnp-btn" ${disabled} onclick="startConfirmFlow('${p.id}', '${p.name}')">${label}</button>`;
-            })
-            .join("") +
-          `</div>`;
+      function renderHub(allPlayers, phase) {
+        // Show Hub, Hide Game
+        els.pnpHub.style.display = "flex";
+        els.gameContainer.style.display = "none";
+        els.pnpOverlay.style.display = "none";
+
+        const pnpLogContainer = document.getElementById("pnp-log-container");
+        if (els.log && pnpLogContainer) {
+          pnpLogContainer.appendChild(els.log);
+        }
+
+        const phaseName = phase ? phase.replace(/_/g, " ") : "Game";
+        // Ensure the h2 element exists before setting text
+        const titleEl = document.querySelector("#pnp-hub h2");
+        if (titleEl) titleEl.textContent = `${phaseName} Phase`;
+
+        els.pnpGrid.innerHTML = allPlayers
+          .map((p) => {
+            // Visibility Logic:
+            // 1. If Alive: Always Show.
+            // 2. If Dead: Show only during Day Phases (Accusation/Lynch) IF Ghost Mode is Active
+            // 3. Otherwise: Hide.
+            const isDay = phase === PHASE_ACCUSATION || phase === PHASE_LYNCH;
+            const showDead = isDay && ghostModeActive;
+
+            if (!p.is_alive && !showDead) return "";
+
+            const disabled = hasActed.has(p.id) ? "dead" : "";
+            // Visual style for dead players in hub
+            const deadClass = !p.is_alive ? "dead" : "";
+
+            const label = hasActed.has(p.id) ? `${p.name} (Done)` : p.name;
+            const safeName = p.name.replace(/'/g, "\\'");
+            const clickAction = hasActed.has(p.id)
+              ? ""
+              : `startConfirmFlow('${p.id}', '${safeName}')`;
+
+            return `<div class="pnp-btn ${disabled} ${deadClass}" onclick="${clickAction}">${label}</div>`;
+          })
+          .join("");
       }
 
       function startConfirmFlow(pid, name) {
-        els.pnp.innerHTML = `
-            <div class="confirm-box">
-                <h3>Are you ${name}?</h3>
-                <button onclick="confirmLevel2('${pid}', '${name}')">Yes, I am ${name}</button>
-                <button class="cancel" onclick="requestGameSync()">No, go back</button>
-            </div>`;
+        const overlay = els.pnpOverlay;
+        const title = document.getElementById("overlay-title");
+        const msg = document.getElementById("overlay-msg");
+        const actions = document.getElementById("overlay-actions");
+        const actionArea = document.getElementById("overlay-action-area");
+
+        // Reset action area so previous buttons don't persist
+        if (actionArea) actionArea.innerHTML = "";
+
+        overlay.style.display = "flex";
+        title.innerText = "Identity Check";
+        title.style.color = "#bb86fc";
+        msg.innerHTML = `Are you <strong>${name}</strong>?`;
+
+        actions.innerHTML = `
+            <button class="big-btn" onclick="confirmLevel2('${pid}', '${name.replace(/'/g, "\\'")}')">Yes, I am ${name}</button>
+            <button class="big-btn cancel" onclick="closeOverlay()">No, go back</button>
+        `;
+      }
+
+      function closeOverlay() {
+        els.pnpOverlay.style.display = "none";
       }
 
       function confirmLevel2(pid, name) {
-        els.pnp.innerHTML = `
-            <div class="confirm-box" style="border-color: #f44336">
-                <h3 style="color:#f44336">CONFIRM IDENTITY</h3>
-                <p>Pass device to <strong>${name}</strong>.</p>
-                <button onclick="socket.emit('pnp_request_state', { player_id: '${pid}' })">I am ready</button>
-                <button class="cancel" onclick="requestGameSync()">Cancel</button>
-            </div>`;
+        const title = document.getElementById("overlay-title");
+        const msg = document.getElementById("overlay-msg");
+        const actions = document.getElementById("overlay-actions");
+
+        title.innerText = "Confirm Identity";
+        title.style.color = "#f44336"; // Warning Red
+        msg.innerHTML = `Make sure <strong>${name}</strong> has the device.<br>Do not show the screen to anyone else.`;
+
+        actions.innerHTML = `
+            <button class="big-btn" onclick="socket.emit('pnp_request_state', { player_id: '${pid}' })">I am Ready</button>
+            <button class="big-btn cancel" onclick="closeOverlay()">Cancel</button>
+        `;
       }
 
-      socket.on("pnp_state_received", (data) => {
-        // Render Role & Prompt (Silly or Serious)
-        let html =
-          `
-            <div class="role-header">
-                <h2>You are: ${data.role_name.toUpperCase()}</h2>
-                <p style="font-size:1.2em; color:#fdd835">${data.prompt}</p>
-            </div>
-            <div class="target-grid">` +
-          data.targets
-            .map(
-              (t) =>
-                `<button onclick="submitPnPAction('${data.id}', '${t.id}')">${t.name}</button>`,
-            )
-            .join("") +
-          `</div>`;
-        els.pnp.innerHTML = html;
+      socket.on("pnp_state_sync", (data) => {
+        // 1. Hide Hub & Overlay
+        const btnMain = document.getElementById("overlay-btn-main");
+        if (btnMain) {
+          btnMain.disabled = false;
+          btnMain.innerText = "Confirm";
+        }
+
+        els.pnpHub.style.display = "none";
+        els.pnpOverlay.style.display = "none";
+
+        // 2. Show Standard Game Container
+        els.gameContainer.style.display = "flex";
+        const mainPanel = document.querySelector(".main-panel");
+        if (els.log && mainPanel) {
+          mainPanel.appendChild(els.log);
+        }
+        // 3. Inject PnP specific "Back" button
+        els.pnpReturnBtn.classList.remove("pnp-hidden");
+
+        // 4. Update Variables with Specific Player Data
+        myPlayerId = data.this_player_id;
+        allPlayers = data.all_players;
+        livingPlayers = data.living_players;
+        currentNightUI = data.night_ui;
+        myNightTargetId = data.my_night_target_id;
+        myNightMetadata = data.my_night_metadata || {};
+        myRole = data.your_role;
+        isAlive = data.is_alive;
+        isAdmin = data.is_admin;
+
+        myAccusationId = data.my_accusation_id;
+        myLynchVote = data.my_lynch_vote;
+        mySleepVote = data.my_sleep_vote;
+
+        // 5. Update UI Components
+        // Role Display
+        els.role.textContent = myRole.replace(/_/g, " ");
+        if (typeof updateRoleTooltip === "function") updateRoleTooltip(myRole);
+
+        // Action Area (Night UI)
+        renderActionUI(data.phase, data.duration);
+
+        // Player List
+        updatePlayerListView(data.accusation_counts || {});
+
+        // Hide Chat / Admin controls
+        if (els.gameChatContainer)
+          els.gameChatContainer.classList.add("pnp-hidden");
+        if (els.adminControls) els.adminControls.style.display = "none";
       });
 
-      function submitPnPAction(actorId, targetId) {
-        socket.emit("pnp_submit_action", {
-          actor_id: actorId,
-          target_id: targetId,
-        });
-        hasActed.add(actorId);
-        els.pnp.innerHTML = `<div class="confirm-box"><h3>Action Recorded.</h3><p>Please pass the device.</p></div>`;
-        setTimeout(() => requestGameSync(), 2000);
+      // --- Standard UI Logic ---
+      function updateRoleTooltip(roleStr) {
+        if (typeof ROLE_DATA === "undefined") return;
+        const roleKey = roleStr.replace(/_/g, " ");
+        const rData = ROLE_DATA[roleKey] || {
+          long: "...",
+          rating: "?",
+          color: "#fff",
+        };
+        const tooltipEl = document.getElementById("my-role-tooltip");
+        if (tooltipEl) {
+          tooltipEl.innerHTML = `
+                  <strong style="color: ${rData.color || "#bb86fc"}; font-size: 1.2em; display:block; margin-bottom:8px;">
+                      ${roleKey}
+                  </strong>
+                  <div style="text-align: left; margin-bottom: 8px; line-height: 1.4;">
+                      ${rData.long}
+                  </div>
+                  <div style="font-size:0.85em; color:#aaa; border-top:1px solid #555; padding-top:5px; text-align:left;">
+                     ${rData.rating}
+                  </div>`;
+        }
       }
 
       // --- Standard UI Logic ---
       function submitLynchVote(vote) {
-        socket.emit("cast_lynch_vote", { vote: vote });
+        // Check if PnP active
+        let payload = { vote: vote };
+        if (isPnP) payload.actor_id = myPlayerId;
+
+        socket.emit("cast_lynch_vote", payload);
         myLynchVote = vote;
         renderActionUI(PHASE_LYNCH);
       }
@@ -626,7 +898,6 @@
           });
       }
 
-      // Consolidate Night Action Submission
       function submitNightAction(uiData) {
         const select = document.getElementById("action-select");
         const select2 = document.getElementById("action-select-2");
@@ -644,6 +915,10 @@
             ? { potion: val2 }
             : { target_id2: val2 };
         }
+
+        // PnP Injection
+        if (isPnP) payload.actor_id = myPlayerId;
+
         socket.emit("hero_choice", payload);
 
         // Optimistic UI Update
@@ -660,13 +935,19 @@
           .replace("${playerPicked2}", p2);
       }
 
-      function renderNightUI(uiData) {
+      // Updated to allow rendering into a specific container (for PnP reuse)
+      function renderNightUI(uiData, containerId = null) {
+        const container = containerId
+          ? document.getElementById(containerId)
+          : els.action;
+        if (!container) return;
+
         if (myNightTargetId === null) {
           if (!uiData || !uiData.pre) {
-            els.action.innerHTML = "<p>Sleeping...</p>";
+            container.innerHTML = "<p>Sleeping...</p>";
             return;
           }
-          els.action.innerHTML = uiData.pre;
+          container.innerHTML = uiData.pre;
           // 1st dropdown
           if (uiData.targets) {
             populateSelect(
@@ -686,16 +967,16 @@
                 true,
               );
           }
-          // 4. Handle Button Click
-          const btn = document.getElementById("action-btn");
-          if (btn) btn.onclick = () => submitNightAction(uiData);
+          // 4. Handle Button Click (Default standard behavior)
+          const btn = container.querySelector("#action-btn");
+          if (btn && !containerId)
+            btn.onclick = () => submitNightAction(uiData);
         } else {
           // Night Action already performed
           if (lastSeerResult) {
-            els.action.innerHTML = `<p>${lastSeerResult}</p>`;
+            container.innerHTML = `<p>${lastSeerResult}</p>`;
             return;
           }
-          // Reconstruct status message
           let p2 = "Unknown";
           if (myNightMetadata && myNightMetadata.potion)
             p2 =
@@ -711,7 +992,7 @@
                 ?.name || "Nobody";
 
           const target = allPlayers.find((p) => p.id === myNightTargetId);
-          els.action.innerHTML = (uiData.post || "<p>Action submitted.</p>")
+          container.innerHTML = (uiData.post || "<p>Action submitted.</p>")
             .replace("${playerPicked}", target ? target.name : "Nobody")
             .replace("${playerPicked2}", p2);
         }
@@ -720,7 +1001,7 @@
       function renderAccusationUI(currentDuration) {
         if (sleepButtonTimeout) clearTimeout(sleepButtonTimeout);
 
-        let html = ""; // 1. Build the HTML string first
+        let html = "";
         if (!isAlive && ghostModeActive) {
           html += "<h4 style='color: #a0a0ff'>👻 Ghost Mode Active: ...</h4>";
         }
@@ -741,7 +1022,6 @@
                 <button id="accuse-btn">Accuse</button>`;
         }
 
-        // --- Sleep Section ---
         const timeToEnable =
           (currentDuration || totalAccusationDuration) -
           (totalAccusationDuration - 30);
@@ -759,7 +1039,6 @@
         html += `<hr style="border-color: #444; margin: 15px 0;">
              <div id="sleep-section"><h4>Ready for Night?</h4><button id="vote-end-day-btn" ${btnState}>${btnText}</button><span id="end-day-vote-counter" style="margin-left:10px; font-size:0.9em; color:#aaa"></span></div>`;
 
-        // 2. Render to DOM ONCE
         els.action.innerHTML = html;
 
         // 3. Attach Listeners (Now that elements are stable)
@@ -767,10 +1046,12 @@
           populateSelect("accuse-select", livingPlayers, true, true);
           const accBtn = document.getElementById("accuse-btn");
           if (accBtn) {
-            accBtn.onclick = () =>
-              socket.emit("accuse_player", {
-                target_id: document.getElementById("accuse-select").value,
-              });
+            accBtn.onclick = () => {
+              let pid = document.getElementById("accuse-select").value;
+              let payload = { target_id: pid };
+              if (isPnP) payload.actor_id = myPlayerId; // [ADDED]
+              socket.emit("accuse_player", payload);
+            };
           }
         }
 
@@ -787,7 +1068,10 @@
         }
         if (voteBtn && !mySleepVote)
           voteBtn.onclick = function () {
-            socket.emit("vote_to_end_day");
+            let payload = {};
+            if (isPnP) payload.actor_id = myPlayerId;
+            socket.emit("vote_to_end_day", payload);
+
             this.disabled = true;
             this.textContent = "Voted to Sleep 💤";
             mySleepVote = true;
@@ -796,18 +1080,18 @@
 
       function renderLynchVoteUI() {
         let html = "";
-
-        // 1. Ghost Mode Indicator
         if (!isAlive && ghostModeActive) {
           html += "<h4 style='color: #a0a0ff'>👻 Ghost Mode Active: ...</h4>";
         }
-
-        if (myLynchVote === "yes" || myLynchVote === "no") {
+        if (myLynchVote === "Ghost_Fail") {
+          html += `<h3 style="color: #a0a0ff; font-style: italic;">👻 Your ghostly voice faded...</h3><p>Vote failed.</p>`;
+          els.action.innerHTML = html;
+        } else if (myLynchVote === "yes" || myLynchVote === "no") {
           els.action.innerHTML = `<h3>You voted: <span style="color:${
             myLynchVote === "yes" ? "green" : "red"
           }">${myLynchVote.toUpperCase()}</span></h3><p>Waiting for result...</p>`;
         } else {
-          // If not voted, SHOW BUTTONS (Moved from lynch_vote_started)
+          // If not voted, SHOW BUTTONS
           els.action.innerHTML = `
              <h4>Will you lynch <span style="color:#bb86fc">${currentLynchTargetName}</span>?</h4>
              <button onclick="submitLynchVote('yes')" class="vote-btn-yes">YES</button>
@@ -862,14 +1146,17 @@
 
       function showGameOverScreen(data, rematchInfo = {}) {
         if (timerInterval) clearInterval(timerInterval);
-        document.querySelector(".game-container").style.display = "none";
+        els.gameContainer.style.display = "none";
         els.gameOverScreen.style.display = "flex";
+
+        // Ensure PnP hub is hidden
+        els.pnpHub.style.display = "none";
+
         document.getElementById("game-over-title").textContent =
           data.winning_team === "Villagers" ||
           data.winning_team === "Werewolves"
             ? `The ${data.winning_team} Win!`
             : `${data.winning_team} Won!`;
-        // Populate game over data...
         document.getElementById("game-over-reason").innerHTML = data.reason;
 
         const list = document.getElementById("final-roles-list");
@@ -879,7 +1166,6 @@
             (data.winning_team === "Villagers" && p.team === "Villagers") ||
             (data.winning_team === "Werewolves" && p.team === "Werewolves") ||
             data.winning_team === p.name;
-
           const isSoloWinner =
             p.status_effects && p.status_effects.includes("solo_win");
 
@@ -911,7 +1197,7 @@
           status.textContent = `${rematchInfo.count} / ${rematchInfo.total} players have voted to return.`;
 
         document.getElementById("game-over-chat-container").style.display =
-          isPassAndPlay ? "none" : "flex";
+          isPnP ? "none" : "flex";
       }
 
       // --- Socket Events ---
@@ -920,7 +1206,14 @@
       });
 
       socket.on("game_state_sync", (data) => {
-        // Sync Globals
+        // 1. Detect Phase Change to Clear PnP History
+        currentPhase = data.phase;
+        if (data.acted_players) {
+          hasActed = new Set(data.acted_players);
+        } else {
+          hasActed.clear();
+        }
+        // Update Globals
         myRole = data.your_role;
         isAdmin = data.is_admin;
         isAlive = data.is_alive;
@@ -938,7 +1231,6 @@
         if (data.total_accusation_duration)
           totalAccusationDuration = data.total_accusation_duration;
 
-        // Log Sync
         if (data.message_history && els.log.innerHTML.trim() === "") {
           data.message_history.forEach(logMessage);
           // Scroll to bottom
@@ -946,7 +1238,7 @@
         }
 
         if (myNightTargetId === null) lastSeerResult = null;
-        isPassAndPlay = data.mode === "pass_and_play";
+        isPnP = data.mode === "pass_and_play";
 
         if (data.phase === PHASE_GAME_OVER && data.game_over_data) {
           showGameOverScreen(data.game_over_data, {
@@ -958,58 +1250,45 @@
           return;
         }
 
-        // Phase UI Switch
-        if (isPassAndPlay && data.phase === PHASE_NIGHT) {
-          els.sidePanel.style.display = "none";
-          els.action.style.display = "none";
-          els.pnp.style.display = "block";
-          els.phase.textContent = "Night (Pass Device)";
-          renderHub(allPlayers);
+        if (
+          isPnP &&
+          (data.phase === PHASE_NIGHT ||
+            data.phase === PHASE_ACCUSATION ||
+            data.phase === PHASE_LYNCH)
+        ) {
+          // Force hide standard game, show Hub
+          els.gameContainer.style.display = "none";
+          renderHub(allPlayers, data.phase);
+          let phaseName = data.phase.replace(/_/g, " ");
+          els.phase.textContent = `${phaseName} (Pass Device)`;
         } else {
-          // Standard Mode / Day Phase
-          els.sidePanel.style.display = "flex";
-          els.action.style.display = "block";
-          els.pnp.style.display = "none";
+          // Standard Game Mode OR PnP Day Phase
+          els.pnpHub.style.display = "none";
+          els.pnpOverlay.style.display = "none";
+          els.gameContainer.style.display = "flex";
 
-          // 1. Standard Role Text Update
+          const mainPanel = document.querySelector(".main-panel");
+          if (els.log && mainPanel) {
+            mainPanel.appendChild(els.log);
+          }
+
+          if (isPnP) {
+            els.pnpReturnBtn.classList.remove("pnp-hidden");
+          } else {
+            els.pnpReturnBtn.classList.add("pnp-hidden");
+          }
+
           const displayRole = myRole === "Random_Seer" ? "Seer" : myRole;
           els.role.textContent = displayRole + (isAdmin ? " 👑" : "");
+          if (typeof updateRoleTooltip === "function")
+            updateRoleTooltip(displayRole);
 
-          // 2. NEW: Tooltip Population Logic
-          if (typeof ROLE_DATA !== "undefined") {
-            // Convert role key (e.g. "Alpha_Werewolf") to Data Key (e.g. "Alpha Werewolf")
-            const roleKey = displayRole.replace(/_/g, " ");
-
-            // Find data or fallback
-            const rData = ROLE_DATA[roleKey] || {
-              long: "Description unavailable.",
-              rating: "?",
-              color: "#fff",
-            };
-
-            const tooltipEl = document.getElementById("my-role-tooltip");
-            if (tooltipEl) {
-              tooltipEl.innerHTML = `
-      <strong style="color: ${rData.color || "#bb86fc"}; font-size: 1.2em; display:block; margin-bottom:8px;">
-          ${roleKey}
-      </strong>
-      <div style="text-align: left; margin-bottom: 8px; line-height: 1.4;">
-          ${rData.long}
-      </div>
-      <div style="font-size:0.85em; color:#aaa; border-top:1px solid #555; padding-top:5px; text-align:left;">
-         ${rData.rating}
-      </div>
-    `;
-            }
-          }
           if (data.phase) els.phase.textContent = data.phase.replace(/_/g, " ");
           renderActionUI(data.phase, data.duration);
-          els.adminChatToggle.style.display = "block";
-          // Clear local PnP history if phase changed to Day
-          if (data.phase !== PHASE_NIGHT) hasActed.clear();
+
+          setChatMode(data.admin_only_chat, data.phase);
         }
 
-        // Accusation Counter
         if (data.phase === PHASE_ACCUSATION) {
           const needed =
             1 +
@@ -1022,11 +1301,9 @@
 
         updatePlayerListView(data.accusation_counts || {});
         updateAdminControls();
-        setChatMode(data.admin_only_chat, data.phase);
         startTimer(data.phase_end_time);
       });
 
-      // Simple Phase Change
       socket.on("phase_change", (data) => {
         logMessage(
           `A new phase has begun: <strong>${data.phase.replace(
@@ -1034,11 +1311,9 @@
             " ",
           )}</strong>.`,
         );
-        // Refactor Note: We rely on the full sync to handle complex UI state updates to reduce duplication
         socket.emit("client_ready_for_game");
       });
 
-      // Unified Message Handlers
       socket.on("message", (data) => logMessage(data.text));
       socket.on("new_message", (data) => {
         const div = document.createElement("div");
@@ -1060,16 +1335,32 @@
         }
       });
 
-      // Specific Events
       socket.on("chat_mode_update", (data) => {
         setChatMode(data.admin_only_chat, data.phase);
       });
 
       socket.on("seer_result", (data) => {
-        const m = `Your vision reveals that <strong>${data.name}</strong> is a <strong>${data.role}</strong>.`;
+        const m = `🔮 Your vision reveals that <strong>${data.name}</strong> is a <strong>${data.role}</strong>.`;
         logMessage(m);
         lastSeerResult = m;
+        // In Standard UI, renderActionUI handles displaying this if active.
         els.action.innerHTML = `<p>${m}</p>`;
+      });
+
+      socket.on("pnp_action_confirmed", () => {
+        // Switch view back to confirmation/done state
+        // We add the actor to 'hasActed' set to gray out button on Hub
+        if (myPlayerId) hasActed.add(myPlayerId);
+        // Show overlay message
+        els.pnpOverlay.style.display = "flex";
+        document.getElementById("overlay-title").innerText = "Done";
+        document.getElementById("overlay-title").style.color = "#4caf50";
+        document.getElementById("overlay-msg").innerText = "Action Recorded.";
+        document.getElementById("overlay-actions").innerHTML =
+          "<p>Please pass the device...</p>";
+        document.getElementById("overlay-action-area").innerHTML = "";
+
+        setTimeout(() => requestGameSync(), 2000);
       });
 
       socket.on("night_result_kill", (data) => {
@@ -1077,13 +1368,12 @@
         // Update local state if I am the one who died
         if (data.killed_player && myPlayerId === data.killed_player.id) {
           isAlive = false;
-          setChatMode(data.admin_only_chat, data.phase);
         }
       });
       socket.on("werewolf_team_info", (data) =>
         logMessage(
           data.teammates.length
-            ? `You are a Werewolf. Your fellow Werewolves are: <strong>${data.teammates.join(
+            ? `You are a Werewolf 🐺 Your fellow Werewolves are: <strong>${data.teammates.join(
                 ", ",
               )}</strong>.`
             : "You are the lone Werewolf.",
@@ -1098,10 +1388,7 @@
                 }<br>Voted No: ${data.summary.no.join(", ") || "None"}</div>`
               : ""),
         );
-        if (data.killed_id === myPlayerId) {
-          isAlive = false;
-          setChatMode(data.admin_only_chat, data.phase);
-        }
+        if (data.killed_id === myPlayerId) isAlive = false;
       });
 
       socket.on("force_phase_update", () =>
@@ -1118,7 +1405,6 @@
           if (b) {
             b.disabled = true;
             b.textContent = "Accuse";
-
             myAccusationId =
               data.accused_name === "Nobody" ? null : "Vote_Cast";
           }
@@ -1135,10 +1421,8 @@
       });
       socket.on("lynch_vote_started", (data) => {
         logMessage(`<strong>${data.target_name}</strong> is on trial!`);
-
-        // Update Local State
         currentLynchTargetName = data.target_name;
-        els.phase.textContent = "Lynch Vote"; // Fix: Restore immediate phase text update
+        els.phase.textContent = "Lynch Vote";
         renderActionUI(PHASE_LYNCH);
         startTimer(data.phase_end_time);
       });
@@ -1151,7 +1435,6 @@
           s.textContent = `${data.count} / ${data.total} players have voted to return.`;
       });
       socket.on("redirect_to_lobby", () => {
-        logMessage("Majority vote reached! Returning to lobby...");
         window.location.href = "/lobby";
       });
 
@@ -1168,17 +1451,27 @@
         const livingIds = livingPlayers.map((p) => p.id);
         allPlayers.forEach((p) => {
           const li = document.createElement("li");
-          li.innerHTML =
-            `<span>${p.name}${p.id === myPlayerId ? " (You)" : ""}</span>` +
-            (accusationCounts[p.id]
-              ? `<span class="accusation-count">${
-                  accusationCounts[p.id]
-                }</span>`
-              : "");
+
+          const isMe = p.id === myPlayerId;
+          const nameDisplay = isMe ? `${p.name} (You)` : p.name;
+
+          let html = `<span>${nameDisplay}</span>`;
+
+          if (accusationCounts[p.id]) {
+            html += `<span class="accusation-count">${accusationCounts[p.id]}</span>`;
+          }
+
+          li.innerHTML = html;
+
           if (!livingIds.includes(p.id)) {
             li.classList.add("dead");
             li.firstChild.textContent += " 💀";
           }
+          if (isMe) {
+            li.style.fontWeight = "bold";
+            li.style.color = "#bb86fc"; // Optional: Purple highlight
+          }
+
           els.playerList.appendChild(li);
         });
       }

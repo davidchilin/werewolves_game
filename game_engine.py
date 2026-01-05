@@ -1,6 +1,6 @@
 """
 game_engine.py
-# Version: 4.7.0
+# Version: 4.8.3
 Manages the game flow, player states, complex role interactions, and phase transitions.
 """
 import random
@@ -494,7 +494,7 @@ class Game:
                     if "solo_win" not in player_obj.status_effects:
                         player_obj.status_effects.append("solo_win")
                         # todo fix message only sent after refresh
-                        msg = f'🥰 The <span style="color: #ff66aa">Prostitute {player_obj.name}</span> made a full circle and achieved a Solo Win! 🥇'
+                        msg = f'🥰 The <span style="color: #ff66aa">Prostitute {player_obj.name}</span> made a full circle and achieved a Solo Win🥇'
                         print(msg)
                         notifications.append(
                             {
@@ -710,17 +710,20 @@ class Game:
                 return False
 
             # GHOST LOGIC
+            # This prevents re-rolling the 10% chance by refreshing.
+            if not player.is_alive and voter_id in self.lynch_votes:
+                return False
+
             vote_value = vote
             if not player.is_alive:
                 if not self.is_ghost_mode_active():
                     return False
-
                 # 10% Chance check
                 if random.random() > 0.10:
                     vote_value = "Ghost_Fail"  # Failed roll
 
             # Record vote
-            self.lynch_votes[voter_id] = vote
+            self.lynch_votes[voter_id] = vote_value  # FIX: Use vote_value
 
             # CHECK: Have all LIVING players voted?
             living_voters = [
@@ -751,7 +754,11 @@ class Game:
         # Populate summary names
         for player_id, vote in self.lynch_votes.items():
             if vote in ["yes", "no"]:
-                result_data["summary"][vote].append(self.players[player_id].name)
+                p_name = self.players[player_id].name
+                # Fix: Mask ghost names
+                if not self.players[player_id].is_alive:
+                    p_name = "Ghost"
+                result_data["summary"][vote].append(p_name)
 
         if total_valid_votes > 0 and yes_count > (total_valid_votes / 2):
             # --- Lawyer Check ---

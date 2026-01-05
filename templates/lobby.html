@@ -1,4 +1,4 @@
-<!-- Version: 4.7.0 -->
+<!-- Version: 4.8.3 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -118,8 +118,8 @@
         position: absolute;
         top: 8px;
         right: 8px;
-        width: 20px;
-        height: 20px;
+        width: 16px;
+        height: 16px;
 
         border: 2px solid var(--role-color, #777);
         border-radius: 4px;
@@ -284,7 +284,21 @@
       <p id="game-code-area" style="display: none">
         Game Code: <strong id="game-code-display"></strong>
       </p>
-      <h3>Players:</h3>
+      <h3>
+        Players:
+        <button
+          id="add-player-btn"
+          style="
+            display: none;
+            font-size: 0.8em;
+            padding: 10px 10px;
+            margin-left: 10px;
+            background-color: #4caf50;
+          "
+        >
+          Add Player
+        </button>
+      </h3>
       <ul id="player-list"></ul>
       <div
         id="role-summary-container"
@@ -649,10 +663,13 @@
         console.log("Restoring settings:", settings);
 
         // 1. Restore Mode Checkboxes
-        if (settings.mode === "pass_and_play") {
-          document.getElementById("mode-pass-and-play").checked = true;
-        } else {
-          document.getElementById("mode-pass-and-play").checked = false;
+        const isPnP = settings.mode === "pass_and_play";
+        document.getElementById("mode-pass-and-play").checked = isPnP;
+
+        // Toggle Add Player Button
+        const addPlayerBtn = document.getElementById("add-player-btn");
+        if (addPlayerBtn) {
+          addPlayerBtn.style.display = isPnP ? "inline-block" : "none";
         }
 
         // 2. Restore Solo Win (Logic Inverted)
@@ -831,6 +848,21 @@
           },
         });
       };
+
+      // Add Player Button Logic (Pass-and-Play)
+      document.getElementById("add-player-btn").onclick = () => {
+        window.location.href = "/?add_player=1";
+      };
+
+      // Listen for Mode Change to immediately sync state
+      const pnpCheckbox = document.getElementById("mode-pass-and-play");
+      if (pnpCheckbox) {
+        pnpCheckbox.addEventListener("change", (e) => {
+          socket.emit("admin_update_settings", {
+            mode: e.target.checked ? "pass_and_play" : "standard",
+          });
+        });
+      }
 
       // --- Random Roles Logic ---
       function selectRandomRoles() {

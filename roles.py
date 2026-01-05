@@ -960,7 +960,7 @@ class Sorcerer(Role):
             ROLE_REVEALER,
         ]:
             return "Magic User"
-        return "Human"
+        return "non-Magic User"
 
     def night_action(self, player_obj, target_player_obj, game_context):
         result = self.investigate(target_player_obj)
