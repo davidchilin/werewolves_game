@@ -1,4 +1,4 @@
-<!-- Version: 4.8.3 -->
+<!-- Version: 4.8.4 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -36,7 +36,7 @@
       }
       .admin-controls {
         margin-top: 20px;
-        padding-top: 20px;
+        padding-top: 10px;
         border-top: 1px solid #444;
       }
       .exclude-btn {
@@ -281,7 +281,7 @@
   <body>
     <div class="lobby-container">
       <h2>Lobby - Waiting for Players</h2>
-      <p id="game-code-area" style="display: none">
+      <p id="game-code-area" style="display: none; margin: 0">
         Game Code: <strong id="game-code-display"></strong>
       </p>
       <h3>
@@ -445,7 +445,12 @@
 
         <div class="admin-controls">
           <label for="new-game-code-input">Set New Game Code:</label>
-          <input type="text" id="new-game-code-input" placeholder="New Code" />
+          <input
+            type="text"
+            id="new-game-code-input"
+            placeholder="New Code"
+            style="margin: 8px"
+          />
           <button id="set-code-btn">Set Code</button>
           <button id="toggle-chat-btn" style="margin-left: 10px">
             Toggle Admin Chat

@@ -1,5 +1,5 @@
 // static/role_data.js
-// v 4.7.0
+// v 4.8.4
 
 const ROLE_DATA = {
   "Alpha Werewolf": {
@@ -34,7 +34,7 @@ const ROLE_DATA = {
   },
   Fool: {
     short: "Your goal is to get yourself lynched by the village.",
-    long: "You are a neutral chaos agent. You are not part of the villagers nor the werewolves.Although your ultimate win is successful if you convince the town to successfully Lynch you.",
+    long: "You are a neutral chaos agent. You are not part of the villagers nor the werewolves. Although your ultimate win is successful if you convince the town to Lynch you.",
     rating: -0.2,
     color: "#990066",
   },

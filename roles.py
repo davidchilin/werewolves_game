@@ -744,6 +744,9 @@ class Mayor(Villager):
                 new_mayor.role.on_night_start = Mayor.on_night_start.__get__(
                     new_mayor.role, type(new_mayor.role)
                 )
+                new_mayor.role.get_valid_targets = Mayor.get_valid_targets.__get__(
+                    new_mayor.role, type(new_mayor.role)
+                )
                 # announce to all next mayor name has been elected
             return {
                 "type": "announcement",
@@ -1046,7 +1049,7 @@ class Wild_Child(Villager):
         # select role model
         if self.role_model_id is None:
             return {
-                "pre": '<h4>Wild Child, Choose your Rolemodel</h4><select id="action-select"></select> <button id="action-btn">Choose</button>',
+                "pre": '<h4>Wild Child, Choose your Rolemodel:</h4><select id="action-select"></select> <button id="action-btn">Choose</button>',
                 "post": '<p>You look up to <span style="color:darkorange">${playerPicked}</span>.</p>',
                 "targets": [
                     {"id": p.id, "name": p.name}
@@ -1126,7 +1129,7 @@ class Witch(Villager):
 
         return {
             "pre": '<h4>Witch, who will consume a potion?</h4><select id="action-select"></select> <select id="action-select-2"></select><button id="action-btn">Feed Potion</button>',
-            "post": '<p><span style="color: lawngreen">${playerPicked}</span> consumed ${playerPicked2}</p>',
+            "post": '<p><span style="color: lawngreen">${playerPicked}</span> consumed <span style="gold">${playerPicked2}</span>.</p>',
             "targets": [
                 {"id": p.id, "name": p.name}
                 for p in self.get_valid_targets(game_context)

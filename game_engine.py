@@ -790,9 +790,10 @@ class Game:
 
                 dead_ids_set.add(player_id)
                 player_obj.is_alive = False
-                print(f"DIED: {player_obj.name}, Reason: {reason}")
+                print(f"DIED2: {player_obj.name}, Reason: {reason}")
 
                 if player_id != self.lynch_target_id:
+                    print(f"DIED2:secondary_deaths {player_obj.name}, Reason: {reason}")
                     result_data["secondary_deaths"].append(
                         {
                             "id": player_id,

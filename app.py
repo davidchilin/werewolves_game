@@ -1,6 +1,6 @@
 """
 app.py
-Version: 4.8.3
+Version: 4.8.4
 """
 import logging
 import os
@@ -674,7 +674,7 @@ def resolve_lynch():
         for ann in result["announcements"]:
             game_instance.message_history.append(ann)
             socketio.emit("message", {"text": ann}, to=game["game_code"])
-    msg = "No one was lynched."
+    msg = "No one was lynched 🕊️"
     if result.get("armor_save"):
         msg = "⚖️ The village voted to lynch, but... <strong>strangely, nobody dies.</strong>"
     elif result["killed_id"]:
