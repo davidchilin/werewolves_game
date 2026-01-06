@@ -20,8 +20,7 @@ discussion and deception take place.
 
 <img src="lobby.png" width="50%" align="right" />
 
-- **Secure Game Lobby:** Players join a single game instance using a shared game
-  code.
+- **Game Lobby:** Players join a single game instance using a shared game code.
 - **Admin Controls:** The first player to join becomes the admin and has the
   ability to:
   - Exclude players from the lobby.

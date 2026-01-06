@@ -73,7 +73,6 @@ class Game:
         self.night_log = []  # frontend logs e.g., "Seer saw a Werewolf"
 
         # Day Phase Data
-        self.accusations = {}  # Dict[accuser_id, target_id]
         self.accusation_restarts = 0
         self.end_day_votes = set()  # set[voter_id]
 
@@ -233,7 +232,7 @@ class Game:
             for player_obj in self.players.values():
                 player_obj.visiting_id = None
 
-            self.accusations = {}
+            self.pending_actions = {}
             self.end_day_votes = set()
             self.lynch_target_id = None
             self.lynch_votes = {}
@@ -319,7 +318,7 @@ class Game:
 
             return "WAITING"
 
-    def get_player_night_choice(self, player_id):
+    def get_player_phase_choice(self, player_id):
         """Returns the target ID the player submitted, or None."""
         choice = self.pending_actions.get(player_id)
         # if dict (Witch), extract target_id
@@ -334,10 +333,6 @@ class Game:
         if isinstance(choice, dict):
             return choice.get("metadata")
         return None
-
-    def get_player_accusation(self, player_id):
-        """Returns the ID of the player this user accused."""
-        return self.accusations.get(player_id)
 
     def get_player_lynch_vote(self, player_id):
         """Returns 'yes' or 'no' if the player has voted."""
@@ -626,12 +621,12 @@ class Game:
                     vote_value = "Ghost_Fail"
 
             # Record the vote (if not already voted)
-            if accuser_id not in self.accusations:
-                self.accusations[accuser_id] = vote_value
+            if accuser_id not in self.pending_actions:
+                self.pending_actions[accuser_id] = vote_value
 
             # CHECK: Have all LIVING players voted?
             living_voters = [
-                pid for pid in self.accusations.keys() if self.players[pid].is_alive
+                pid for pid in self.pending_actions.keys() if self.players[pid].is_alive
             ]
             living_total = len(self.get_living_players())
 
@@ -640,7 +635,7 @@ class Game:
     def tally_accusations(self):
         valid_votes = [
             target_id
-            for target_id in self.accusations.values()
+            for target_id in self.pending_actions.values()
             if target_id and target_id != "Ghost_Fail"
         ]
 
@@ -662,7 +657,7 @@ class Game:
                 None,
             )
             if mayor:
-                mayor_vote = self.accusations.get(mayor.id)
+                mayor_vote = self.pending_actions.get(mayor.id)
                 tied_candidate_1 = most_common[0][0]
                 tied_candidate_2 = most_common[1][0]
 
@@ -682,7 +677,7 @@ class Game:
 
             if self.accusation_restarts == 0:
                 self.accusation_restarts += 1
-                self.accusations = {}
+                self.pending_actions = {}
                 return {"result": "restart", "message": "⚖️ Tie vote! Re-discuss."}
             else:
                 self.set_phase(PHASE_NIGHT)

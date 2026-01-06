@@ -100,7 +100,6 @@ def broadcast_player_list():
                 "is_alive": is_alive,
             }
         )
-
     socketio.emit(
         "update_player_list",
         {
@@ -125,7 +124,7 @@ def generate_player_payload(player_id, player_wrapper=None):
         ]
         accusation_counts = {}
         if game_instance.phase == PHASE_ACCUSATION:
-            accusation_counts = dict(Counter(game_instance.accusations.values()))
+            accusation_counts = dict(Counter(game_instance.pending_actions.values()))
     except Exception as e:
         print(f"DEBUG ERROR in Public Data: {e}")
         return None
@@ -166,35 +165,29 @@ def generate_player_payload(player_id, player_wrapper=None):
         }
         night_ui = engine_player_obj.role.get_night_ui_schema(engine_player_obj, ctx)
 
-
     acted_ids = []
     if game_instance.phase == PHASE_NIGHT:
         acted_ids = list(game_instance.turn_history)
     elif game_instance.phase == PHASE_ACCUSATION:
         # In Accusation, acting = Accusing someone OR Voting to sleep
-        acted_ids = list(set(game_instance.accusations.keys()) | game_instance.end_day_votes)
+        acted_ids = list(
+            set(game_instance.pending_actions.keys()) | game_instance.end_day_votes
+        )
     elif game_instance.phase == PHASE_LYNCH:
         acted_ids = list(game_instance.lynch_votes.keys())
 
     # Retrieve Player Actions
-    my_night_target_id = game_instance.get_player_night_choice(player_id)
+    my_phase_target_id = game_instance.get_player_phase_choice(player_id)
     my_night_metadata = game_instance.get_player_night_metadata(player_id)
-    my_accusation_id = game_instance.get_player_accusation(player_id)
     my_lynch_vote = game_instance.get_player_lynch_vote(player_id)
     my_sleep_vote = game_instance.has_player_voted_to_sleep(player_id)
 
     # Resolve Names
-    my_night_target_name = None
-    if my_night_target_id:
-        target_obj = game_instance.players.get(my_night_target_id)
+    my_phase_target_name = None
+    if my_phase_target_id:
+        target_obj = game_instance.players.get(my_phase_target_id)
         if target_obj:
-            my_night_target_name = target_obj.name
-
-    my_accusation_name = None
-    if my_accusation_id:
-        target_obj = game_instance.players.get(my_accusation_id)
-        if target_obj:
-            my_accusation_name = target_obj.name
+            my_phase_target_name = target_obj.name
 
     valid_targets_data = []
     if engine_player_obj.role:
@@ -231,12 +224,10 @@ def generate_player_payload(player_id, player_wrapper=None):
         "lynch_target_name": lynch_target_name,
         "message_history": game_instance.message_history,
         "mode": game_instance.mode,
-        "my_accusation_id": my_accusation_id,
-        "my_accusation_name": my_accusation_name,
         "my_lynch_vote": my_lynch_vote,
-        "my_night_target_id": my_night_target_id,
+        "my_phase_target_id": my_phase_target_id,
         "my_night_metadata": my_night_metadata,
-        "my_night_target_name": my_night_target_name,
+        "my_phase_target_name": my_phase_target_name,
         "my_rematch_vote": player_id in game_instance.rematch_votes,
         "my_sleep_vote": my_sleep_vote,
         "night_ui": night_ui,
@@ -870,7 +861,7 @@ def handle_accuse_player(data):
     tid = data.get("target_id")
     all_voted = game_instance.process_accusation(pid, tid)
     # 2. Check what was recorded
-    recorded_vote = game_instance.accusations.get(pid)
+    recorded_vote = game_instance.pending_actions.get(pid)
     if recorded_vote == "Ghost_Fail":
         # update ghost to "wails went unheard"
         emit("force_phase_update", to=request.sid)
@@ -893,7 +884,7 @@ def handle_accuse_player(data):
             },
             to=game["game_code"],
         )
-    counts = Counter(game_instance.accusations.values())
+    counts = Counter(game_instance.pending_actions.values())
     emit("accusation_update", counts, to=game["game_code"])
     if all_voted:
         perform_tally_accusations()

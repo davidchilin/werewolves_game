@@ -612,10 +612,9 @@
       let isPnP = false;
       let currentPhase = "";
       let hasActed = new Set(),
-        myNightTargetId = null,
+        myPhaseTargetId = null,
         myNightMetadata = null,
         lastSeerResult = null,
-        myAccusationId = null,
         myLynchVote = null,
         currentLynchTargetName = "Unknown",
         mySleepVote = false;
@@ -828,13 +827,12 @@
         allPlayers = data.all_players;
         livingPlayers = data.living_players;
         currentNightUI = data.night_ui;
-        myNightTargetId = data.my_night_target_id;
+        myPhaseTargetId = data.my_phase_target_id;
         myNightMetadata = data.my_night_metadata || {};
         myRole = data.your_role;
         isAlive = data.is_alive;
         isAdmin = data.is_admin;
 
-        myAccusationId = data.my_accusation_id;
         myLynchVote = data.my_lynch_vote;
         mySleepVote = data.my_sleep_vote;
 
@@ -953,7 +951,7 @@
           : els.action;
         if (!container) return;
 
-        if (myNightTargetId === null) {
+        if (myPhaseTargetId === null) {
           if (!uiData || !uiData.pre) {
             container.innerHTML = "<p>Sleeping...</p>";
             return;
@@ -1002,7 +1000,7 @@
               allPlayers.find((p) => p.id === myNightMetadata.target_id2)
                 ?.name || "Nobody";
 
-          const target = allPlayers.find((p) => p.id === myNightTargetId);
+          const target = allPlayers.find((p) => p.id === myPhaseTargetId);
           container.innerHTML = (uiData.post || "<p>Action submitted.</p>")
             .replace("${playerPicked}", target ? target.name : "Nobody")
             .replace("${playerPicked2}", p2);
@@ -1017,11 +1015,11 @@
           html += "<h4 style='color: #a0a0ff'>👻 Ghost Mode Active: ...</h4>";
         }
 
-        if (myAccusationId !== null)
-          if (myAccusationId === "Ghost_Fail") {
+        if (myPhaseTargetId !== null)
+          if (myPhaseTargetId === "Ghost_Fail") {
             html += `<h3 style="color: #a0a0ff; font-style: italic;">👻 Your ghostly wails went unheard...</h3><p>Vote failed.</p>`;
           } else {
-            const target = allPlayers.find((p) => p.id === myAccusationId);
+            const target = allPlayers.find((p) => p.id === myPhaseTargetId);
             html += `<h3>You have accused <span style="color:#ff5252">${
               target ? target.name : "Nobody"
             }</span>.</h3><p>Waiting for others...</p>`;
@@ -1053,7 +1051,7 @@
         els.action.innerHTML = html;
 
         // 3. Attach Listeners (Now that elements are stable)
-        if (myAccusationId === null) {
+        if (myPhaseTargetId === null) {
           populateSelect("accuse-select", livingPlayers, true, true);
           const accBtn = document.getElementById("accuse-btn");
           if (accBtn) {
@@ -1249,9 +1247,8 @@
         livingPlayers = data.living_players;
         allPlayers = data.all_players;
         timersDisabled = data.timers_disabled;
-        myNightTargetId = data.my_night_target_id;
+        myPhaseTargetId = data.my_phase_target_id;
         myNightMetadata = data.my_night_metadata || {};
-        myAccusationId = data.my_accusation_id;
         currentNightUI = data.night_ui;
         mySleepVote = data.my_sleep_vote;
         myLynchVote = data.my_lynch_vote;
@@ -1268,7 +1265,7 @@
           els.log.scrollTop = els.log.scrollHeight;
         }
 
-        if (myNightTargetId === null) lastSeerResult = null;
+        if (myPhaseTargetId === null) lastSeerResult = null;
 
         if (data.phase === PHASE_GAME_OVER && data.game_over_data) {
           showGameOverScreen(data.game_over_data, {
@@ -1435,7 +1432,7 @@
           if (b) {
             b.disabled = true;
             b.textContent = "Accuse";
-            myAccusationId =
+            myPhaseTargetId =
               data.accused_name === "Nobody" ? null : "Vote_Cast";
           }
         }
