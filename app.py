@@ -174,12 +174,11 @@ def generate_player_payload(player_id, player_wrapper=None):
             set(game_instance.pending_actions.keys()) | game_instance.end_day_votes
         )
     elif game_instance.phase == PHASE_LYNCH:
-        acted_ids = list(game_instance.lynch_votes.keys())
+        acted_ids = list(game_instance.pending_actions.keys())
 
     # Retrieve Player Actions
     my_phase_target_id = game_instance.get_player_phase_choice(player_id)
-    my_night_metadata = game_instance.get_player_night_metadata(player_id)
-    my_lynch_vote = game_instance.get_player_lynch_vote(player_id)
+    my_phase_metadata = game_instance.get_player_phase_choice(player_id, True)
     my_sleep_vote = game_instance.has_player_voted_to_sleep(player_id)
 
     # Resolve Names
@@ -224,9 +223,9 @@ def generate_player_payload(player_id, player_wrapper=None):
         "lynch_target_name": lynch_target_name,
         "message_history": game_instance.message_history,
         "mode": game_instance.mode,
-        "my_lynch_vote": my_lynch_vote,
+        "my_lynch_vote": my_phase_target_id,
         "my_phase_target_id": my_phase_target_id,
-        "my_night_metadata": my_night_metadata,
+        "my_phase_metadata": my_phase_metadata,
         "my_phase_target_name": my_phase_target_name,
         "my_rematch_vote": player_id in game_instance.rematch_votes,
         "my_sleep_vote": my_sleep_vote,
@@ -605,7 +604,10 @@ def handle_admin_exclude_player(data):
 
 @socketio.on("start_game")
 def handle_start_game(data):
-    if request.sid != game.get("admin_sid"):
+    settings = data.get("settings", {})
+    is_pnp = settings.get("mode") == "pass_and_play"
+
+    if request.sid != game.get("admin_sid") and not is_pnp:
         return emit("error", {"message": "Only the admin can start the game."})
     if len(game["players"]) < 4:
         return emit("error", {"message": "Cannot start with fewer than 4 players."})
@@ -617,7 +619,6 @@ def handle_start_game(data):
         game_loop_running = True
         socketio.start_background_task(background_game_loop)
     # configure engine
-    settings = data.get("settings", {})
     lobby_state["settings"] = settings
     lobby_state["selected_roles"] = data.get("roles", [])
     game_instance.settings = settings

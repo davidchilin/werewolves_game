@@ -77,7 +77,6 @@ class Game:
         self.end_day_votes = set()  # set[voter_id]
 
         self.lynch_target_id = None
-        self.lynch_votes = {}  # Dict[voter_id, "yes"/"no"]
 
         # Admin/Meta Data
         self.admin_only_chat = False
@@ -235,9 +234,8 @@ class Game:
             self.pending_actions = {}
             self.end_day_votes = set()
             self.lynch_target_id = None
-            self.lynch_votes = {}
         elif new_phase == PHASE_LYNCH:
-            self.lynch_votes = {}
+            self.pending_actions = {}
 
         self.phase_end_time = time.time() + duration
 
@@ -318,25 +316,20 @@ class Game:
 
             return "WAITING"
 
-    def get_player_phase_choice(self, player_id):
+    def get_player_phase_choice(self, player_id, get_meta=None):
         """Returns the target ID the player submitted, or None."""
         choice = self.pending_actions.get(player_id)
         # if dict (Witch), extract target_id
         if isinstance(choice, dict):
-            # todo is this even needed?
-            return choice.get("target_id")
-        return choice
-
-    def get_player_night_metadata(self, player_id):
-        """Returns the metadata dict (e.g. {'potion': 'heal'}) or None."""
-        choice = self.pending_actions.get(player_id)
-        if isinstance(choice, dict):
-            return choice.get("metadata")
-        return None
-
-    def get_player_lynch_vote(self, player_id):
-        """Returns 'yes' or 'no' if the player has voted."""
-        return self.lynch_votes.get(player_id)
+            if get_meta:
+                # Returns the metadata dict (e.g. {'potion': 'heal'}) or None
+                return choice.get("metadata")
+            else:
+                return choice.get("target_id")
+        if get_meta:
+            return None
+        else:
+            return choice
 
     def resolve_night_deaths(self):
         print("--- RESOLVING NIGHT Deaths & ACTIONS ---")
@@ -706,7 +699,7 @@ class Game:
 
             # GHOST LOGIC
             # This prevents re-rolling the 10% chance by refreshing.
-            if not player.is_alive and voter_id in self.lynch_votes:
+            if not player.is_alive and voter_id in self.pending_actions:
                 return False
 
             vote_value = vote
@@ -718,11 +711,11 @@ class Game:
                     vote_value = "Ghost_Fail"  # Failed roll
 
             # Record vote
-            self.lynch_votes[voter_id] = vote_value  # FIX: Use vote_value
+            self.pending_actions[voter_id] = vote_value  # FIX: Use vote_value
 
             # CHECK: Have all LIVING players voted?
             living_voters = [
-                pid for pid in self.lynch_votes.keys() if self.players[pid].is_alive
+                pid for pid in self.pending_actions.keys() if self.players[pid].is_alive
             ]
             living_total = len(self.get_living_players())
 
@@ -733,8 +726,8 @@ class Game:
         Calculates lynch result. Apply death if needed. Checks Win.
         Returns result dict.
         """
-        yes_count = list(self.lynch_votes.values()).count("yes")
-        no_count = list(self.lynch_votes.values()).count("no")
+        yes_count = list(self.pending_actions.values()).count("yes")
+        no_count = list(self.pending_actions.values()).count("no")
         total_valid_votes = yes_count + no_count
 
         result_data = {
@@ -747,7 +740,7 @@ class Game:
         }
 
         # Populate summary names
-        for player_id, vote in self.lynch_votes.items():
+        for player_id, vote in self.pending_actions.items():
             if vote in ["yes", "no"]:
                 p_name = self.players[player_id].name
                 # Fix: Mask ghost names
@@ -809,7 +802,7 @@ class Game:
                 ctx = {
                     "players": list(self.players.values()),
                     "reason": reason,
-                    "lynch_votes": self.lynch_votes,
+                    "lynch_votes": self.pending_actions,
                 }
                 death_reaction = player_obj.role.on_death(player_obj, ctx)
 

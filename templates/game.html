@@ -183,7 +183,6 @@
         transition:
           transform 0.1s,
           background-color 0.2s;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
       }
       .pnp-btn:hover {
         color: #ff1111;
@@ -222,7 +221,6 @@
         border: 2px solid #bb86fc;
         max-width: 440px;
         width: 90%;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
       }
       .confirm-box h2 {
         margin-top: 0;
@@ -331,7 +329,6 @@
         border: 1px solid #bb86fc;
         border-radius: 12px;
         text-align: center;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         margin-top: 20px;
         margin-bottom: 20px;
       }
@@ -397,7 +394,7 @@
       }
       #admin-controls-ingame button {
         margin: 5px auto;
-        width: 75%;
+        width: 65%;
         display: block;
         background-color: #ccc;
       }
@@ -738,26 +735,26 @@
 
         els.pnpGrid.innerHTML = allPlayers
           .map((p) => {
-            // Visibility Logic:
-            // 1. If Alive: Always Show.
-            // 2. If Dead: Show only during Day Phases (Accusation/Lynch) IF Ghost Mode is Active
-            // 3. Otherwise: Hide.
+            // Show All Players, disable if acted or dead without ghost mode
             const isDay = phase === PHASE_ACCUSATION || phase === PHASE_LYNCH;
-            const showDead = isDay && ghostModeActive;
+            const isGhostActive = !p.is_alive && ghostModeActive && isDay;
 
-            if (!p.is_alive && !showDead) return "";
+            // button clickable if not acted and alive, or ghost
+            const isInteractive =
+              !hasActed.has(p.id) && (p.is_alive || isGhostActive);
+            let deadClass = "pnp-btn";
+            if (!isInteractive) deadClass += " dead";
 
-            const disabled = hasActed.has(p.id) ? "dead" : "";
-            // Visual style for dead players in hub
-            const deadClass = !p.is_alive ? "dead" : "";
-
-            const label = hasActed.has(p.id) ? `${p.name} (Done)` : p.name;
             const safeName = p.name.replace(/'/g, "\\'");
-            const clickAction = hasActed.has(p.id)
-              ? ""
-              : `startConfirmFlow('${p.id}', '${safeName}')`;
+            const clickAction = isInteractive
+              ? `startConfirmFlow('${p.id}', '${safeName}')`
+              : "";
 
-            return `<div class="pnp-btn ${disabled} ${deadClass}" onclick="${clickAction}">${label}</div>`;
+            let label = p.name;
+            if (!p.is_alive) label += " 👻"; // Add Ghost icon for clarity
+            if (hasActed.has(p.id)) label += " (Done)";
+
+            return `<div class="${deadClass}" onclick="${clickAction}">${label}</div>`;
           })
           .join("");
       }
@@ -794,7 +791,7 @@
 
         title.innerText = "Confirm Identity";
         title.style.color = "#f44336"; // Warning Red
-        msg.innerHTML = `Make sure <strong>${name}</strong> has the device.<br>Do not show the screen to anyone else.`;
+        msg.innerHTML = `Make sure <strong>${name}</strong> has the device.<br>Don't show the screen to anyone else.`;
 
         actions.innerHTML = `
             <button class="big-btn" onclick="socket.emit('pnp_request_state', { player_id: '${pid}' })">I am Ready</button>
@@ -828,7 +825,7 @@
         livingPlayers = data.living_players;
         currentNightUI = data.night_ui;
         myPhaseTargetId = data.my_phase_target_id;
-        myNightMetadata = data.my_night_metadata || {};
+        myNightMetadata = data.my_phase_metadata || {};
         myRole = data.your_role;
         isAlive = data.is_alive;
         isAdmin = data.is_admin;
@@ -926,8 +923,10 @@
         }
 
         // PnP Injection
-        if (isPnP) payload.actor_id = myPlayerId;
-
+        if (isPnP) {
+          console.log(`[ACTION] Submitting action as Actor: ${myPlayerId}`);
+          payload.actor_id = myPlayerId;
+        }
         socket.emit("hero_choice", payload);
 
         // Optimistic UI Update
@@ -1216,6 +1215,10 @@
 
       socket.on("game_state_sync", (data) => {
         // 1. Detect Phase Change to Clear PnP History
+        const isPnP = data.mode === "pass_and_play";
+        console.log(`[SYNC] Packet received for ID: ${data.this_player_id}`);
+        console.log(`[SYNC] My Current ID: ${myPlayerId}`);
+
         let phaseChanged = data.phase !== currentPhase;
 
         if (data.acted_players) {
@@ -1224,10 +1227,8 @@
           hasActed.clear();
         }
 
-        const isPnP = data.mode === "pass_and_play";
         const isGameVisible = els.gameContainer.style.display !== "none";
         const isOverlayOpen = els.pnpOverlay.style.display === "flex";
-
         const overlayTitle = document.getElementById("overlay-title");
         const isDoneScreen =
           isOverlayOpen && overlayTitle && overlayTitle.innerText === "Done";
@@ -1248,7 +1249,7 @@
         allPlayers = data.all_players;
         timersDisabled = data.timers_disabled;
         myPhaseTargetId = data.my_phase_target_id;
-        myNightMetadata = data.my_night_metadata || {};
+        myNightMetadata = data.my_phase_metadata || {};
         currentNightUI = data.night_ui;
         mySleepVote = data.my_sleep_vote;
         myLynchVote = data.my_lynch_vote;
@@ -1375,7 +1376,6 @@
       });
 
       socket.on("pnp_action_confirmed", () => {
-        // Switch view back to confirmation/done state
         // We add the actor to 'hasActed' set to gray out button on Hub
         if (myPlayerId) hasActed.add(myPlayerId);
         // Show overlay message
@@ -1387,7 +1387,7 @@
           "<p>Please pass the device...</p>";
         document.getElementById("overlay-action-area").innerHTML = "";
 
-        setTimeout(() => requestGameSync(), 2000);
+        setTimeout(() => requestGameSync(), 3000);
       });
 
       socket.on("night_result_kill", (data) => {
@@ -1428,12 +1428,12 @@
         );
 
         if (myPlayerId === data.accuser_id) {
+          myPhaseTargetId = data.accused_name === "Nobody" ? null : "Vote_Cast";
+
           const b = document.getElementById("accuse-btn");
           if (b) {
             b.disabled = true;
             b.textContent = "Accuse";
-            myPhaseTargetId =
-              data.accused_name === "Nobody" ? null : "Vote_Cast";
           }
         }
       });
