@@ -714,6 +714,7 @@
       }
 
       function requestGameSync() {
+        els.gameContainer.style.display = "none";
         socket.emit("client_ready_for_game");
       }
 
@@ -1215,7 +1216,7 @@
 
       socket.on("game_state_sync", (data) => {
         // 1. Detect Phase Change to Clear PnP History
-        const isPnP = data.mode === "pass_and_play";
+        isPnP = data.mode === "pass_and_play";
         console.log(`[SYNC] Packet received for ID: ${data.this_player_id}`);
         console.log(`[SYNC] My Current ID: ${myPlayerId}`);
 
@@ -1379,7 +1380,7 @@
         // We add the actor to 'hasActed' set to gray out button on Hub
         if (myPlayerId) hasActed.add(myPlayerId);
         // Show overlay message
-        els.pnpOverlay.style.display = "flex";
+        /* els.pnpOverlay.style.display = "flex";
         document.getElementById("overlay-title").innerText = "Done";
         document.getElementById("overlay-title").style.color = "#4caf50";
         document.getElementById("overlay-msg").innerText = "Action Recorded.";
@@ -1388,6 +1389,7 @@
         document.getElementById("overlay-action-area").innerHTML = "";
 
         setTimeout(() => requestGameSync(), 3000);
+        */
       });
 
       socket.on("night_result_kill", (data) => {
@@ -1429,6 +1431,8 @@
 
         if (myPlayerId === data.accuser_id) {
           myPhaseTargetId = data.accused_name === "Nobody" ? null : "Vote_Cast";
+
+          // if (currentPhase === PHASE_ACCUSATION) renderActionUI(PHASE_ACCUSATION);
 
           const b = document.getElementById("accuse-btn");
           if (b) {

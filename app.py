@@ -777,6 +777,7 @@ def handle_pnp_request(data):
     Called when PnP device clicks a player button.
     Sends that specific player's FULL private state (using generator).
     """
+    print(f"handle_pnp_request")
     target_id = data.get("player_id")
     payload = generate_player_payload(target_id)
     if payload:
@@ -788,6 +789,7 @@ def handle_pnp_action(data):
     """
     Unified action handler for Pass-and-Play.
     """
+    print(f"handle_pnp_action")
     result = game_instance.receive_night_action(
         data.get("actor_id"), data.get("target_id")
     )
@@ -814,8 +816,10 @@ def handle_client_ready_for_game():
 def handle_hero_choice(data):
     player_id = session.get("player_id")
     # PnP Override
+    print(f"hero_choice {player_id}")
     if game_instance.mode == "pass_and_play" and "actor_id" in data:
         player_id = data["actor_id"]
+        print(f"hero_choice new player_id: {player_id}")
     target_id = data.get("target_id")
     if target_id == "Nobody":
         result = game_instance.receive_night_action(player_id, "Nobody")
