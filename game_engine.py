@@ -1,6 +1,6 @@
 """
 game_engine.py
-# Version: 4.8.3
+# Version: 4.8.5
 Manages the game flow, player states, complex role interactions, and phase transitions.
 """
 import random
