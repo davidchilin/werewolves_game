@@ -1,6 +1,6 @@
 """
 app.py
-Version: 4.8.5
+Version: 4.8.6
 """
 import logging
 import os
@@ -281,7 +281,12 @@ def perform_tally_accusations():
     result_type = outcome["result"]
     if result_type == "trial":
         if outcome.get("message"):
+            print(f"perform_tally_accusations message: {outcome.get('message')}")
             socketio.emit("message", {"text": outcome["message"]}, to=game["game_code"])
+
+        trial_msg = f"⛓️ <strong>{outcome['target_name']}</strong> is on trial!"
+        game_instance.message_history.append(trial_msg)
+
         socketio.emit(
             "lynch_vote_started",
             {
@@ -292,13 +297,16 @@ def perform_tally_accusations():
             to=game["game_code"],
         )
     elif result_type == "restart":
+        game_instance.message_history.append(outcome["message"])
         socketio.emit(
             "lynch_vote_result", {"message": outcome["message"]}, to=game["game_code"]
         )
         socketio.sleep(4)
         game_instance.set_phase(PHASE_ACCUSATION)
         broadcast_game_state()
+
     elif result_type == "night":
+        game_instance.message_history.append(outcome["message"])
         # No Accusations / Deadlock -> Sleep
         socketio.emit(
             "lynch_vote_result", {"message": outcome["message"]}, to=game["game_code"]
@@ -673,6 +681,7 @@ def resolve_lynch():
         name = game_instance.players[result["killed_id"]].name
         role = game_instance.players[result["killed_id"]].role.name_key
         msg = f"⚖️ <strong>{name}</strong> was lynched! They were a <strong>{role}</strong> ⚰️"
+    game_instance.message_history.append(msg)
     socketio.emit(
         "lynch_vote_result",
         {
@@ -697,10 +706,11 @@ def resolve_lynch():
             game_instance.message_history.append(sec_msg)
             socketio.emit("message", {"text": sec_msg}, to=game["game_code"])
 
-    # Message werewolves teammates names
+    # Message werewolves teammates names, in case Wild_Child
     living_wolves = game_instance.get_living_players("Werewolves")
     for werewolf in living_wolves:
         send_werewolf_info(werewolf.id)
+
     socketio.sleep(5)
     check_game_over_or_next_phase()
 
@@ -751,7 +761,7 @@ def handle_admin_set_new_code(data):
     broadcast_player_list()
 
 
-def send_werewolf_info(player_id):
+def send_werewolf_info(player_id, specific_sid=None):
     """Sends the list of werewolf teammates to a specific player."""
     engine_player_obj = game_instance.players.get(player_id)
     if (
@@ -763,10 +773,16 @@ def send_werewolf_info(player_id):
 
     living_werewolves = game_instance.get_living_players("Werewolves")
     teammate_names = [w.name for w in living_werewolves if w.id != player_id]
-    player_wrapper = game["players"].get(player_id)
-    if player_wrapper and player_wrapper.sid:
+
+    target_sid = specific_sid
+    if not target_sid:
+        player_wrapper = game["players"].get(player_id)
+        if player_wrapper:
+            target_sid = player_wrapper.sid
+
+    if target_sid:
         socketio.emit(
-            "werewolf_team_info", {"teammates": teammate_names}, to=player_wrapper.sid
+            "werewolf_team_info", {"teammates": teammate_names}, to=target_sid
         )
 
 
@@ -777,11 +793,11 @@ def handle_pnp_request(data):
     Called when PnP device clicks a player button.
     Sends that specific player's FULL private state (using generator).
     """
-    print(f"handle_pnp_request")
     target_id = data.get("player_id")
     payload = generate_player_payload(target_id)
     if payload:
         emit("pnp_state_sync", payload)
+        send_werewolf_info(target_id, specific_sid=request.sid)
 
 
 @socketio.on("pnp_submit_action")
@@ -816,10 +832,8 @@ def handle_client_ready_for_game():
 def handle_hero_choice(data):
     player_id = session.get("player_id")
     # PnP Override
-    print(f"hero_choice {player_id}")
     if game_instance.mode == "pass_and_play" and "actor_id" in data:
         player_id = data["actor_id"]
-        print(f"hero_choice new player_id: {player_id}")
     target_id = data.get("target_id")
     if target_id == "Nobody":
         result = game_instance.receive_night_action(player_id, "Nobody")
@@ -870,7 +884,7 @@ def handle_accuse_player(data):
     if recorded_vote == "Ghost_Fail":
         # update ghost to "wails went unheard"
         emit("force_phase_update", to=request.sid)
-    elif recorded_vote:
+    elif recorded_vote is not None:
         accuser = game_instance.players[pid]
         accuser_name = accuser.name
         if not accuser.is_alive:
@@ -880,12 +894,18 @@ def handle_accuse_player(data):
             target_name = target.name if target else "Unknown"
         else:
             target_name = "Nobody"
+
+        hist_msg = (
+            f"🫵 <strong>{accuser_name}</strong> accuses <strong>{target_name}</strong>!"
+        )
+        game_instance.message_history.append(hist_msg)
         emit(
             "accusation_made",
             {
                 "accuser_id": pid,
                 "accuser_name": accuser_name,
                 "accused_name": target_name,
+                "accused_id": tid,
             },
             to=game["game_code"],
         )
@@ -998,13 +1018,14 @@ def resolve_night():
                     },
                     to=game["game_code"],
                 )
-
+                # msg werewolf teamates in case Wild_Child joined
                 living_wolves = game_instance.get_living_players("Werewolves")
                 for werewolf in living_wolves:
                     send_werewolf_info(werewolf.id)
     # todo delete game.html night_result_no_kill function
     if not actual_death:
         msg = "🌞 The sun rises, and no one was killed."
+        game_instance.message_history.append(msg)
         socketio.emit("message", {"text": msg}, to=game["game_code"])
 
     socketio.sleep(4)  # Short pause for effect

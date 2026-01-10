@@ -1,4 +1,4 @@
-<!-- Version: 4.85 -->
+<!-- Version: 4.8.6 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -596,6 +596,7 @@
       // Global State
       let myRole,
         myPlayerId = "{{ player_id }}", // Injected by Flask
+        publicHistory = [],
         isAlive = false;
       let livingPlayers = [],
         allPlayers = [],
@@ -651,6 +652,14 @@
         els.log.prepend(div);
       }
 
+      function resetLog(history) {
+        els.log.innerHTML = ""; // Clear existing logs (including private ones from previous player)
+        if (history && Array.isArray(history)) {
+          history.forEach(logMessage); // Repopulate with public events
+        }
+        els.log.scrollTop = els.log.scrollHeight;
+      }
+
       function updateAdminControls() {
         if (isAdmin && !isPnP) {
           els.adminControls.style.display = "block";
@@ -680,7 +689,7 @@
         let isChatDisabled = isAdminOnly && !isAdmin;
         let placeholder = "Chat is restricted.";
 
-        if (phase === "night" && !isAdmin) {
+        if (phase === PHASE_NIGHT && !isAdmin) {
           placeholder = "sleepy quiet time...zzz";
           isChatDisabled = true;
         } else if (!isChatDisabled) {
@@ -704,6 +713,17 @@
 
       // --- Pass-and-Play (PnP) Logic ---
       function confirmAdvancePhase() {
+        /* els.pnpOverlay.style.display = "flex";
+        document.getElementById("overlay-title").innerText = "Done";
+        document.getElementById("overlay-title").style.color = "#4caf50";
+        document.getElementById("overlay-msg").innerText = "Action Recorded.";
+        document.getElementById("overlay-actions").innerHTML =
+          "<p>Please pass the device...</p>";
+        document.getElementById("overlay-action-area").innerHTML = "";
+
+        setTimeout(() => requestGameSync(), 3000);
+        */
+
         if (
           confirm(
             "⚠️ Advance the game to the next phase?\n(This will skip remaining turns)",
@@ -726,6 +746,7 @@
 
         const pnpLogContainer = document.getElementById("pnp-log-container");
         if (els.log && pnpLogContainer) {
+          resetLog(publicHistory);
           pnpLogContainer.appendChild(els.log);
         }
 
@@ -815,6 +836,7 @@
         els.gameContainer.style.display = "flex";
         const mainPanel = document.querySelector(".main-panel");
         if (els.log && mainPanel) {
+          resetLog(data.message_history);
           mainPanel.appendChild(els.log);
         }
         // 3. Inject PnP specific "Back" button
@@ -1214,11 +1236,19 @@
         socket.emit("client_ready_for_game");
       });
 
+      socket.on("force_phase_update", () => {
+        // Signal that the Ghost's action was processed but failed (RNG)
+        myPhaseTargetId = "Ghost_Fail";
+
+        // Force UI refresh to show the "Ghostly wails went unheard" message
+        if (currentPhase === PHASE_ACCUSATION) {
+          renderActionUI(PHASE_ACCUSATION);
+        }
+      });
+
       socket.on("game_state_sync", (data) => {
         // 1. Detect Phase Change to Clear PnP History
         isPnP = data.mode === "pass_and_play";
-        console.log(`[SYNC] Packet received for ID: ${data.this_player_id}`);
-        console.log(`[SYNC] My Current ID: ${myPlayerId}`);
 
         let phaseChanged = data.phase !== currentPhase;
 
@@ -1260,6 +1290,8 @@
           totalAccusationDuration = data.total_accusation_duration;
 
         currentPhase = data.phase;
+
+        if (data.message_history) publicHistory = data.message_history;
 
         if (data.message_history && els.log.innerHTML.trim() === "") {
           data.message_history.forEach(logMessage);
@@ -1334,12 +1366,11 @@
       });
 
       socket.on("phase_change", (data) => {
-        logMessage(
-          `A new phase has begun: <strong>${data.phase.replace(
-            /_/g,
-            " ",
-          )}</strong>.`,
-        );
+        const msg = `A new phase has begun: <strong>${data.phase.replace(/_/g, " ")}</strong>.`;
+
+        if (publicHistory) publicHistory.push(msg);
+        logMessage(msg);
+
         socket.emit("client_ready_for_game");
       });
 
@@ -1399,6 +1430,7 @@
           isAlive = false;
         }
       });
+
       socket.on("werewolf_team_info", (data) =>
         logMessage(
           data.teammates.length
@@ -1408,41 +1440,40 @@
             : "You are the lone Werewolf.",
         ),
       );
+
       socket.on("lynch_vote_result", (data) => {
-        logMessage(
+        let msg =
           data.message +
-            (data.summary
-              ? `<div class="vote-summary">Voted Yes: ${
-                  data.summary.yes.join(", ") || "None"
-                }<br>Voted No: ${data.summary.no.join(", ") || "None"}</div>`
-              : ""),
-        );
+          (data.summary
+            ? `<div class="vote-summary">Voted Yes: ${
+                data.summary.yes.join(", ") || "None"
+              }<br>Voted No: ${data.summary.no.join(", ") || "None"}</div>`
+            : "");
+        if (publicHistory) publicHistory.push(msg);
+        logMessage(msg);
         if (data.killed_id === myPlayerId) isAlive = false;
       });
 
-      socket.on("force_phase_update", () =>
-        socket.emit("client_ready_for_game"),
-      );
-
       socket.on("accusation_made", (data) => {
-        logMessage(
-          `🫵 <strong>${data.accuser_name}</strong> accuses <strong>${data.accused_name}</strong>!`,
-        );
+        msg = `🫵 <strong>${data.accuser_name}</strong> accuses <strong>${data.accused_name}</strong>!`;
+        if (publicHistory) publicHistory.push(msg);
+        logMessage(msg);
 
         if (myPlayerId === data.accuser_id) {
-          myPhaseTargetId = data.accused_name === "Nobody" ? null : "Vote_Cast";
+          myPhaseTargetId =
+            data.accused_id !== undefined
+              ? data.accused_id
+              : data.accused_name === "Nobody"
+                ? ""
+                : "Vote_Cast";
 
-          // if (currentPhase === PHASE_ACCUSATION) renderActionUI(PHASE_ACCUSATION);
-
-          const b = document.getElementById("accuse-btn");
-          if (b) {
-            b.disabled = true;
-            b.textContent = "Accuse";
-          }
+          if (currentPhase === PHASE_ACCUSATION)
+            renderActionUI(PHASE_ACCUSATION);
         }
       });
 
       socket.on("accusation_update", (data) => updatePlayerListView(data));
+
       socket.on("end_day_vote_update", (data) => {
         const c = document.getElementById("end-day-vote-counter");
         if (c)
@@ -1450,21 +1481,35 @@
             1 + Math.floor(data.total / 2) - data.count
           }</strong> more votes needed to sleep!`;
       });
+
       socket.on("lynch_vote_started", (data) => {
-        logMessage(`⛓️ <strong>${data.target_name}</strong> is on trial!`);
+        msg = `⛓️ <strong>${data.target_name}</strong> is on trial!`;
+        logmessage(msg);
+        if (publicHistory) {
+          publicHistory.push(msg);
+        }
+
         currentLynchTargetName = data.target_name;
+        currentPhase = PHASE_LYNCH;
+        hasActed.clear();
+
         els.phase.textContent = "Lynch Vote";
         renderActionUI(PHASE_LYNCH);
         startTimer(data.phase_end_time);
+
+        if (isPnP) renderHub(allPlayers, PHASE_LYNCH);
       });
+
       socket.on("game_over", (data) => {
         showGameOverScreen(data);
       });
+
       socket.on("rematch_vote_update", (data) => {
         const s = document.getElementById("rematch-vote-status");
         if (s)
           s.textContent = `${data.count} / ${data.total} players have voted to return.`;
       });
+
       socket.on("redirect_to_lobby", () => {
         window.location.href = "/lobby";
       });
@@ -1475,6 +1520,7 @@
         );
         window.location.href = "/";
       });
+
       socket.on("error", (data) => alert("Error: " + data.message));
 
       function updatePlayerListView(accusationCounts = {}) {

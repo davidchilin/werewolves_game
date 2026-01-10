@@ -1,6 +1,6 @@
 """
 game_engine.py
-# Version: 4.8.5
+Version: 4.8.6
 Manages the game flow, player states, complex role interactions, and phase transitions.
 """
 import random
@@ -357,7 +357,7 @@ class Game:
         dead_ids_set = set()
         final_death_events = []
 
-        def kill_recursive(player_id, reason):
+        def kill_recursive_night(player_id, reason):
             # target.is_alive=False, execute death hook, kill lover
             player_obj = self.players[player_id]
 
@@ -410,7 +410,7 @@ class Game:
                             print(
                                 f"Retaliation by {player_obj.name} on {retaliation_target_obj.name}!"
                             )
-                        kill_recursive(retaliation_target_id, custom_reason)
+                        kill_recursive_night(retaliation_target_id, custom_reason)
 
                 if death_reaction.get("type") == "announcement":
                     final_death_events.append(death_reaction)
@@ -421,7 +421,7 @@ class Game:
                 if partner_player_obj and partner_player_obj.is_alive:
                     msg = f"💘 Lovers Pact: <strong>{partner_player_obj.name}</strong> dies of broken heart 💔"
                     print(msg)
-                    kill_recursive(partner_player_obj.id, msg)
+                    kill_recursive_night(partner_player_obj.id, msg)
 
             # Prostitute Collateral Damage
             if player_obj.visiting_id:
@@ -429,7 +429,7 @@ class Game:
                 if visitor_player_obj and visitor_player_obj.is_alive:
                     msg = f"👠 Date damage: <strong>{visitor_player_obj.name}</strong> dies too 🔞  They were a <strong>{visitor_player_obj.role.name_key}</strong>"
                     print(msg)
-                    kill_recursive(
+                    kill_recursive_night(
                         visitor_player_obj.id,
                         msg,
                     )
@@ -512,20 +512,24 @@ class Game:
 
                 if "poisoned" in target_player_obj.status_effects:
                     print(f"{target_player_obj.name} poisoned!")
-                    kill_recursive(
+                    kill_recursive_night(
                         target_player_obj.id, result.get("reason", "Witch Poison")
                     )
 
                 if action_type == "revealed_werewolf":
-                    kill_recursive(
+                    kill_recursive_night(
                         target_player_obj.id, result.get("reason", "Revealed")
                     )
 
                 if action_type == "revealed_wrongly":
-                    kill_recursive(player_obj.id, result.get("reason", "Revealed"))
+                    kill_recursive_night(
+                        player_obj.id, result.get("reason", "Revealed")
+                    )
 
                 if action_type == "direct_kill":
-                    kill_recursive(target_player_obj.id, result.get("reason", "Murder"))
+                    kill_recursive_night(
+                        target_player_obj.id, result.get("reason", "Murder")
+                    )
 
                 if action_type == "villager_vote" and target_player_obj:
                     villager_votes.append(target_player_obj.id)
@@ -587,7 +591,7 @@ class Game:
                         )
         # 5. Process Deaths & Lovers Pact
         for death_record in pending_deaths:
-            kill_recursive(death_record["target_id"], death_record["reason"])
+            kill_recursive_night(death_record["target_id"], death_record["reason"])
 
         return final_death_events + notifications
 
@@ -727,8 +731,7 @@ class Game:
         Returns result dict.
         """
         yes_count = list(self.pending_actions.values()).count("yes")
-        no_count = list(self.pending_actions.values()).count("no")
-        total_valid_votes = yes_count + no_count
+        living_total = len(self.get_living_players())
 
         result_data = {
             "summary": {"yes": [], "no": []},
@@ -748,7 +751,7 @@ class Game:
                     p_name = "Ghost"
                 result_data["summary"][vote].append(p_name)
 
-        if total_valid_votes > 0 and yes_count > (total_valid_votes / 2):
+        if yes_count and yes_count > (living_total / 2):
             # --- Lawyer Check ---
             target_obj = self.players[self.lynch_target_id]
             if "no_lynch" in target_obj.status_effects:
@@ -764,7 +767,7 @@ class Game:
             result_data["killed_id"] = self.lynch_target_id
             dead_ids_set = set()
 
-            def kill_recursive(player_id, reason):
+            def kill_recursive_lynch(player_id, reason):
                 # target.is_alive=False, execute death hook, kill lover
                 player_obj = self.players[player_id]
 
@@ -822,7 +825,7 @@ class Game:
                                 print(
                                     f"🪚 Retaliation by {player_obj.name} on {retaliation_target_obj.name}! 🪓"
                                 )
-                            kill_recursive(retaliation_target_id, custom_reason)
+                            kill_recursive_lynch(retaliation_target_id, custom_reason)
                     if death_reaction.get("type") == "announcement":
                         result_data["announcements"].append(death_reaction["message"])
 
@@ -831,7 +834,7 @@ class Game:
                     partner_obj = self.players.get(player_obj.linked_partner_id)
                     if partner_obj and partner_obj.is_alive:
                         print(f"Lovers Pact: {partner_obj.name} dies of broken heart.")
-                        kill_recursive(partner_obj.id, "Love Pact")
+                        kill_recursive_lynch(partner_obj.id, "Love Pact")
 
                 # Check Prostitute
                 if player_obj.visiting_id:
@@ -839,10 +842,10 @@ class Game:
                     if host_obj and host_obj.is_alive:
                         msg = f"👠 Date damage: <strong>{host_obj.name}</strong> dies too 🔞  They were a <strong>{host_obj.role.name_key}</strong>"
                         print(msg)
-                        kill_recursive(host_obj.id, msg)
+                        kill_recursive_lynch(host_obj.id, msg)
 
             # Start the chain reaction
-            kill_recursive(self.lynch_target_id, "Lynched")
+            kill_recursive_lynch(self.lynch_target_id, "Lynched")
 
             # Check Win Conditions
             if result_data["killed_id"]:  # Only triggers if they actually died

@@ -91,9 +91,6 @@ class Role:
         self.player_id = player_obj.id
         pass
 
-    def get_team(self):
-        return self.team
-
     def on_night_start(self, player_obj, game_context):
         """Called at the very start of the night phase."""
         pass
