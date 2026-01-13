@@ -463,7 +463,6 @@
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='role_data.js') }}"></script>
   </head>
   <body>
     <div id="pnp-hub">
@@ -605,6 +604,7 @@
 
       const socket = io();
       // Global State
+      let ROLE_DATA = {};
       let myRole,
         myPlayerId = "{{ player_id }}", // Injected by Flask
         publicHistory = [],
@@ -630,6 +630,24 @@
       let totalAccusationDuration = 90,
         sleepButtonTimeout = null;
 
+      fetch("/get_roles")
+        .then((response) => response.json())
+        .then((roles) => {
+          roles.forEach((r) => {
+            const key = r.name_key.replace(/_/g, " ");
+            ROLE_DATA[key] = {
+              short: r.short,
+              long: r.long,
+              rating: r.rating,
+              color: r.color,
+            };
+          });
+          // Refresh my tooltip if role is already set
+          if (typeof myRole !== "undefined" && myRole) {
+            updateRoleTooltip(myRole);
+          }
+        })
+        .catch((err) => console.error("Error fetching role data:", err));
       // --- DOM Elements ---
       const els = {
         phase: document.getElementById("phase-display"),

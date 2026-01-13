@@ -378,7 +378,6 @@
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='role_data.js') }}"></script>
   </head>
   <body>
     <div class="lobby-container">
@@ -647,37 +646,36 @@
       const setTimersButton = document.getElementById("set-timers-btn");
 
       // --- 1. Role Loading ---
+      // [ADDED] Global storage for role metadata (populated from server)
+      let ROLE_DATA = {};
+
+      // --- 1. Role Loading ---
       async function loadRoles() {
         try {
           const response = await fetch("/get_roles");
           const roles = await response.json();
           const container = document.getElementById("roles-grid"); // Target the grid directly
 
-          // Safety check for ROLE_DATA
-          if (typeof ROLE_DATA === "undefined") {
-            console.error("ROLE_DATA missing. Check static imports.");
-            container.innerHTML =
-              '<p style="color:red">Error: Role data missing.</p>';
-            return;
-          }
-
           container.innerHTML = ""; // Clear "Loading roles..." text
 
           roles.forEach((role) => {
-            // 1. Match Server Key to ROLE_DATA Key
-            const dataKey = role.name_key.replace(/_/g, " ");
-            const roleData = ROLE_DATA[dataKey] || {
-              short: role.description_key,
-              long: "Description unavailable.",
-              rating: 0,
-              color: "#fff",
+            // [CHANGED] Populate Global ROLE_DATA from Server Object
+            // The server now sends: short, long, rating, color
+            const key = role.name_key.replace(/_/g, " ");
+
+            ROLE_DATA[key] = {
+              short: role.short,
+              long: role.long,
+              rating: role.rating,
+              color: role.color,
             };
 
             // 2. Create the Tile
             const tile = document.createElement("div");
             tile.className = "role-tile";
 
-            tile.style.setProperty("--role-color", roleData.color || "#ddd");
+            // [CHANGED] Use role object directly (it has the color now)
+            tile.style.setProperty("--role-color", role.color || "#ddd");
 
             // 3. Create Checkbox
             const checkbox = document.createElement("input");
@@ -720,27 +718,24 @@
 
             // 4. Build Tile Content
             const title = document.createElement("h3");
-            title.innerText = dataKey + ":";
+            title.innerText = key + ":";
 
             // Short Desc
             const shortDesc = document.createElement("p");
             shortDesc.className = "role-short-desc";
-            shortDesc.innerText = roleData.short;
-            //shortDesc.style.color = roleData.color;
+            shortDesc.innerText = role.short; // [CHANGED] Use server prop
 
             // Tooltip
             const tooltip = document.createElement("div");
             tooltip.className = "role-tooltip";
             tooltip.innerHTML = `
-        ${roleData.long}
-        <span class="tooltip-rating" style="color: ${roleData.color}">
-            ${roleData.rating}
-        </span>
-      `;
+                ${role.long}
+                <span class="tooltip-rating" style="color: ${role.color}">
+                    ${role.rating}
+                </span>
+            `;
 
             // 5. Assemble
-            // We wrap the checkbox in a label or just append it.
-            // Appending directly allows clicking the box specifically.
             tile.appendChild(checkbox);
             tile.appendChild(title);
             tile.appendChild(shortDesc);
@@ -765,7 +760,6 @@
             '<p style="color:red">Error loading roles</p>';
         }
       }
-
       // --- 2. Socket Events ---
 
       socket.on("connect", () => {
