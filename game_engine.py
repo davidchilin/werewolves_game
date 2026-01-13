@@ -1,6 +1,6 @@
 """
 game_engine.py
-Version: 4.8.6a
+Version: 4.8.9
 Manages the game flow, player states, complex role interactions, and phase transitions.
 """
 import random
@@ -21,7 +21,6 @@ PHASE_GAME_OVER = "Game_Over"
 class Player:
     def __init__(self, session_id, name):
         self.id = session_id
-        self.lock = RLock()
         self.name = name
         self.role = None  # Will be an instance of a Role class
         self.is_alive = True
@@ -70,7 +69,6 @@ class Game:
         # Night Phase Data
         self.pending_actions = {}  # Dict[player_id, target_id]
         self.turn_history = set()  # set[player_id]
-        self.night_log = []  # frontend logs e.g., "Seer saw a Werewolf"
 
         # Day Phase Data
         self.accusation_restarts = 0
@@ -215,8 +213,6 @@ class Game:
         # Trigger cleanup or specific phase logic here
         if new_phase == PHASE_NIGHT:
             self.accusation_restarts = 0
-            self.night_actions = {}
-            self.night_log = []
             self.night_count += 1
             self.pending_actions = {}
             self.turn_history = set()  # Reset tracker
@@ -532,13 +528,6 @@ class Game:
                 if target_player_obj and effect:
                     print(f"Effect Applied: {effect} on {target_player_obj.name}")
                     target_player_obj.status_effects.append(effect)
-
-                self.night_log.append(
-                    {
-                        "player_id": player_obj.id,
-                        "message": f"Result: {result.get('result', 'Done')}",
-                    }
-                )
 
                 # IMMEDIATE DEATHS (Witch / Revealer / Serial Killer)
                 immediate_deaths = []

@@ -1,6 +1,6 @@
 """
 app.py
-Version: 4.8.6a
+Version: 4.8.9
 """
 import logging
 import os
@@ -110,13 +110,11 @@ def broadcast_player_list():
         to=game["game_code"],
     )
 
-
-def generate_player_payload(player_id, player_wrapper=None):
+def get_public_game_state():
     """
-    Generates the specific game state payload for a given player ID.
-    Used for both standard broadcasts and PnP impersonation.
+    Generates the game state data common to ALL players.
+    Optimization: Calculated once per tick/broadcast.
     """
-    # 1. Global Public Data
     try:
         all_players_data = [
             {"id": p.id, "name": p.name, "is_alive": p.is_alive}
@@ -125,22 +123,68 @@ def generate_player_payload(player_id, player_wrapper=None):
         accusation_counts = {}
         if game_instance.phase == PHASE_ACCUSATION:
             accusation_counts = dict(Counter(game_instance.pending_actions.values()))
+
+        remaining_time = 0
+        if game_instance.phase_start_time and not game_instance.timers_disabled:
+            key = game_instance.phase
+            if key in game_instance.timer_durations:
+                elapsed = time.time() - game_instance.phase_start_time
+                remaining_time = max(0, game_instance.timer_durations[key] - elapsed)
+
+        lynch_target_name = None
+        if game_instance.lynch_target_id:
+            target_obj = game_instance.players.get(game_instance.lynch_target_id)
+            if target_obj:
+                lynch_target_name = target_obj.name
+
+        acted_ids = []
+        if game_instance.phase == PHASE_NIGHT:
+            acted_ids = list(game_instance.turn_history)
+        elif game_instance.phase == PHASE_ACCUSATION:
+            acted_ids = list(
+                set(game_instance.pending_actions.keys()) | game_instance.end_day_votes
+            )
+        elif game_instance.phase == PHASE_LYNCH:
+            acted_ids = list(game_instance.pending_actions.keys())
+
+        return {
+            "accusation_counts": accusation_counts,
+            "acted_players": acted_ids,
+            "admin_only_chat": game_instance.admin_only_chat,
+            "all_players": all_players_data,
+            "duration": remaining_time,
+            "game_over_data": game_instance.game_over_data,
+            "ghost_mode_active": game_instance.is_ghost_mode_active(),
+            "living_players": [
+                {"id": p.id, "name": p.name} for p in game_instance.get_living_players()
+            ],
+            "lynch_target_id": game_instance.lynch_target_id,
+            "lynch_target_name": lynch_target_name,
+            "message_history": game_instance.message_history,
+            "mode": game_instance.mode,
+            "phase": game_instance.phase,
+            "phase_end_time": game_instance.phase_end_time,
+            "rematch_vote_count": len(game_instance.rematch_votes),
+            "sleep_vote_count": len(game_instance.end_day_votes),
+            "timers_disabled": game_instance.timers_disabled,
+            "total_accusation_duration": game_instance.timer_durations.get(
+                PHASE_ACCUSATION, 90
+            ),
+        }
     except Exception as e:
         print(f"DEBUG ERROR in Public Data: {e}")
         return None
 
-    remaining_time = 0
-    if game_instance.phase_start_time and not game_instance.timers_disabled:
-        key = game_instance.phase
-        if key in game_instance.timer_durations:
-            elapsed = time.time() - game_instance.phase_start_time
-            remaining_time = max(0, game_instance.timer_durations[key] - elapsed)
-
-    lynch_target_name = None
-    if game_instance.lynch_target_id:
-        target_obj = game_instance.players.get(game_instance.lynch_target_id)
-        if target_obj:
-            lynch_target_name = target_obj.name
+def generate_player_payload(player_id, player_wrapper=None, public_data=None):
+    """
+    Generates the specific game state payload for a given player ID.
+    Accepts pre-calculated public_data for optimization.
+    """
+    # 1. Use provided Public Data or generate it (CPU Optimization)
+    if public_data is None:
+        public_data = get_public_game_state()
+    if not public_data:
+        return None
 
     # 2. Private Data (Specific to the requested player_id)
     engine_player_obj = game_instance.players.get(player_id)
@@ -162,17 +206,6 @@ def generate_player_payload(player_id, player_wrapper=None):
         }
         night_ui = engine_player_obj.role.get_night_ui_schema(engine_player_obj, ctx)
 
-    acted_ids = []
-    if game_instance.phase == PHASE_NIGHT:
-        acted_ids = list(game_instance.turn_history)
-    elif game_instance.phase == PHASE_ACCUSATION:
-        # In Accusation, acting = Accusing someone OR Voting to sleep
-        acted_ids = list(
-            set(game_instance.pending_actions.keys()) | game_instance.end_day_votes
-        )
-    elif game_instance.phase == PHASE_LYNCH:
-        acted_ids = list(game_instance.pending_actions.keys())
-
     # Retrieve Player Actions
     my_phase_target_id = game_instance.get_player_phase_choice(player_id)
     my_phase_metadata = game_instance.get_player_phase_choice(player_id, True)
@@ -193,33 +226,21 @@ def generate_player_payload(player_id, player_wrapper=None):
         valid_targets_data = [{"id": t.id, "name": t.name} for t in targets]
 
     # 3. Admin Status
-    # If a wrapper was passed (broadcast), use it. If not (PnP request), check global dict
     is_admin = False
     if player_wrapper:
         is_admin = player_wrapper.is_admin
     else:
-        # Fallback lookup if wrapper not passed (e.g. PnP)
         wrapper = game["players"].get(player_id)
         if wrapper:
             is_admin = wrapper.is_admin
 
-    return {
-        "accusation_counts": accusation_counts,
-        "acted_players": acted_ids,
-        "admin_only_chat": game_instance.admin_only_chat,
-        "all_players": all_players_data,
-        "duration": remaining_time,
-        "game_over_data": game_instance.game_over_data,
-        "ghost_mode_active": game_instance.is_ghost_mode_active(),
+    # 4. Merge Private Data with Public Data
+    # We copy public_data to avoid modifying the cached dictionary
+    payload = public_data.copy()
+
+    payload.update({
         "is_admin": is_admin,
         "is_alive": is_alive,
-        "living_players": [
-            {"id": p.id, "name": p.name} for p in game_instance.get_living_players()
-        ],
-        "lynch_target_id": game_instance.lynch_target_id,
-        "lynch_target_name": lynch_target_name,
-        "message_history": game_instance.message_history,
-        "mode": game_instance.mode,
         "my_lynch_vote": my_phase_target_id,
         "my_phase_target_id": my_phase_target_id,
         "my_phase_metadata": my_phase_metadata,
@@ -227,29 +248,28 @@ def generate_player_payload(player_id, player_wrapper=None):
         "my_rematch_vote": player_id in game_instance.rematch_votes,
         "my_sleep_vote": my_sleep_vote,
         "night_ui": night_ui,
-        "phase": game_instance.phase,
-        "phase_end_time": game_instance.phase_end_time,
-        "rematch_vote_count": len(game_instance.rematch_votes),
-        "sleep_vote_count": len(game_instance.end_day_votes),
         "this_player_id": player_id,
-        "timers_disabled": game_instance.timers_disabled,
-        "total_accusation_duration": game_instance.timer_durations.get(
-            PHASE_ACCUSATION, 90
-        ),
         "valid_targets": valid_targets_data,
         "your_role": role_str,
-    }
+    })
 
+    return payload
 
 def broadcast_game_state():
-    """Syncs the FULL Engine state to all clients."""
+    """Syncs the FULL Engine state to all clients efficiently."""
+    # 1. Generate Public Data Once (CPU Optimization)
+    public_data = get_public_game_state()
+    if not public_data:
+        return
+
     for player_id, player_wrapper in game["players"].items():
         if not player_wrapper.sid:
             continue
-        payload = generate_player_payload(player_id, player_wrapper)
+
+        # 2. Generate private payload using cached public data
+        payload = generate_player_payload(player_id, player_wrapper, public_data=public_data)
         if payload:
             socketio.emit("game_state_sync", payload, to=player_wrapper.sid)
-
 
 # --- Timer System ---
 game_loop_running = False
@@ -919,14 +939,18 @@ def handle_pnp_action(data):
 @socketio.on("client_ready_for_game")
 def handle_client_ready_for_game():
     """
-    Simple handler: Just sync the game state.
-    We no longer wait for all players to 'ready up' before starting logic.
+    Syncs the game state for the specific client requesting it.
     """
     player_id = session.get("player_id")
     if not player_id or player_id not in game["players"]:
         return
-    broadcast_game_state()
 
+    # OPTIMIZATION: Only update the requester, not the whole server
+    player_wrapper = game["players"][player_id]
+    payload = generate_player_payload(player_id, player_wrapper)
+
+    if payload:
+        emit("game_state_sync", payload, to=player_wrapper.sid)
 
 @socketio.on("hero_choice")
 def handle_hero_choice(data):
@@ -1075,7 +1099,7 @@ def resolve_night():
                 if reason == "Werewolf meat":
                     hist_msg = f"🐾 Remnants of a body were found! <strong>{name}</strong> was killed 🫀 They were a <strong>{role}</strong> ⚰️"
                 if reason == "Witch Poison":
-                    hist_msg = f"☣️ A dissolving body was found! ☠ <strong>{name}</strong> was killed. Role: {role} ⚰️"
+                    hist_msg = f"☣️ A dissolving body was found! ☠ <strong>{name}</strong> was killed. They were a <strong>{role}</strong> ⚰️"
                 elif reason == "Love Pact":
                     hist_msg = f"💕 <strong>{name}</strong> died of a broken heart! 😈 Role: {role} ⚰️"
                 elif reason == "Retaliation":
@@ -1083,7 +1107,7 @@ def resolve_night():
                 elif reason == "revealed_werewolf":
                     hist_msg = f"☠ <strong>{name}</strong> was revealed to be a <strong>{role}</strong> and strung up! ⚰️"
                 elif reason == "revealed_wrongly":
-                    hist_msg = f"☠ <strong>{name}</strong> revealed a <strong>Villager</strong> and died of embarrassment! ⚰️"
+                    hist_msg = f"☠ <strong>{name}</strong> revealed a <strong>Villager</strong> and died of shame! ⚰️"
                 elif reason == "Serial Killer":
                     hist_msg = f"🔪 A mutilated body was found! <strong>{name}</strong> was the victim of a <strong>Serial Killer</strong>! 🩸 They were a <strong>{role}</strong> ⚰️"
                 elif "Honeypot" in reason:
