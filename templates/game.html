@@ -1,4 +1,4 @@
-<!-- Version: 4.8.6 -->
+<!-- Version: 4.8.6a -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -275,6 +275,13 @@
         font-size: 0.9em;
         color: #aaa;
       }
+      /* New Private Message Style */
+      .private-msg {
+        background-color: #1a1a2e;
+        border-left: 3px solid #7c4dff;
+        padding: 5px;
+        margin-left: 5px;
+      }
       .chat-container {
         margin-top: 20px;
         display: flex;
@@ -451,6 +458,7 @@
         opacity: 1;
       }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
     <script src="{{ url_for('static', filename='role_data.js') }}"></script>
   </head>
@@ -646,16 +654,22 @@
       };
 
       // --- Helper Functions ---
-      function logMessage(message) {
+      function logMessage(message, isPrivate = false) {
         let div = document.createElement("div");
-        div.innerHTML = message;
+        div.innerHTML = DOMPurify.sanitize(message);
+        if (isPrivate) {
+          div.classList.add("private-msg");
+        }
         els.log.prepend(div);
       }
 
       function resetLog(history) {
-        els.log.innerHTML = ""; // Clear existing logs (including private ones from previous player)
+        if (isPnP && els.log.children.length > 0) {
+          els.log.innerHTML = "";
+        }
+        // Clear existing logs (including private ones from previous player)
         if (history && Array.isArray(history)) {
-          history.forEach(logMessage); // Repopulate with public events
+          history.forEach((msg) => logMessage(msg, false));
         }
         els.log.scrollTop = els.log.scrollHeight;
       }
@@ -712,25 +726,42 @@
       }
 
       // --- Pass-and-Play (PnP) Logic ---
+      function doForcePhase() {
+        console.log("[PnP] Forcing Next Phase via Admin command...");
+        // Fallback: send simple empty payload, but we could add metadata if needed
+        socket.emit("admin_next_phase", { is_pnp: true });
+        closeOverlay();
+      }
+
       function confirmAdvancePhase() {
-        /* els.pnpOverlay.style.display = "flex";
-        document.getElementById("overlay-title").innerText = "Done";
-        document.getElementById("overlay-title").style.color = "#4caf50";
-        document.getElementById("overlay-msg").innerText = "Action Recorded.";
-        document.getElementById("overlay-actions").innerHTML =
-          "<p>Please pass the device...</p>";
-        document.getElementById("overlay-action-area").innerHTML = "";
+        const overlay = els.pnpOverlay;
+        const title = document.getElementById("overlay-title");
+        const msg = document.getElementById("overlay-msg");
+        const actions = document.getElementById("overlay-actions");
+        const actionArea = document.getElementById("overlay-action-area");
 
-        setTimeout(() => requestGameSync(), 3000);
-        */
+        // Clear any previous injected buttons
+        if (actionArea) actionArea.innerHTML = "";
 
-        if (
-          confirm(
-            "⚠️ Advance the game to the next phase?\n(This will skip remaining turns)",
-          )
-        ) {
-          socket.emit("admin_next_phase");
-        }
+        // 1. Show Overlay
+        overlay.style.display = "flex";
+
+        // 2. Set Content
+        title.innerText = "Force Next Phase";
+        title.style.color = "#ff9800"; // Orange warning color
+        msg.innerHTML =
+          "⚠️ <strong>Warning:</strong><br>This will skip remaining turns for this phase.<br>Are you sure?";
+
+        // 3. Define Actions
+        // UPDATED: Calls named function doForcePhase() for better reliability
+        actions.innerHTML = `
+                  <button class="big-btn" style="background-color: #d32f2f;" onclick="doForcePhase()">
+                      Yes, Force Next Phase
+                  </button>
+                  <button class="big-btn cancel" style="background-color: #2222dd" onclick="closeOverlay()">
+                      Cancel
+                  </button>
+              `;
       }
 
       function requestGameSync() {
@@ -1163,9 +1194,9 @@
             0,
             Math.ceil(endTimeStamp - Date.now() / 1000),
           );
-          const m = Math.floor(timeLeft / 60),
-            s = Math.floor(timeLeft % 60);
-          els.timer.textContent = `Time left: ${m}:${("0" + s).slice(-2)}`;
+          const min = Math.floor(timeLeft / 60),
+            sec = Math.floor(timeLeft % 60);
+          els.timer.textContent = `Time left: ${min}:${("0" + sec).slice(-2)}`;
           if (timeLeft <= 0) {
             clearInterval(timerInterval);
             els.timer.textContent = "Time's up!";
@@ -1294,7 +1325,7 @@
         if (data.message_history) publicHistory = data.message_history;
 
         if (data.message_history && els.log.innerHTML.trim() === "") {
-          data.message_history.forEach(logMessage);
+          data.message_history.forEach((msg) => logMessage(msg, false));
           // Scroll to bottom
           els.log.scrollTop = els.log.scrollHeight;
         }
@@ -1366,18 +1397,22 @@
       });
 
       socket.on("phase_change", (data) => {
+        // RESTORED: UX Alert
         const msg = `A new phase has begun: <strong>${data.phase.replace(/_/g, " ")}</strong>.`;
-
-        if (publicHistory) publicHistory.push(msg);
-        logMessage(msg);
-
-        socket.emit("client_ready_for_game");
+        publicHistory.push(msg);
+        logMessage(msg, false);
+        setTimeout(() => {
+          socket.emit("client_ready_for_game");
+        }, 500);
       });
 
-      socket.on("message", (data) => logMessage(data.text));
+      socket.on("message", (data) => {
+        logMessage(data.text, false);
+      });
+
       socket.on("new_message", (data) => {
         const div = document.createElement("div");
-        div.innerHTML = data.text;
+        div.innerHTML = DOMPurify.sanitize(data.text);
         const target = document.getElementById("game-chat-messages");
         const overTarget = document.getElementById("game-over-chat-messages");
 
@@ -1399,14 +1434,6 @@
         setChatMode(data.admin_only_chat, data.phase);
       });
 
-      socket.on("seer_result", (data) => {
-        const m = `🔮 Your vision reveals that <strong>${data.name}</strong> is a <strong>${data.role}</strong>.`;
-        logMessage(m);
-        lastSeerResult = m;
-        // In Standard UI, renderActionUI handles displaying this if active.
-        els.action.innerHTML = `<p>${m}</p>`;
-      });
-
       socket.on("pnp_action_confirmed", () => {
         // We add the actor to 'hasActed' set to gray out button on Hub
         if (myPlayerId) hasActed.add(myPlayerId);
@@ -1419,27 +1446,40 @@
           "<p>Please pass the device...</p>";
         document.getElementById("overlay-action-area").innerHTML = "";
 
-        setTimeout(() => requestGameSync(), 3000);
+              setTimeout(() => requestGameSync(), 2000);
         */
       });
 
       socket.on("night_result_kill", (data) => {
-        if (data.message) logMessage(data.message);
+        if (data.message) {
+          logMessage(data.message, false);
+          console.log("publicHistory add: ${data.message}");
+          publicHistory.push(data.message);
+        }
         // Update local state if I am the one who died
         if (data.killed_player && myPlayerId === data.killed_player.id) {
           isAlive = false;
         }
       });
 
-      socket.on("werewolf_team_info", (data) =>
-        logMessage(
-          data.teammates.length
-            ? `You are a Werewolf 🐺 Your fellow Werewolves are: <strong>${data.teammates.join(
-                ", ",
-              )}</strong>.`
-            : "You are the lone Werewolf.",
-        ),
-      );
+      socket.on("seer_result", (data) => {
+        const msg = `🔮 Your vision reveals that <strong>${data.name}</strong> is a <strong>${data.role}</strong>.`;
+        logMessage(msg, true);
+        lastSeerResult = msg;
+        // In Standard UI, renderActionUI handles displaying this if active.
+        els.action.innerHTML = `<p>${msg}</p>`;
+      });
+
+      socket.on("cupid_info", (data) => {
+        logMessage(data.message, true);
+      });
+
+      socket.on("werewolf_team_info", (data) => {
+        const msg = data.teammates.length
+          ? `You are a Werewolf 🐺 Your fellow Werewolves are: <strong>${data.teammates.join(", ")}</strong>.`
+          : "You are the lone Werewolf 🐺";
+        logMessage(msg, true);
+      });
 
       socket.on("lynch_vote_result", (data) => {
         let msg =
@@ -1449,15 +1489,16 @@
                 data.summary.yes.join(", ") || "None"
               }<br>Voted No: ${data.summary.no.join(", ") || "None"}</div>`
             : "");
-        if (publicHistory) publicHistory.push(msg);
-        logMessage(msg);
+        // Use standard logging
+        publicHistory.push(msg);
+        logMessage(msg, false);
         if (data.killed_id === myPlayerId) isAlive = false;
       });
 
       socket.on("accusation_made", (data) => {
         msg = `🫵 <strong>${data.accuser_name}</strong> accuses <strong>${data.accused_name}</strong>!`;
-        if (publicHistory) publicHistory.push(msg);
-        logMessage(msg);
+        publicHistory.push(msg);
+        logMessage(msg, false);
 
         if (myPlayerId === data.accuser_id) {
           myPhaseTargetId =
@@ -1484,10 +1525,8 @@
 
       socket.on("lynch_vote_started", (data) => {
         msg = `⛓️ <strong>${data.target_name}</strong> is on trial!`;
-        logmessage(msg);
-        if (publicHistory) {
-          publicHistory.push(msg);
-        }
+        publicHistory.push(msg);
+        logMessage(msg, false);
 
         currentLynchTargetName = data.target_name;
         currentPhase = PHASE_LYNCH;

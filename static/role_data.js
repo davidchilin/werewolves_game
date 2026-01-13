@@ -1,5 +1,5 @@
 // static/role_data.js
-// v 4.8.4
+// v 4.8.6a
 
 const ROLE_DATA = {
   "Alpha Werewolf": {
@@ -15,7 +15,7 @@ const ROLE_DATA = {
     color: "#FF0000",
   },
   Bodyguard: {
-    short: "Choose a player to protect from Werewolves.",
+    short: "Chooses a player to protect from Werewolves.",
     long: "Every night, you may choose one player to guard. If the Werewolves attack that player, your protection saves them, and nobody dies. You cannot protect the same person two nights in a row.",
     rating: 0.5,
     color: "#4000C0",
@@ -27,19 +27,19 @@ const ROLE_DATA = {
     color: "#990066",
   },
   "Demented Villager": {
-    short: "Solo win if last one standing.",
+    short: "Solo wins if last one standing.",
     long: "You have no special powers and appear as a Villager to the Seer. However, ChatGPT convinced you to kill everyone for the WIN. Note you won't be last if left with a Monster, Honeypot, Hunter, Serial Killer, and Wild Child.",
     rating: 0.2,
     color: "#660099",
   },
   Fool: {
-    short: "Your goal is to get yourself lynched by the village.",
+    short: "Tries to get themselves lynched by the village.",
     long: "You are a neutral chaos agent. You are not part of the villagers nor the werewolves. Although your ultimate win is successful if you convince the town to Lynch you.",
     rating: -0.2,
     color: "#990066",
   },
   Honeypot: {
-    short: "A trap role. If you're killed, your killer dies too.",
+    short: "A trap role. If killed, their killer dies too.",
     long: "You are a Villager, but dangerous to touch. If you are killed, whether by Werewolves or a Lynch mob — they will pay with their life.",
     rating: 0,
     color: "#800080",
@@ -51,25 +51,25 @@ const ROLE_DATA = {
     color: "#4D00B3",
   },
   Lawyer: {
-    short: "Choose a client to be unlynchable the next day.",
+    short: "Chooses a client to be unlynchable the next day.",
     long: "You work to defend the accused. At night, you select a player to be your client. If that player goes to lynch trial, the lynching will fail, and they will survive.",
     rating: 0.2,
     color: "#660099",
   },
   Martyr: {
-    short: "Gift a player to receive a 2nd life upon your death.",
+    short: "Gifts a player to receive a 2nd life upon their death.",
     long: "At night you can select a player to absorb your life force upon your death.",
     rating: 0.2,
     color: "#660099",
   },
   Mayor: {
-    short: "Your vote can break a tie during accusations.",
+    short: "Vote can break a tie during accusations.",
     long: "You are the leader of the village. Because of your political influence, your vote carries tie-breaking weight during the daily accusation. You can secretly announce your successor. Your successor can only name their successor if their role has no night actions, like a Villager or Monster.",
     rating: 0.4,
     color: "#4D00B3",
   },
   Monster: {
-    short: "Solo win if last one standing. Teamless",
+    short: "Solo wins if last one standing. Teamless",
     long: "You are a supernatural beast. You are not on the Villager team or the Werewolf team; you are on your own. You are immune to the Werewolf attacks and are seen as a Werewolf. Solo win if alive with maximum of one living Werewolf.",
     rating: 0.3,
     color: "#5A00A6",
@@ -100,7 +100,7 @@ const ROLE_DATA = {
     color: "#0000FF",
   },
   "Serial Killer": {
-    short: "Kill one person nightly. Win if last one standing.",
+    short: "Kills one person nightly. Wins if last one standing.",
     long: "You are a third party. You do not win with the Villagers or the Werewolves. Every night, you choose a victim to mutilate. Your kills cannot be stopped by the Bodyguard. You can only solo win with maximum of one other living human.",
     rating: -0.2,
     color: "#990066",
@@ -112,13 +112,13 @@ const ROLE_DATA = {
     color: "#B3004D",
   },
   "Tough Villager": {
-    short: "You are a Villager who can survive one death.",
+    short: "Villager who can survive one death.",
     long: "You have no active powers, but you are wearing armor. The first time you die, you will mysteriously survive. You only really die upon your second death.",
     rating: 0.7,
     color: "#2600D9",
   },
   "Tough Werewolf": {
-    short: "You will survive the first attempt on their life.",
+    short: "Will survive the first attempt on their life.",
     long: "You hunt with the pack. If a Hunter shoots you, a Witch poisons you, Lynch-mob targets you, or the Serial Killer attacks you, you survive that first strike.",
     rating: -0.8,
     color: "#E6001A",
@@ -136,13 +136,13 @@ const ROLE_DATA = {
     color: "#CC0033",
   },
   "Wild Child": {
-    short: "Pick a role model. If they die, you become a Werewolf.",
+    short: "Picks a role model. If they die, child becomes a Werewolf.",
     long: "On the first night, you choose another player to be your 'Role Model.' As long as they live, and nurture you, you stay human. If they die, you become a Werewolf and join the pack.",
     rating: -0.3,
     color: "#A6005A",
   },
   Witch: {
-    short: "You have two potions: one to kill, one to heal.",
+    short: "Has two potions: one to kill, one to heal.",
     long: "You wake up before the Werewolves. You can use your Healing Potion to possibly save the victim if you guess right, or your Poison Potion to kill another player of your choice. You can use each potion only once per game.",
     rating: 0.3,
     color: "#5A00A6",

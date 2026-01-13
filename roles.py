@@ -1,10 +1,10 @@
 """
 roles.py
-Version: 4.8.5
+Version: 4.8.6a
 Defines the behavior of all roles using a generic base class and specific subclasses.
 """
 import random
-from config import *
+from config import VILLAGER_PROMPTS
 
 # --- Roles ---
 # Simplified keys, add manually to lobby.html
@@ -61,27 +61,17 @@ def register_role(cls):
 
 # 2. The Base Generic Class
 class Role:
+    name_key = "Unknown"
+    description_key = "desc_generic"
+    team = "Neutral"  # Villager, Werewolf, Neutral
+    priority = 8  # 0 = First (e.g., Bodyguard), 50 = Last (e.g.,Werewolf)
+
     def __init__(self):
         # Basic Metadata
-        self.name_key = "Unknown"
-        self.description_key = "desc_generic"
-        self.team = "Neutral"  # Villager, Werewolf, Neutral
+        self.is_night_active = False
         self.player_id = None
 
-        # Logic Settings
-        self.priority = 8  # 0 = First (e.g., Bodyguard), 50 = Last (e.g.,Werewolf)
-        self.is_night_active = False
-
-    VILLAGER_PROMPTS = [
-        "Who is most likely to have an only fans channel?",
-        "Who would die first in a zombie apocalypse?",
-        "Who looks the most suspicious right now?",
-        "Who is the most lightweight drinker?",
-        "Who has the highest body count?",
-        "Who has the cutest smile?",
-        "Who is a finger licker?",
-        "Dim didi dum :)",
-    ]
+    VILLAGER_PROMPTS = VILLAGER_PROMPTS
 
     def on_assign(self, player_obj):
         """
@@ -154,11 +144,12 @@ class Role:
 
 @register_role
 class Villager(Role):
+    name_key = ROLE_VILLAGER
+    description_key = "desc_villager"
+    team = "Villagers"
+
     def __init__(self):
         super().__init__()
-        self.name_key = ROLE_VILLAGER
-        self.description_key = "desc_villager"
-        self.team = "Villagers"
         self.is_night_active = False
 
     def night_action(self, player_obj, target_player_obj, game_context):
@@ -173,12 +164,13 @@ class Villager(Role):
 
 @register_role
 class Werewolf(Role):
+    name_key = ROLE_WEREWOLF
+    description_key = "desc_werewolf"
+    team = "Werewolves"
+    priority = 45  # Wolves attack after defensive roles
+
     def __init__(self):
         super().__init__()
-        self.name_key = ROLE_WEREWOLF
-        self.description_key = "desc_werewolf"
-        self.team = "Werewolves"
-        self.priority = 45  # Wolves attack after defensive roles
         self.is_night_active = True
 
     def night_action(self, player_obj, target_player_obj, game_context):
@@ -199,12 +191,13 @@ class Werewolf(Role):
 
 @register_role
 class Seer(Role):
+    name_key = ROLE_SEER
+    description_key = "desc_seer"
+    team = "Villagers"
+    priority = 3  # Seer acts early
+
     def __init__(self):
         super().__init__()
-        self.name_key = ROLE_SEER
-        self.description_key = "desc_seer"
-        self.team = "Villagers"
-        self.priority = 3  # Seer acts early
         self.is_night_active = True
 
     def investigate(self, target_player):
@@ -239,9 +232,10 @@ class Seer(Role):
 
 @register_role
 class Alpha_Werewolf(Werewolf):
+    name_key = ROLE_ALPHA_WEREWOLF
+
     def __init__(self):
         super().__init__()
-        self.name_key = ROLE_ALPHA_WEREWOLF
 
     def check_win_condition(self, player_obj, game_context):
         # Wins if is the ONLY one left alive with max one non-monster alive
@@ -265,12 +259,13 @@ class Alpha_Werewolf(Werewolf):
 
 @register_role
 class Bodyguard(Role):
+    name_key = ROLE_BODYGUARD
+    description_key = "desc_bodyguard"
+    team = "Villagers"
+    priority = 17  # Priority PROTECT BEFORE ATTACK
+
     def __init__(self):
         super().__init__()
-        self.name_key = ROLE_BODYGUARD
-        self.description_key = "desc_bodyguard"
-        self.team = "Villagers"
-        self.priority = 17  # Priority PROTECT BEFORE ATTACK
         self.is_night_active = True
         self.last_protected_id = None
 
@@ -307,10 +302,11 @@ class Bodyguard(Role):
 
 @register_role
 class Cupid(Villager):
+    name_key = ROLE_CUPID
+    priority = 9  # Very early, before wolves
+
     def __init__(self):
         super().__init__()
-        self.name_key = ROLE_CUPID
-        self.priority = 9  # Very early, before wolves
         self.is_night_active = True
 
     def night_action(self, player_obj, target_player_obj, game_context):
@@ -367,12 +363,13 @@ class Cupid(Villager):
 
 @register_role
 class Demented(Villager):
-    # Wins if last one alive
+    name_key = ROLE_DEMENTED_VILLAGER
+    team = "Neutral"  # Wins alone
+
     def __init__(self):
         super().__init__()
-        self.name_key = ROLE_DEMENTED_VILLAGER
-        self.team = "Neutral"  # Wins alone
 
+    # Wins if last one alive
     def check_win_condition(self, player_obj, game_context):
         # win if alive and max one non serial killer villager alive
         if not player_obj.is_alive:
@@ -401,19 +398,21 @@ class Demented(Villager):
 
 @register_role
 class Fool(Villager):
+    name_key = ROLE_FOOL
+    team = "Neutral"
+
     # Wins if lynched
     def __init__(self):
         super().__init__()
-        self.name_key = ROLE_FOOL
-        self.team = "Neutral"
         # Logic handled in game_engine.resolve_lynch_vote
 
 
 @register_role
 class Honeypot(Villager):
+    name_key = ROLE_HONEYPOT
+
     def __init__(self):
         super().__init__()
-        self.name_key = "Honeypot"
 
     def on_death(self, player_obj, game_context):
         reason = game_context.get("reason", "")
@@ -441,7 +440,7 @@ class Honeypot(Villager):
                 )
                 msg = "Honeypot Retaliation"
                 if target_player_obj:
-                    msg = f"Honeypot retaliation: {target_player_obj.name} selected from lynch mob."
+                    msg = f"Honeypot retaliation: <strong>{target_player_obj.name}</strong> selected from lynch mob. They were a {target_player_obj.role.name_key}!"
                     print(msg)
                 return {"kill": target_id, "reason": msg}
 
@@ -493,13 +492,14 @@ class Honeypot(Villager):
 
 @register_role
 class Hunter(Role):
+    name_key = ROLE_HUNTER
+    team = "Villagers"
+    priority = 48
+
     def __init__(self):
         super().__init__()
-        self.name_key = ROLE_HUNTER
-        self.team = "Villagers"
         self.is_night_active = True
         self.failsafe_id = None
-        self.priority = 48
 
     def night_action(self, player_obj, target_player_obj, game_context):
         # Store the target, do NOT kill yet.
@@ -533,11 +533,12 @@ class Hunter(Role):
 @register_role
 class Backlash_Werewolf(Hunter):
     # Same logic as Hunter, just Werewolf team
+    name_key = ROLE_BACKLASH_WEREWOLF
+    team = "Werewolves"
+    priority = 50
+
     def __init__(self):
         super().__init__()
-        self.name_key = ROLE_BACKLASH_WEREWOLF
-        self.team = "Werewolves"
-        self.priority = 50
         self.failsafe_id = None
 
     def get_night_ui_schema(self, player_obj, game_context):
@@ -584,12 +585,13 @@ class Backlash_Werewolf(Hunter):
 
 @register_role
 class Lawyer(Villager):
+    name_key = ROLE_LAWYER
+    description_key = "desc_lawyer"
+    priority = 14  # Acts around the same time as Bodyguard
+
     def __init__(self):
         super().__init__()
-        self.name_key = ROLE_LAWYER
-        self.description_key = "desc_lawyer"
         self.is_night_active = True
-        self.priority = 14  # Acts around the same time as Bodyguard
 
     def night_action(self, player_obj, target_player_obj, game_context):
         # Apply the protection effect
@@ -614,9 +616,10 @@ class Lawyer(Villager):
 
 @register_role
 class Martyr(Villager):
+    name_key = "Martyr"
+
     def __init__(self):
         super().__init__()
-        self.name_key = "Martyr"
         self.is_night_active = True
         self.failsafe_id = None
 
@@ -661,11 +664,12 @@ class Martyr(Villager):
 @register_role
 class Mayor(Villager):
     # Mayor tag is transferable to not night active like villager, demented villager, fool, monster, tough_villager
+    name_key = ROLE_MAYOR
+    description_key = "desc_mayor"
+    priority = 12
+
     def __init__(self):
         super().__init__()
-        self.name_key = ROLE_MAYOR
-        self.description_key = "desc_mayor"
-        self.priority = 12
         self.is_night_active = True
         self.next_mayor_id = "not_set_yet"
 
@@ -755,10 +759,11 @@ class Mayor(Villager):
 @register_role
 class Monster(Villager):
     # seen as Werewolf, but cannot be killed by Werewolf
+    name_key = ROLE_MONSTER
+    team = "Monster"
+
     def __init__(self):
         super().__init__()
-        self.name_key = ROLE_MONSTER
-        self.team = "Monster"
 
     def on_assign(self, player_obj):
         # This is checked by the Engine when calculating deaths
@@ -783,14 +788,14 @@ class Monster(Villager):
 
 @register_role
 class Prostitute(Role):
-    # todo make it so player visiting gets night actions skipped
+    name_key = ROLE_PROSTITUTE
+    priority = 5
+    team = "Villagers"
+
     def __init__(self):
         super().__init__()
-        self.is_night_active = True
-        self.name_key = ROLE_PROSTITUTE
-        self.priority = 5
         self.slept_with = set()
-        self.team = "Villagers"
+        self.is_night_active = True
 
     def night_action(self, player_obj, target_player_obj, game_context):
         player_obj.visiting_id = target_player_obj.id
@@ -827,12 +832,12 @@ class Prostitute(Role):
 
 @register_role
 class Random_Seer(Seer):
+    name_key = ROLE_RANDOM_SEER
+
     def __init__(self):
         super().__init__()
-        self.name_key = ROLE_RANDOM_SEER
         # insane, naive, paranoid, normal
         self.sanity = random.choice(["insane", "naive", "paranoid", "normal"])
-        print(f"RandomSeer spawned as {self.sanity}")
 
     def investigate(self, target_player):
         actual = super().investigate(target_player)  # "Werewolf" or "Villager"
@@ -849,12 +854,13 @@ class Random_Seer(Seer):
 
 @register_role
 class Revealer(Role):
+    name_key = ROLE_REVEALER
+    team = "Villagers"
+    priority = 25
+
     def __init__(self):
         super().__init__()
-        self.name_key = ROLE_REVEALER
-        self.team = "Villagers"
         self.is_night_active = True
-        self.priority = 25
 
     def night_action(self, player_obj, target_player_obj, game_context):
         # If wolf -> kill wolf. Else -> kill self.
@@ -889,11 +895,12 @@ class Revealer(Role):
 
 @register_role
 class Serial_Killer(Role):
+    name_key = "Serial_Killer"
+    team = "Serial_Killer"
+    priority = 15  # Kills before wolves
+
     def __init__(self):
         super().__init__()
-        self.name_key = "Serial_Killer"
-        self.team = "Serial_Killer"
-        self.priority = 15  # Kills before wolves
         self.is_night_active = True
 
     def night_action(self, player_obj, target_player_obj, game_context):
@@ -944,11 +951,12 @@ class Serial_Killer(Role):
 
 @register_role
 class Sorcerer(Role):
+    name_key = "Sorcerer"
+    team = "Werewolves"  # Wins with wolves
+    priority = 11  # Acts around Seer time
+
     def __init__(self):
         super().__init__()
-        self.name_key = "Sorcerer"
-        self.team = "Werewolves"  # Wins with wolves
-        self.priority = 11  # Acts around Seer time
         self.is_night_active = True
 
     def investigate(self, target_player):
@@ -984,9 +992,10 @@ class Sorcerer(Role):
 
 @register_role
 class Tough_Villager(Villager):
+    name_key = ROLE_TOUGH_VILLAGER
+
     def __init__(self):
         super().__init__()
-        self.name_key = ROLE_TOUGH_VILLAGER
 
     def on_assign(self, player_obj):
         player_obj.status_effects.append("2nd_life")
@@ -994,9 +1003,10 @@ class Tough_Villager(Villager):
 
 @register_role
 class Tough_Werewolf(Werewolf):
+    name_key = ROLE_TOUGH_WEREWOLF
+
     def __init__(self):
         super().__init__()
-        self.name_key = ROLE_TOUGH_WEREWOLF
 
     def on_assign(self, player_obj):
         player_obj.status_effects.append("2nd_life")
@@ -1004,9 +1014,10 @@ class Tough_Werewolf(Werewolf):
 
 @register_role
 class Wild_Child(Villager):
+    name_key = ROLE_WILD_CHILD
+
     def __init__(self):
         super().__init__()
-        self.name_key = ROLE_WILD_CHILD
         self.role_model_id = None
         self.transformed = False
         self.is_night_active = True
@@ -1072,10 +1083,11 @@ class Wild_Child(Villager):
 
 @register_role
 class Witch(Villager):
+    name_key = ROLE_WITCH
+    priority = 20  # After Seer, Before Wolves to set heal
+
     def __init__(self):
         super().__init__()
-        self.name_key = ROLE_WITCH
-        self.priority = 20  # After Seer, Before Wolves to set heal
         self.is_night_active = True
 
         # Specific State

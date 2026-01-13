@@ -1,6 +1,6 @@
 """
 app.py
-Version: 4.8.6
+Version: 4.8.6a
 """
 import logging
 import os
@@ -20,7 +20,7 @@ from flask import (
 )
 from flask_socketio import SocketIO, emit, join_room
 
-from config import *
+from config import GAME_DEFAULTS
 from game_engine import *
 from roles import *
 
@@ -60,7 +60,7 @@ game = {
 }
 
 lobby_state = {
-    "selected_roles": ["Villager", "Werewolf", "Seer"],
+    "selected_roles": GAME_DEFAULTS["DEFAULT_ROLES"],
     "settings": {},
 }
 
@@ -147,12 +147,9 @@ def generate_player_payload(player_id, player_wrapper=None):
     if not engine_player_obj:
         return None
 
-    role_str = "Unknown"
+    role_str = engine_player_obj.role.name_key if engine_player_obj.role else "Unknown"
     is_alive = engine_player_obj.is_alive
     night_ui = None
-
-    if engine_player_obj.role:
-        role_str = engine_player_obj.role.name_key
 
     if (
         game_instance.phase == PHASE_NIGHT
@@ -181,7 +178,7 @@ def generate_player_payload(player_id, player_wrapper=None):
     my_phase_metadata = game_instance.get_player_phase_choice(player_id, True)
     my_sleep_vote = game_instance.has_player_voted_to_sleep(player_id)
 
-    # Resolve Names
+    # Resolve Target Names for UI feedback
     my_phase_target_name = None
     if my_phase_target_id:
         target_obj = game_instance.players.get(my_phase_target_id)
@@ -201,7 +198,7 @@ def generate_player_payload(player_id, player_wrapper=None):
     if player_wrapper:
         is_admin = player_wrapper.is_admin
     else:
-        # Fallback look up
+        # Fallback lookup if wrapper not passed (e.g. PnP)
         wrapper = game["players"].get(player_id)
         if wrapper:
             is_admin = wrapper.is_admin
@@ -301,7 +298,7 @@ def perform_tally_accusations():
         socketio.emit(
             "lynch_vote_result", {"message": outcome["message"]}, to=game["game_code"]
         )
-        socketio.sleep(4)
+        socketio.sleep(GAME_DEFAULTS["PAUSE_DURATION"])
         game_instance.set_phase(PHASE_ACCUSATION)
         broadcast_game_state()
 
@@ -311,7 +308,7 @@ def perform_tally_accusations():
         socketio.emit(
             "lynch_vote_result", {"message": outcome["message"]}, to=game["game_code"]
         )
-        socketio.sleep(4)
+        socketio.sleep(GAME_DEFAULTS["PAUSE_DURATION"])
         broadcast_game_state()
 
 
@@ -338,6 +335,18 @@ def index():
         code = request.form.get("game_code", "").strip().upper()
         if not name:
             return render_template("index.html", error="name is required.")
+        if len(name) > 20:
+            return render_template(
+                "index.html", error="Name must be 20 characters or less."
+            )
+        if not code:
+            return render_template("index.html", error="Game code is required.")
+        if not code.isalnum():
+            return render_template(
+                "index.html", error="Game code must be alphanumeric."
+            )
+        if len(code) > 20:
+            return render_template("index.html", error="Game code is too long.")
         if code != game["game_code"]:
             return render_template("index.html", error="Invalid game code.")
         for p in game["players"].values():
@@ -436,7 +445,6 @@ def handle_admin_update_settings(data):
 
 @socketio.on("connect")
 def handle_connect(auth=None):
-    log_and_emit(f"===> A client connected. SID: {request.sid}")
     player_id = session.get("player_id")
     if not player_id:
         return
@@ -480,6 +488,7 @@ def handle_connect(auth=None):
         )
         broadcast_game_state()
         send_werewolf_info(player_id)
+        send_cupid_info(player_id)
 
 
 @socketio.on("disconnect")
@@ -500,12 +509,26 @@ def on_join(data):
     emit("update_player_list", {"players": current_players}, to=room)
 
 
+last_message_time = {}
+
+
 @socketio.on("send_message")
 def handle_send_message(data):
+    current_time = time.time()
+    last_time = last_message_time.get(request.sid, 0)
+
+    # Enforce 0.5 second cooldown
+    if current_time - last_time < 0.5:
+        return  # Silently ignore spam
+
+    last_message_time[request.sid] = current_time
+
     pid, p = get_player_by_sid(request.sid)
     if not p:
         return
     msg = data.get("message", "").strip()
+    if len(msg) > 500:
+        return emit("error", {"message": "Message too long."})
     if not msg:
         return
     phase = game_instance.phase
@@ -565,11 +588,38 @@ def handle_admin_toggle_chat():
 def handle_admin_set_timers(data):
     if request.sid != game["admin_sid"]:
         return
+
+    if "settings" not in lobby_state:
+        lobby_state["settings"] = {}
+
+    # Save disabled state if present
+    if "timers_disabled" in data:
+        if "timers" not in lobby_state["settings"]:
+            lobby_state["settings"]["timers"] = {}
+        lobby_state["settings"]["timers"]["timers_disabled"] = data["timers_disabled"]
+
+    # Save durations if present
+    key_map = {
+        "accusation": PHASE_ACCUSATION,
+        "night": PHASE_NIGHT,
+        "lynch_vote": PHASE_LYNCH,
+    }
+
+    # Check if we are updating specific durations (from the 'Set Timers' button)
+    # If so, save them to lobby_state too
+    has_duration_update = any(k in data for k in key_map.keys())
+    if has_duration_update:
+        if "timers" not in lobby_state["settings"]:
+            lobby_state["settings"]["timers"] = {}
+
+        for frontend_key in key_map.keys():
+            if frontend_key in data:
+                lobby_state["settings"]["timers"][frontend_key] = data[frontend_key]
+
     if "timers_disabled" in data:
         game_instance.timers_disabled = data["timers_disabled"]
         status = "Paused" if game_instance.timers_disabled else "Resumed"
         log_and_emit(f"Admin has {status} the timers.")
-
         # Broadcast the new state so UI updates immediately
         broadcast_game_state()
 
@@ -617,8 +667,13 @@ def handle_start_game(data):
 
     if request.sid != game.get("admin_sid") and not is_pnp:
         return emit("error", {"message": "Only the admin can start the game."})
-    if len(game["players"]) < 4:
-        return emit("error", {"message": "Cannot start with fewer than 4 players."})
+    if len(game["players"]) < GAME_DEFAULTS["MIN_PLAYERS"]:
+        return emit(
+            "error",
+            {
+                "message": "Cannot start with fewer than {GAME_DEFAULTS['MIN_PLAYERS']} players."
+            },
+        )
     if game.get("game_state") != PHASE_LOBBY:
         return emit("error", {"message": "Game is already in progress."})
     log_and_emit("===> Admin started game. Assigning roles.")
@@ -637,9 +692,13 @@ def handle_start_game(data):
     # Optional: Apply timer settings immediately if they exist
     timers_settings = settings.get("timers", {})
     game_instance.timer_durations = {
-        "Night": int(timers_settings.get("night", 90)),
-        "Accusation": int(timers_settings.get("accusation", 90)),
-        "Lynch_Vote": int(timers_settings.get("lynch_vote", 30)),
+        "Night": int(timers_settings.get("night", GAME_DEFAULTS["TIME_NIGHT"])),
+        "Accusation": int(
+            timers_settings.get("accusation", GAME_DEFAULTS["TIME_ACCUSATION"])
+        ),
+        "Lynch_Vote": int(
+            timers_settings.get("lynch_vote", GAME_DEFAULTS["TIME_LYNCH"])
+        ),
     }
     game_instance.timers_disabled = timers_settings.get("timers_disabled", False)
     game_instance.players = {}
@@ -654,10 +713,13 @@ def handle_start_game(data):
 
 
 @socketio.on("admin_next_phase")
-def handle_admin_next_phase():
+def handle_admin_next_phase(data=None):
     player_id, p = get_player_by_sid(request.sid)
-    if not p or not p.is_admin:
-        return
+    is_pnp = data.get("is_pnp", None) if data else None
+    if not is_pnp:
+        if not p or not p.is_admin:
+            return
+
     current_phase = game_instance.phase
     log_and_emit(f"Admin is advancing the phase from {current_phase}.")
     if current_phase == PHASE_NIGHT:
@@ -673,6 +735,7 @@ def resolve_lynch():
     if result.get("announcements"):
         for ann in result["announcements"]:
             game_instance.message_history.append(ann)
+            print(f"resolve_lynch announcement: {ann}")
             socketio.emit("message", {"text": ann}, to=game["game_code"])
     msg = "No one was lynched 🕊️"
     if result.get("armor_save"):
@@ -693,9 +756,6 @@ def resolve_lynch():
     )
     if result.get("secondary_deaths"):
         for d in result["secondary_deaths"]:
-            print(
-                "%%%%%%%%%%%%%%%%%%%%%%%%%%% secondary_deaths game loop %%%%%%%%%%%%%%%%%%%"
-            )
             sec_msg = f"☠️ <strong>{d['name']}</strong> died as well! Reason: {d['reason']} ⚰️"
             if "Honeypot" in d["reason"]:
                 clean_reason = d["reason"].replace("Honeypot retaliation: ", "")
@@ -711,7 +771,7 @@ def resolve_lynch():
     for werewolf in living_wolves:
         send_werewolf_info(werewolf.id)
 
-    socketio.sleep(5)
+    socketio.sleep(GAME_DEFAULTS["PAUSE_DURATION"])
     check_game_over_or_next_phase()
 
 
@@ -737,6 +797,12 @@ def handle_admin_set_new_code(data):
     new_code = data.get("new_code", "").strip().upper()
     if not new_code:
         return emit("error", {"message": "New code cannot be empty."})
+    if not new_code.isalnum():
+        return emit(
+            "error", {"message": "Code must be alphanumeric (Letters/Numbers only)."}
+        )
+    if len(new_code) > 20:
+        return emit("error", {"message": "Code must be 20 characters or fewer."})
     admin_id, admin_player = get_player_by_sid(request.sid)
     if not admin_player:
         return
@@ -759,6 +825,38 @@ def handle_admin_set_new_code(data):
     # Update the admin's lobby view
     join_room(new_code)
     broadcast_player_list()
+
+
+def send_cupid_info(player_id, specific_sid=None):
+    """
+    Checks if the player has a lover and sends the cupid_info event.
+    Can send to a specific SID (for PnP/Reconnects) or look up the current SID.
+    """
+    # 1. Get Engine Object
+    engine_player_obj = game_instance.players.get(player_id)
+    if not engine_player_obj or not engine_player_obj.linked_partner_id:
+        return
+
+    # 2. Get Partner Object
+    partner_obj = game_instance.players.get(engine_player_obj.linked_partner_id)
+    if not partner_obj:
+        return
+
+    # 3. Determine Target SID
+    target_sid = specific_sid
+    if not target_sid:
+        player_wrapper = game["players"].get(player_id)
+        if player_wrapper:
+            target_sid = player_wrapper.sid
+
+    # 4. Emit Event
+    if target_sid:
+        pre_msg = ""
+        if not engine_player_obj.is_alive:
+            pre_msg = "You died, but you should know... "
+
+        msg = f"{pre_msg}💘 You are in love with <strong>{partner_obj.name}</strong>! If one dies, you both die."
+        socketio.emit("cupid_info", {"message": msg}, to=target_sid)
 
 
 def send_werewolf_info(player_id, specific_sid=None):
@@ -798,6 +896,7 @@ def handle_pnp_request(data):
     if payload:
         emit("pnp_state_sync", payload)
         send_werewolf_info(target_id, specific_sid=request.sid)
+        send_cupid_info(target_id, specific_sid=request.sid)
 
 
 @socketio.on("pnp_submit_action")
@@ -810,6 +909,7 @@ def handle_pnp_action(data):
         data.get("actor_id"), data.get("target_id")
     )
     if result == "RESOLVED":
+        socketio.sleep(GAME_DEFAULTS["PAUSE_DURATION"])
         resolve_night()
     else:
         # Confirm receipt to client so they can show "Passed" screen
@@ -936,23 +1036,8 @@ def resolve_night():
     events = game_instance.resolve_night_deaths()
 
     # Notify Lovers
-    for player_id, player_obj in game_instance.players.items():
-        if player_obj.linked_partner_id:
-            partner_obj = game_instance.players.get(player_obj.linked_partner_id)
-            if partner_obj:
-                player_wrapper = game["players"].get(player_id)
-                if player_wrapper and player_wrapper.sid:
-                    status_msg = ""
-                    if not player_obj.is_alive:
-                        status_msg = "You died, but you should know... "
-                    socketio.emit(
-                        "message",
-                        {
-                            "text": f"{status_msg}💘 You are in love with <strong>{partner_obj.name}</strong>! If one dies, you both die.",
-                            "channel": "living",
-                        },
-                        to=player_wrapper.sid,
-                    )
+    for player_id in game_instance.players:
+        send_cupid_info(player_id)
 
     # since deaths may also contain "armor_save"
     actual_death = False
@@ -1022,13 +1107,13 @@ def resolve_night():
                 living_wolves = game_instance.get_living_players("Werewolves")
                 for werewolf in living_wolves:
                     send_werewolf_info(werewolf.id)
-    # todo delete game.html night_result_no_kill function
+
     if not actual_death:
         msg = "🌞 The sun rises, and no one was killed."
         game_instance.message_history.append(msg)
         socketio.emit("message", {"text": msg}, to=game["game_code"])
 
-    socketio.sleep(4)  # Short pause for effect
+    socketio.sleep(GAME_DEFAULTS["PAUSE_DURATION"])
     check_game_over_or_next_phase()
 
 
@@ -1097,4 +1182,4 @@ def handle_vote_for_rematch():
 
 if __name__ == "__main__":
     # This block is for local development only and will not be used by Gunicorn
-    socketio.run(app, host="0.0.0.0", debug=True, allow_unsafe_werkzeug=True)
+    socketio.run(app, host="0.0.0.0", debug=False, allow_unsafe_werkzeug=True)

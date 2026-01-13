@@ -1,4 +1,4 @@
-<!-- Version: 4.8.5 -->
+<!-- Version: 4.8.6a -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -264,6 +264,107 @@
       .timer-options {
         display: block;
       }
+      .settings-row {
+        display: flex;
+        flex-wrap: wrap; /* Wraps to next line on small screens */
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+
+      .settings-group {
+        flex: 1; /* Both take equal width */
+        min-width: 300px; /* Forces stacking if screen is too narrow */
+        background-color: #2c2c2c; /* Matches your list background */
+        padding: 15px;
+        border-radius: 6px;
+        border: 1px solid #444;
+      }
+
+      .settings-group h4 {
+        margin-top: 0;
+        border-bottom: 1px solid #555;
+        padding-bottom: 8px;
+        margin-bottom: 15px;
+        color: #bb86fc; /* Consistent accent color */
+      }
+
+      .settings-group label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+        cursor: pointer;
+      }
+
+      /* Specific adjustment for the timer inputs to look cleaner */
+      .timer-input-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      .rating-legend-wrapper {
+        position: relative;
+        display: inline-block;
+        cursor: help;
+        font-size: 0.9em;
+        font-weight: normal;
+        color: #bbb;
+      }
+
+      .legend-tooltip {
+        visibility: hidden;
+        opacity: 0;
+        width: 220px;
+        background-color: #222;
+        color: #eee;
+        text-align: left;
+        border-radius: 6px;
+        padding: 10px;
+        border: 1px solid #444;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+
+        /* Position tooltips */
+        position: absolute;
+        z-index: 1000;
+        bottom: 125%; /* Show above the text */
+        left: 50%;
+        transform: translateX(-50%);
+
+        transition: opacity 0.3s;
+        pointer-events: none;
+      }
+
+      .legend-tooltip::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: #222 transparent transparent transparent;
+      }
+
+      .rating-legend-wrapper:hover .legend-tooltip {
+        visibility: visible;
+        opacity: 1;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        margin-top: 4px;
+        font-size: 0.85em;
+      }
+
+      .legend-item .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 8px;
+        display: inline-block;
+      }
       @media (max-width: 768px) {
         .lobby-container {
           grid-template-columns: 1fr;
@@ -275,6 +376,7 @@
         }
       }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
     <script src="{{ url_for('static', filename='role_data.js') }}"></script>
   </head>
@@ -333,62 +435,98 @@
         <h3>Admin Controls</h3>
         <div style="margin-bottom: 20px">
           <button id="start-game-btn" disabled>Start Game</button>
-          <p><small>Need at least 4 players to start.</small></p>
+          <p>
+            <small style="color: #a33">Need at least 4 players to start.</small>
+          </p>
         </div>
 
         <div class="admin-controls">
-          <h4>Game Mode</h4>
-          <label
-            style="
-              display: flex;
-              align-items: center;
-              gap: 10px;
-              margin-bottom: 10px;
-            "
-          >
-            <input type="checkbox" id="mode-pass-and-play" />
-            <div>
-              <strong>Pass-and-Play Mode</strong><br />
-              <small style="color: #aaa"
-                >Single/Multiple device mode. Pauses between turns.</small
-              >
-            </div>
-          </label>
-          <label
-            style="
-              display: flex;
-              align-items: center;
-              gap: 10px;
-              margin-bottom: 10px;
-            "
-          >
-            <input type="checkbox" id="mode-solo-ends-game" />
-            <div>
-              <strong>Solo win ends game</strong><br />
-              <small style="color: #aaa"
-                >Standard Rules: Do not wait for team wins.</small
-              >
-            </div>
-          </label>
-          <label
-            style="
-              display: flex;
-              align-items: center;
-              gap: 10px;
-              margin-bottom: 10px;
-            "
-          >
-            <input type="checkbox" id="ghost-mode-checkbox" />
-            <div>
-              <strong>Enable Ghost Mode</strong><br />
-              <small style="color: #aaa"
-                >Ghosts can participate in accusation and lynch
-                vote...sometimes</small
-              >
-            </div>
-          </label>
-        </div>
+          <div class="settings-row">
+            <div class="settings-group">
+              <h4>Game Mode</h4>
 
+              <label>
+                <input type="checkbox" id="mode-pass-and-play" />
+                <div>
+                  <strong>Pass-and-Play Mode</strong><br />
+                  <small style="color: #aaa"
+                    >Single device mode. Pauses turns.</small
+                  >
+                </div>
+              </label>
+
+              <label>
+                <input type="checkbox" id="mode-solo-ends-game" />
+                <div>
+                  <strong>Solo win ends game</strong><br />
+                  <small style="color: #aaa">Don't wait for team wins.</small>
+                </div>
+              </label>
+
+              <label>
+                <input type="checkbox" id="ghost-mode-checkbox" />
+                <div>
+                  <strong>Enable Ghost Mode</strong><br />
+                  <small style="color: #aaa">Dead can vote...sometimes.</small>
+                </div>
+              </label>
+            </div>
+
+            <div class="settings-group">
+              <h4>Timer Settings (+30sec)</h4>
+
+              <div
+                style="
+                  margin-bottom: 15px;
+                  padding-bottom: 10px;
+                  border-bottom: 1px solid #444;
+                "
+              >
+                <label for="disable-timers-checkbox" style="color: #ffb74d">
+                  <input type="checkbox" id="disable-timers-checkbox" />
+                  <strong>Disable Timers (Infinite)</strong>
+                </label>
+              </div>
+
+              <div id="timer-options" class="timer-options">
+                <div class="timer-input-row">
+                  <label for="night-timer-input">Night (sec):</label>
+                  <input
+                    type="number"
+                    id="night-timer-input"
+                    value="90"
+                    min="30"
+                    style="width: 70px"
+                  />
+                </div>
+                <div class="timer-input-row">
+                  <label for="accusation-timer-input">Accusation (sec):</label>
+                  <input
+                    type="number"
+                    id="accusation-timer-input"
+                    value="90"
+                    min="30"
+                    style="width: 70px"
+                  />
+                </div>
+                <div class="timer-input-row">
+                  <label for="lynch-vote-timer-input">Lynch Vote (sec):</label>
+                  <input
+                    type="number"
+                    id="lynch-vote-timer-input"
+                    value="60"
+                    min="30"
+                    style="width: 70px"
+                  />
+                </div>
+              </div>
+
+              <button id="set-timers-btn" style="width: 50%; margin-top: 10px">
+                Set Timers
+              </button>
+            </div>
+          </div>
+        </div>
         <div class="admin-controls">
           <h4>
             Roles
@@ -400,47 +538,39 @@
                 margin-bottom: 5px;
                 background-color: #7b1fa2;
                 color: white;
+                margin-right: 10px;
               "
             >
               🎲 Select Random Roles
             </button>
+
+            <span class="rating-legend-wrapper">
+              <span class="info-icon">💡 Rating Guide</span>
+              <div class="legend-tooltip">
+                <strong>Role Balance Rating:</strong>
+                <div class="legend-item">
+                  <span class="dot" style="background: #4433ff"></span> +
+                  Positive: Villager Alligned
+                </div>
+                <div class="legend-item">
+                  <span class="dot" style="background: #bb88ff"></span> ~ Zero:
+                  Neutral / Unknown
+                </div>
+                <div class="legend-item">
+                  <span class="dot" style="background: #f44336"></span> -
+                  Negative: Werewolf Aligned
+                </div>
+                <hr style="border-color: #555; margin: 5px 0" />
+                <small
+                  >"Random" button selects balanced roles with a total value
+                  close to 0.</small
+                >
+              </div>
+            </span>
           </h4>
           <div id="roles-grid">
             <p>Loading roles...</p>
           </div>
-        </div>
-
-        <div class="admin-controls">
-          <h4>Timer Settings ( >30 seconds)</h4>
-          <div class="timer-setting">
-            <label for="disable-timers-checkbox">Disable Timers</label>
-            <input type="checkbox" id="disable-timers-checkbox" />
-          </div>
-          <div id="timer-options" class="timer-options">
-            <div class="timer-setting">
-              <label for="night-timer-input">Night (sec):</label>
-              <input type="number" id="night-timer-input" value="90" min="30" />
-            </div>
-            <div class="timer-setting">
-              <label for="accusation-timer-input">Accusation (sec):</label>
-              <input
-                type="number"
-                id="accusation-timer-input"
-                value="90"
-                min="30"
-              />
-            </div>
-            <div class="timer-setting">
-              <label for="lynch-vote-timer-input">Lynch Vote (sec):</label>
-              <input
-                type="number"
-                id="lynch-vote-timer-input"
-                value="60"
-                min="30"
-              />
-            </div>
-          </div>
-          <button id="set-timers-btn">Set Timers</button>
         </div>
 
         <div class="admin-controls">
@@ -801,7 +931,7 @@
       socket.on("new_message", (data) => {
         if (data.channel === "lobby" || data.channel === "announcement") {
           const messageEl = document.createElement("div");
-          messageEl.innerHTML = data.text;
+          messageEl.innerHTML = DOMPurify.sanitize(data.text);
           if (data.channel === "announcement")
             messageEl.classList.add("announcement");
           chatMessages.prepend(messageEl);
@@ -858,16 +988,6 @@
       document.getElementById("add-player-btn").onclick = () => {
         window.location.href = "/?add_player=1";
       };
-
-      // Listen for Mode Change to immediately sync state
-      const pnpCheckbox = document.getElementById("mode-pass-and-play");
-      if (pnpCheckbox) {
-        pnpCheckbox.addEventListener("change", (e) => {
-          socket.emit("admin_update_settings", {
-            mode: e.target.checked ? "pass_and_play" : "standard",
-          });
-        });
-      }
 
       // --- Random Roles Logic ---
       function selectRandomRoles() {
@@ -983,12 +1103,56 @@
         }
       });
 
-      disableTimersCheckbox.addEventListener("change", (e) => {
-        const isDisabled = e.target.checked;
-        timerOptionsDiv.style.display = isDisabled ? "none" : "block";
-        setTimersButton.style.display = isDisabled ? "none" : "block";
-        socket.emit("admin_set_timers", { timers_disabled: isDisabled });
-      });
+      const settingsContainer = document.querySelector(".settings-row");
+
+      if (settingsContainer) {
+        settingsContainer.addEventListener("change", (e) => {
+          const target = e.target;
+
+          // Ignore clicks that aren't inputs
+          if (target.tagName !== "INPUT" && target.tagName !== "SELECT") return;
+
+          switch (target.id) {
+            case "mode-pass-and-play":
+              socket.emit("admin_update_settings", {
+                mode: target.checked ? "pass_and_play" : "standard",
+              });
+              break;
+
+            case "mode-solo-ends-game":
+              // Logic: Checked = "Ends Game", so solo_win_continues is FALSE
+              socket.emit("admin_update_settings", {
+                solo_win_continues: !target.checked,
+              });
+              break;
+
+            case "ghost-mode-checkbox":
+              socket.emit("admin_update_settings", {
+                ghost_mode: target.checked,
+              });
+              break;
+
+            case "disable-timers-checkbox":
+              // Toggle UI visibility immediately
+              const timerOptionsDiv = document.getElementById("timer-options");
+              const setTimersButton = document.getElementById("set-timers-btn");
+              if (timerOptionsDiv)
+                timerOptionsDiv.style.display = target.checked
+                  ? "none"
+                  : "block";
+              if (setTimersButton)
+                setTimersButton.style.display = target.checked
+                  ? "none"
+                  : "block";
+
+              // Send to server
+              socket.emit("admin_set_timers", {
+                timers_disabled: target.checked,
+              });
+              break;
+          }
+        });
+      }
 
       // Admin Utils
       document.getElementById("set-code-btn").onclick = () => {

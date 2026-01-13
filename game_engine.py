@@ -1,6 +1,6 @@
 """
 game_engine.py
-Version: 4.8.6
+Version: 4.8.6a
 Manages the game flow, player states, complex role interactions, and phase transitions.
 """
 import random
@@ -122,8 +122,8 @@ class Game:
         # 1. Build Map: 'werewolf' -> RoleWerewolf Class
         key_to_class_map = {}
         for role_name, role_cls in AVAILABLE_ROLES.items():
-            temp_role_obj = role_cls()
-            key_to_class_map[temp_role_obj.name_key] = role_cls
+            r_key = getattr(role_cls, "name_key", role_name)
+            key_to_class_map[r_key] = role_cls
 
         # 2. Prepare Players
         player_ids = list(self.players.keys())
@@ -140,7 +140,7 @@ class Game:
         elif 12 <= num_players <= 16:
             num_wolves = 4
         else:
-            num_wolves = max(1, int(num_players * 0.25))
+            num_wolves = max(1, int(num_players * GAME_DEFAULTS["WOLF_RATIO"]))
 
         # 4. Construct the Master Role List
         final_roles_list = []
@@ -331,114 +331,159 @@ class Game:
         else:
             return choice
 
+    def execute_death_cascade(self, initial_targets, context="night"):
+        """
+        Centralized logic for processing deaths, saves, and chain reactions.
+        Args:
+            initial_targets: List of tuples [(player_id, reason), ...]
+            context: "night" or "lynch" (used for context in on_death hooks)
+        Returns:
+            Dict containing lists of 'deaths', 'armor_saves', 'announcements'.
+        """
+        events = {
+            "deaths": [],  # {id, name, role, reason}
+            "armor_saves": [],  # {id, name}
+            "announcements": [],  # strings
+        }
+
+        # Use a list as a queue to handle chain reactions (Lovers, Retaliation)
+        queue = list(initial_targets)
+        processed_ids = set()  # Prevent infinite loops in this cascade
+
+        while queue:
+            pid, reason = queue.pop(0)
+
+            if pid in processed_ids:
+                continue
+
+            player = self.players.get(pid)
+            if not player or not player.is_alive:
+                continue
+
+            # 1. Armor / 2nd Life Check
+            if "2nd_life" in player.status_effects:
+                print(f"{player.name} used their 2nd life!")
+                player.status_effects.remove("2nd_life")
+                events["armor_saves"].append({"id": pid, "name": player.name})
+                continue  # Stop processing this death
+
+            # 2. Mark Dead
+            player.is_alive = False
+            processed_ids.add(pid)
+
+            # Record Death Event
+            events["deaths"].append(
+                {
+                    "id": pid,
+                    "name": player.name,
+                    "role": player.role.name_key,
+                    "reason": reason,
+                }
+            )
+            print(f"DIED ({context}): {player.name}, Reason: {reason}")
+
+            # 3. Wild Child Check
+            # Check if any ALIVE Wild Child was linked to this DEAD player
+            for p in self.players.values():
+                if p.is_alive and p.role and p.role.name_key == ROLE_WILD_CHILD:
+                    if getattr(p.role, "role_model_id", None) == pid:
+                        if not p.role.transformed:
+                            # Re-trigger night start to handle transformation logic
+                            # (Sets transformed=True, team=Werewolves)
+                            game_context = {"players": list(self.players.values())}
+                            p.role.on_night_start(p, game_context)
+
+            # 4. Role 'on_death' Hooks (Hunter, Honeypot, etc.)
+            ctx = {"players": list(self.players.values()), "reason": reason}
+            if context == "lynch":
+                ctx["lynch_votes"] = self.pending_actions
+
+            death_reaction = player.role.on_death(player, ctx)
+            if death_reaction:
+                # Handle Retaliation Kills
+                if "kill" in death_reaction:
+                    target_id = death_reaction["kill"]
+                    custom_reason = death_reaction.get("reason", "Retaliation")
+                    # Add to queue if valid
+                    if target_id and target_id not in processed_ids:
+                        queue.append((target_id, custom_reason))
+                        target_obj = self.players.get(target_id)
+                        if target_obj:
+                            print(f"Retaliation by {player.name} on {target_obj.name}")
+
+                # Handle Announcements
+                if death_reaction.get("type") == "announcement":
+                    events["announcements"].append(death_reaction["message"])
+
+            # 5. Lovers Pact
+            if player.linked_partner_id:
+                partner = self.players.get(player.linked_partner_id)
+                if partner and partner.is_alive and partner.id not in processed_ids:
+                    msg = f"💘 Lovers Pact: <strong>{partner.name}</strong> dies of broken heart 💔 They were a <strong>{partner.role.name_key}</strong>"
+                    print(msg)
+                    queue.append((partner.id, msg))
+
+            # 6. Prostitute Collateral Damage
+            # If the player was visiting someone (or was visited), the other person dies.
+            # (Logic is bidirectional: visiting_id is set on both parties during night action)
+            if player.visiting_id:
+                other_node = self.players.get(player.visiting_id)
+                if (
+                    other_node
+                    and other_node.is_alive
+                    and other_node.id not in processed_ids
+                ):
+                    msg = f"👠 Date damage: <strong>{other_node.name}</strong> dies too 🔞 They were a <strong>{other_node.role.name_key}</strong>"
+                    print(msg)
+                    queue.append((other_node.id, msg))
+
+        return events
+
     def resolve_night_deaths(self):
         print("--- RESOLVING NIGHT Deaths & ACTIONS ---")
 
-        # 1. Get all alive players with active roles
-        active_player_objs = [
-            p for p in self.players.values() if p.is_alive  # and p.role.is_night_active
-        ]
-        # Sort: Low priority number = Acts First
+        active_player_objs = [p for p in self.players.values() if p.is_alive]
         active_player_objs.sort(key=lambda p: p.role.priority)
 
         werewolf_vote_ids = []
-        pending_deaths = []  # List[Dict] [{"target_id": id, "reason": str}]
-        blocked_player_ids = set()  # prostitute night block
-        notifications = []
+        blocked_player_ids = set()
         villager_votes = []
 
-        # 3. Iterate and Execute
-        # We pass a 'context' dict so roles can see the state of the game
+        # Accumulate all outcomes here
+        final_events = []
         game_context = {
             "players": list(self.players.values()),
             "pending_actions": self.pending_actions,
         }
 
-        dead_ids_set = set()
-        final_death_events = []
-
-        def kill_recursive_night(player_id, reason):
-            # target.is_alive=False, execute death hook, kill lover
-            player_obj = self.players[player_id]
-
-            # Armor Check
-            if "2nd_life" in player_obj.status_effects:
-                print(f"{player_obj.name} used their 2nd life!")
-                player_obj.status_effects.remove("2nd_life")
-                final_death_events.append(
-                    {"id": player_obj.id, "type": "armor_save", "name": player_obj.name}
+        # Helper to merge cascade results into final_events list
+        def merge_cascade_results(cascade_dict):
+            for d in cascade_dict["deaths"]:
+                final_events.append(
+                    {
+                        "type": "death",
+                        "id": d["id"],
+                        "name": d["name"],
+                        "role": d["role"],
+                        "reason": d["reason"],
+                    }
                 )
-                return final_death_events
+            for s in cascade_dict["armor_saves"]:
+                final_events.append(
+                    {"type": "armor_save", "id": s["id"], "name": s["name"]}
+                )
+            for a in cascade_dict["announcements"]:
+                final_events.append({"type": "announcement", "message": a})
 
-            dead_ids_set.add(player_id)
-            player_obj.is_alive = False
-            print(f"DIED: {player_obj.name}, Reason: {reason}")
-
-            for p in self.players.values():
-                if p.is_alive and p.role and p.role.name_key == ROLE_WILD_CHILD:
-                    # Check if the dying player is their Role Model, in case last werewolf
-                    if getattr(p.role, "role_model_id", None) == player_id:
-                        if not p.role.transformed:
-                            game_context = {"players": list(self.players.values())}
-                            p.role.on_night_start(p, game_context)
-
-            final_death_events.append(
-                {
-                    "id": player_obj.id,
-                    "type": "death",
-                    "name": player_obj.name,
-                    "role": player_obj.role.name_key,
-                    "reason": reason,
-                }
-            )
-
-            # Trigger Death Hook (hunter/backlash) return {"kill": target_id}
-            ctx = {"players": list(self.players.values()), "reason": reason}
-            death_reaction = player_obj.role.on_death(player_obj, ctx)
-
-            if death_reaction:
-                if "kill" in death_reaction:
-                    retaliation_target_id = death_reaction["kill"]
-                    custom_reason = death_reaction.get("reason", "Retaliation")
-
-                    if (
-                        retaliation_target_id
-                        and retaliation_target_id not in dead_ids_set
-                    ):
-                        retaliation_target_obj = self.players.get(retaliation_target_id)
-                        if retaliation_target_obj:
-                            print(
-                                f"Retaliation by {player_obj.name} on {retaliation_target_obj.name}!"
-                            )
-                        kill_recursive_night(retaliation_target_id, custom_reason)
-
-                if death_reaction.get("type") == "announcement":
-                    final_death_events.append(death_reaction)
-
-            # Lovers Pact
-            if player_obj.linked_partner_id:
-                partner_player_obj = self.players.get(player_obj.linked_partner_id)
-                if partner_player_obj and partner_player_obj.is_alive:
-                    msg = f"💘 Lovers Pact: <strong>{partner_player_obj.name}</strong> dies of broken heart 💔"
-                    print(msg)
-                    kill_recursive_night(partner_player_obj.id, msg)
-
-            # Prostitute Collateral Damage
-            if player_obj.visiting_id:
-                visitor_player_obj = self.players.get(player_obj.visiting_id)
-                if visitor_player_obj and visitor_player_obj.is_alive:
-                    msg = f"👠 Date damage: <strong>{visitor_player_obj.name}</strong> dies too 🔞  They were a <strong>{visitor_player_obj.role.name_key}</strong>"
-                    print(msg)
-                    kill_recursive_night(
-                        visitor_player_obj.id,
-                        msg,
-                    )
-
-        # 1. Execute Actions
+        # 1. Execute Night Actions
         for player_obj in active_player_objs:
+            # Skip if dead (e.g. killed by Witch earlier in loop)
+            if not player_obj.is_alive:
+                continue
+
             if player_obj.id in blocked_player_ids:
-                print(f"SKIPPED: {player_obj.name} was distracted by the Prostitute.")
-                notifications.append(
+                print(f"SKIPPED: {player_obj.name}")
+                final_events.append(
                     {
                         "id": player_obj.id,
                         "type": "blocked",
@@ -448,54 +493,39 @@ class Game:
                 continue
 
             raw_action = self.pending_actions.get(player_obj.id)
-            target_id = None
-            metadata = {}
-
-            # Parse input (it might be a string ID or a dict with metadata)
             if isinstance(raw_action, dict):
                 target_id = raw_action.get("target_id")
-                metadata = raw_action.get("metadata", {})
+                game_context["current_action_metadata"] = raw_action.get("metadata", {})
             else:
                 target_id = raw_action
-
-            # Update context for roles that need metadata (e.g. Witch)
-            game_context["current_action_metadata"] = metadata
+                game_context["current_action_metadata"] = {}
 
             if not target_id or target_id == "Nobody":
                 continue
 
-            # Resolve ID to Player Object
             target_player_obj = self.players.get(target_id)
-            if not target_player_obj:
-                continue
 
-            # Execute the Role's specific logic (polymorphism!)
+            # Execute Role Logic
             result = player_obj.role.night_action(
                 player_obj, target_player_obj, game_context
             )
 
-            if player_obj.role.name_key == "Prostitute" and target_player_obj:
+            # Prostitute Block Logic
+            if player_obj.role.name_key == ROLE_PROSTITUTE and target_player_obj:
                 print(f"BLOCKING: {target_player_obj.name} visited by Prostitute.")
                 blocked_player_ids.add(target_player_obj.id)
                 # Handle Prostitute solo win here
                 if player_obj.role.check_win_condition(player_obj, game_context):
                     if "solo_win" not in player_obj.status_effects:
                         player_obj.status_effects.append("solo_win")
-                        # todo fix message only sent after refresh
-                        msg = f'🥰 The <span style="color: #ff66aa">Prostitute {player_obj.name}</span> made a full circle and achieved a Solo Win🥇'
-                        print(msg)
-                        notifications.append(
-                            {
-                                "type": "announcement",
-                                "message": msg,
-                            }
-                        )
+                        msg = f'🥰 The <span style="color: #ff66aa">Prostitute</span> made many friends and achieved a Solo Win🥇'
+                        final_events.append({"type": "announcement", "message": msg})
 
             # 4. Handle Results
             if result:
                 if result.get("type") == "announcement":
-                    notifications.append(result)
-                # Need to resolve the target player object from ID
+                    final_events.append(result)
+
                 action_type = result.get("action")
                 effect = result.get("effect")
 
@@ -510,51 +540,47 @@ class Game:
                     }
                 )
 
-                if "poisoned" in target_player_obj.status_effects:
-                    print(f"{target_player_obj.name} poisoned!")
-                    kill_recursive_night(
-                        target_player_obj.id, result.get("reason", "Witch Poison")
+                # IMMEDIATE DEATHS (Witch / Revealer / Serial Killer)
+                immediate_deaths = []
+                if target_player_obj and "poisoned" in target_player_obj.status_effects:
+                    immediate_deaths.append(
+                        (target_player_obj.id, result.get("reason", "Witch Poison"))
                     )
 
-                if action_type == "revealed_werewolf":
-                    kill_recursive_night(
-                        target_player_obj.id, result.get("reason", "Revealed")
+                if action_type in ["revealed_werewolf", "direct_kill"]:
+                    if target_player_obj:
+                        immediate_deaths.append(
+                            (target_player_obj.id, result.get("reason", "Murder"))
+                        )
+                elif action_type == "revealed_wrongly":
+                    immediate_deaths.append(
+                        (player_obj.id, result.get("reason", "Revealed"))
                     )
 
-                if action_type == "revealed_wrongly":
-                    kill_recursive_night(
-                        player_obj.id, result.get("reason", "Revealed")
+                # Execute Immediate Cascade
+                if immediate_deaths:
+                    cascade_results = self.execute_death_cascade(
+                        immediate_deaths, context="night"
                     )
-
-                if action_type == "direct_kill":
-                    kill_recursive_night(
-                        target_player_obj.id, result.get("reason", "Murder")
-                    )
+                    merge_cascade_results(cascade_results)
 
                 if action_type == "villager_vote" and target_player_obj:
                     villager_votes.append(target_player_obj.id)
-
-                # Handle Kill Votes (Werewolves)
-                if action_type == "kill_vote":
-                    # For Werewolves, the target is the ID
+                if action_type == "kill_vote" and target_player_obj:
                     werewolf_vote_ids.append(target_player_obj.id)
 
+        # 2. Village Poll Announcement
         if len(villager_votes) >= 3:
             # Find most common
             vote_counts = Counter(villager_votes)
             top_target_id, count = vote_counts.most_common(1)[0]
-
             if top_target_id in self.players:
-                top_name = self.players[top_target_id].name
-
                 idx = self.get_current_prompt_index()
                 prompt_text = Role.VILLAGER_PROMPTS[idx]
-
-                # Add to notifications (announced at end of night)
-                notifications.append(
+                final_events.append(
                     {
                         "type": "announcement",
-                        "message": f"📊 <strong>Village Poll:</strong> <em>'{prompt_text}'</em> <red><strong>{top_name}</strong></red>",
+                        "message": f"📊 <strong>Village Poll:</strong> <em>{prompt_text} </em><span style='color: #ff5252'><strong>{self.players[top_target_id].name}</strong></span>",
                     }
                 )
 
@@ -566,34 +592,34 @@ class Game:
             for w in living_werewolves
             if w.id not in blocked_player_ids and w.role.name_key != ROLE_SORCERER
         ]
-        if (
-            werewolf_vote_ids
-            and len(active_werewolves) > 0
-            and len(werewolf_vote_ids) >= len(active_werewolves)
-            and len(set(werewolf_vote_ids)) == 1
-        ):
-            target_id = werewolf_vote_ids[0]
-            if target_id in self.players:
-                victim_player_obj = self.players[target_id]
-                print(f"Werewolves selected: {victim_player_obj.name}")
-                if victim_player_obj.is_alive:
-                    if "protected" in victim_player_obj.status_effects:
-                        print(
-                            f"Attack on {victim_player_obj.name} blocked by protection!"
-                        )
-                    elif "healed" in victim_player_obj.status_effects:
-                        print(f"Attack on {victim_player_obj.name} healed by Witch!")
-                    elif "immune_to_wolf" in victim_player_obj.status_effects:
-                        print(f"Attack on {victim_player_obj.name} failed (Immune)!")
-                    else:
-                        pending_deaths.append(
-                            {"target_id": target_id, "reason": "Werewolf meat"}
-                        )
-        # 5. Process Deaths & Lovers Pact
-        for death_record in pending_deaths:
-            kill_recursive_night(death_record["target_id"], death_record["reason"])
 
-        return final_death_events + notifications
+        pending_wolf_kills = []
+        if werewolf_vote_ids and len(active_werewolves) > 0:
+            # Simple Logic: Unanimous (or majority depending on your rules, simplified to unanimous/single target here based on previous code)
+            # Your previous code checked len(set(ids)) == 1
+            if len(set(werewolf_vote_ids)) == 1 and len(werewolf_vote_ids) >= len(
+                active_werewolves
+            ):
+                target_id = werewolf_vote_ids[0]
+                victim = self.players.get(target_id)
+                if victim and victim.is_alive:
+                    if "protected" in victim.status_effects:
+                        print(f"Attack on {victim.name} blocked by protection!")
+                    elif "healed" in victim.status_effects:
+                        print(f"Attack on {victim.name} healed by Witch!")
+                    elif "immune_to_wolf" in victim.status_effects:
+                        print(f"Attack on {victim.name} failed (Immune)!")
+                    else:
+                        pending_wolf_kills.append((target_id, "Werewolf meat"))
+
+        # 4. Execute End-of-Night Cascade
+        if pending_wolf_kills:
+            cascade_results = self.execute_death_cascade(
+                pending_wolf_kills, context="night"
+            )
+            merge_cascade_results(cascade_results)
+
+        return final_events
 
     # --- DAY LOGIC (Accusations & Voting) ---
 
@@ -638,7 +664,7 @@ class Game:
 
         if not valid_votes:
             self.set_phase(PHASE_NIGHT)
-            return {"result": "night", "message": "No accusations. Sleeping..."}
+            return {"result": "night", "message": "No accusations.🌒 Sleeping..."}
 
         counts = Counter(valid_votes)
         most_common = counts.most_common(2)
@@ -751,120 +777,55 @@ class Game:
                     p_name = "Ghost"
                 result_data["summary"][vote].append(p_name)
 
+        # Determine Lynch Result
         if yes_count and yes_count > (living_total / 2):
-            # --- Lawyer Check ---
             target_obj = self.players[self.lynch_target_id]
+
+            # Lawyer Check
             if "no_lynch" in target_obj.status_effects:
                 # Cancel the death
                 result_data["killed_id"] = None
-
                 msg = f"⚖️ <strong>{target_obj.name}</strong> was voted out, but their <strong>Lawyer</strong> found a loophole! The lynch is cancelled!"
                 result_data["announcements"].append(msg)
-
-                # Return early (no recursion, no death)
                 return result_data
 
-            result_data["killed_id"] = self.lynch_target_id
-            dead_ids_set = set()
+            # EXECUTE CASCADE
+            cascade = self.execute_death_cascade(
+                [(self.lynch_target_id, "Lynched")], context="lynch"
+            )
 
-            def kill_recursive_lynch(player_id, reason):
-                # target.is_alive=False, execute death hook, kill lover
-                player_obj = self.players[player_id]
+            # Map results to result_data
+            # 1. Identify primary death vs secondary
+            for d in cascade["deaths"]:
+                if d["id"] == self.lynch_target_id:
+                    result_data["killed_id"] = d["id"]
+                else:
+                    result_data["secondary_deaths"].append(d)
 
-                # Armor Check
-                if "2nd_life" in player_obj.status_effects:
-                    print(f"{player_obj.name} used their 2nd life!")
-                    player_obj.status_effects.remove("2nd_life")
-                    result_data["killed_id"] = None
+            # 2. Check Armor Save on Target
+            for s in cascade["armor_saves"]:
+                if s["id"] == self.lynch_target_id:
                     result_data["armor_save"] = True
-                    return  # CANCEL DEATH
+                    # If saved, killed_id should be None
+                    result_data["killed_id"] = None
 
-                dead_ids_set.add(player_id)
-                player_obj.is_alive = False
-                print(f"DIED2: {player_obj.name}, Reason: {reason}")
+            # 3. Add Announcements
+            result_data["announcements"].extend(cascade["announcements"])
 
-                if player_id != self.lynch_target_id:
-                    print(f"DIED2:secondary_deaths {player_obj.name}, Reason: {reason}")
-                    result_data["secondary_deaths"].append(
-                        {
-                            "id": player_id,
-                            "name": player_obj.name,
-                            "role": player_obj.role.name_key,
-                            "reason": reason,
-                        }
-                    )
-
-                # Wild Child Update in case last werewolf died
-                for p in self.players.values():
-                    if p.is_alive and p.role and p.role.name_key == ROLE_WILD_CHILD:
-                        if getattr(p.role, "role_model_id", None) == player_id:
-                            if not p.role.transformed:
-                                game_context = {"players": list(self.players.values())}
-                                p.role.on_night_start(p, game_context)
-
-                ctx = {
-                    "players": list(self.players.values()),
-                    "reason": reason,
-                    "lynch_votes": self.pending_actions,
-                }
-                death_reaction = player_obj.role.on_death(player_obj, ctx)
-
-                if death_reaction:
-                    if "kill" in death_reaction:
-                        retaliation_target_id = death_reaction["kill"]
-                        custom_reason = death_reaction.get("reason", "Retaliation")
-
-                        if (
-                            retaliation_target_id
-                            and retaliation_target_id not in dead_ids_set
-                        ):
-                            retaliation_target_obj = self.players.get(
-                                retaliation_target_id
-                            )
-                            if retaliation_target_obj:
-                                print(
-                                    f"🪚 Retaliation by {player_obj.name} on {retaliation_target_obj.name}! 🪓"
-                                )
-                            kill_recursive_lynch(retaliation_target_id, custom_reason)
-                    if death_reaction.get("type") == "announcement":
-                        result_data["announcements"].append(death_reaction["message"])
-
-                # Check Lovers
-                if player_obj.linked_partner_id:
-                    partner_obj = self.players.get(player_obj.linked_partner_id)
-                    if partner_obj and partner_obj.is_alive:
-                        print(f"Lovers Pact: {partner_obj.name} dies of broken heart.")
-                        kill_recursive_lynch(partner_obj.id, "Love Pact")
-
-                # Check Prostitute
-                if player_obj.visiting_id:
-                    host_obj = self.players.get(player_obj.visiting_id)
-                    if host_obj and host_obj.is_alive:
-                        msg = f"👠 Date damage: <strong>{host_obj.name}</strong> dies too 🔞  They were a <strong>{host_obj.role.name_key}</strong>"
-                        print(msg)
-                        kill_recursive_lynch(host_obj.id, msg)
-
-            # Start the chain reaction
-            kill_recursive_lynch(self.lynch_target_id, "Lynched")
-
-            # Check Win Conditions
-            if result_data["killed_id"]:  # Only triggers if they actually died
-                target_player_obj = self.players[result_data["killed_id"]]
-
-                # Handle Fool Win immediately
-                if target_player_obj.role.name_key == ROLE_FOOL:
+            # 4. Check Win Conditions (Fool)
+            if result_data["killed_id"]:
+                killed_obj = self.players[result_data["killed_id"]]
+                if killed_obj.role.name_key == ROLE_FOOL:
                     solo_win_continues = self.settings.get("solo_win_continues", False)
-                    msg = f"🤡 The Fool {target_player_obj.name} tricked you all and got lynched for a Solo Win! 🥇"
-                    if solo_win_continues:
-                        if "solo_win" not in target_player_obj.status_effects:
-                            target_player_obj.status_effects.append("solo_win")
-                            result_data["announcements"].append(msg)
-                    else:
-                        if "solo_win" not in target_player_obj.status_effects:
-                            target_player_obj.status_effects.append("solo_win")
-                        self.winner = target_player_obj.name
+                    msg = f"🤡 The Fool {killed_obj.name} tricked you all and got lynched for a Solo Win! 🥇"
+
+                    if "solo_win" not in killed_obj.status_effects:
+                        killed_obj.status_effects.append("solo_win")
+
+                    if not solo_win_continues:
+                        self.winner = killed_obj.name
                         self.game_over_data = {
-                            "winning_team": target_player_obj.name,
+                            "winning_team": killed_obj.name,
                             "reason": msg,
                             "final_player_states": [
                                 p.to_dict() for p in self.players.values()
@@ -872,7 +833,10 @@ class Game:
                         }
                         result_data["game_over"] = True
                         return result_data
+                    else:
+                        result_data["announcements"].append(msg)
 
+            # 5. Check Game Over
             if self.check_game_over():
                 result_data["game_over"] = True
 
