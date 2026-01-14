@@ -1,4 +1,4 @@
-<!-- Version: 4.8.6a -->
+<!-- Version: 4.9.0 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -668,6 +668,7 @@
               long: role.long,
               rating: role.rating,
               color: role.color,
+              team: role.team,
             };
 
             // 2. Create the Tile
@@ -731,6 +732,9 @@
             tooltip.innerHTML = `
                 ${role.long}
                 <span class="tooltip-rating" style="color: ${role.color}">
+                    <span style="float: left; font-weight: normal; ">
+                        ${role.team.replace(/_/g, " ")}
+                    </span>
                     ${role.rating}
                 </span>
             `;

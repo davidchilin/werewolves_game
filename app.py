@@ -1,6 +1,6 @@
 """
 app.py
-Version: 4.8.9
+Version: 4.9.0
 """
 import logging
 import os
@@ -1097,23 +1097,23 @@ def resolve_night():
                 role = event.get("role", "Unknown")
                 hist_msg = reason
                 if reason == "Werewolf meat":
-                    hist_msg = f"🐾 Remnants of a body were found! <strong>{name}</strong> was killed 🫀 They were a <strong>{role}</strong> ⚰️"
+                    hist_msg = f"🐾 <span style='color:#e57373'>Remnants of a body were found!</span> <strong>{name}</strong> was killed 🫀 They were a <strong>{role}</strong> ⚰️"
                 if reason == "Witch Poison":
-                    hist_msg = f"☣️ A dissolving body was found! ☠ <strong>{name}</strong> was killed. They were a <strong>{role}</strong> ⚰️"
+                    hist_msg = f"⚗️ <span style='color:#ba68c8'>A bubbling sound was heard..</span> ☠ <strong>{name}</strong> dissolved into muck. They were a <strong>{role}</strong> ⚰️"
                 elif reason == "Love Pact":
-                    hist_msg = f"💕 <strong>{name}</strong> died of a broken heart! 😈 Role: {role} ⚰️"
+                    hist_msg = f"💕 <span style='color:#f06292'><strong>{name}</strong> died of a broken heart!</span> 😈 They were a <strong>{role}</strong> ⚰️"
                 elif reason == "Retaliation":
-                    hist_msg = f"☠ <strong>{name}</strong> fucked with the wrong person! They were a <strong>{role}</strong> ⚰️"
+                    hist_msg = f"⚔️ <span style='color:#ffb74d'><strong>{name}</strong> fucked with the wrong person!</span> They were a <strong>{role}</strong> ⚰️"
                 elif reason == "revealed_werewolf":
-                    hist_msg = f"☠ <strong>{name}</strong> was revealed to be a <strong>{role}</strong> and strung up! ⚰️"
+                    hist_msg = f"🔦 <span style='color:#fff176'><strong>{name}</strong> was revealed to be a <strong>{role}</strong> and strung up!</span> ⚰️"
                 elif reason == "revealed_wrongly":
-                    hist_msg = f"☠ <strong>{name}</strong> revealed a <strong>Villager</strong> and died of shame! ⚰️"
+                    hist_msg = f"🤦 <span style='color:#90a4ae'><strong>{name}</strong> revealed a <strong>Villager</strong> and died of shame!</span> ⚰️"
                 elif reason == "Serial Killer":
-                    hist_msg = f"🔪 A mutilated body was found! <strong>{name}</strong> was the victim of a <strong>Serial Killer</strong>! 🩸 They were a <strong>{role}</strong> ⚰️"
+                    hist_msg = f"🔪 <span style='color:#b71c1c'>A mutilated body was found!</span> <strong>{name}</strong> was the victim of a <strong>Serial Killer</strong>! 🩸 They were a <strong>{role}</strong> ⚰️"
                 elif "Honeypot" in reason:
                     # Clean up prefix for display if needed
                     clean_reason = reason.replace("Honeypot retaliation: ", "")
-                    hist_msg = f"🍯 <strong>{role} {name}</strong> fell into a trap! {clean_reason} 🐝"
+                    hist_msg = f"🍯 <span style='color:#ffb74d'><strong>{role} {name}</strong> fell into a trap!</span> {clean_reason} 🐝"
 
                 game_instance.message_history.append(hist_msg)
 

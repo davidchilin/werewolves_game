@@ -1,6 +1,6 @@
 """
 game_engine.py
-Version: 4.8.9
+Version: 4.9.0
 Manages the game flow, player states, complex role interactions, and phase transitions.
 """
 import random
@@ -415,7 +415,7 @@ class Game:
             if player.linked_partner_id:
                 partner = self.players.get(player.linked_partner_id)
                 if partner and partner.is_alive and partner.id not in processed_ids:
-                    msg = f"💘 Lovers Pact: <strong>{partner.name}</strong> dies of broken heart 💔 They were a <strong>{partner.role.name_key}</strong>"
+                    msg = f"💘 <span style='color:#f06292'>Lovers Pact:</span> <strong>{partner.name}</strong> dies of broken heart 💔 They were a <strong>{partner.role.name_key}</strong>"
                     print(msg)
                     queue.append((partner.id, msg))
 
@@ -429,7 +429,7 @@ class Game:
                     and other_node.is_alive
                     and other_node.id not in processed_ids
                 ):
-                    msg = f"👠 Date damage: <strong>{other_node.name}</strong> dies too 🔞 They were a <strong>{other_node.role.name_key}</strong>"
+                    msg = f"👠 <span style='color:#e91e63'>Date Damage:</span> <strong>{other_node.name}</strong> dies too 🔞 They were a <strong>{other_node.role.name_key}</strong>"
                     print(msg)
                     queue.append((other_node.id, msg))
 

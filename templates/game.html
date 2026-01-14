@@ -1,4 +1,4 @@
-<!-- Version: 4.8.9 -->
+<!-- Version: 4.9.0 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -175,7 +175,6 @@
         background-color: #555;
         color: white;
         border: 1px solid #609;
-        border: 1px solid #bb77ff;
         border-radius: 8px;
         font-size: 1em;
         cursor: pointer;
@@ -186,7 +185,8 @@
       }
       .pnp-btn:hover {
         color: #ff1111;
-        background-color: #505050;
+        background-color: #444;
+        border: 1px solid #90c;
         transform: translateY(-2px);
       }
       .pnp-btn:active {
@@ -640,6 +640,7 @@
               long: r.long,
               rating: r.rating,
               color: r.color,
+              team: r.team,
             };
           });
           // Refresh my tooltip if role is already set
@@ -805,7 +806,24 @@
         const phaseName = phase ? phase.replace(/_/g, " ") : "Game";
         // Ensure the h2 element exists before setting text
         const titleEl = document.querySelector("#pnp-hub h2");
-        if (titleEl) titleEl.textContent = `${phaseName} Phase`;
+        if (titleEl) {
+          titleEl.textContent = `${phaseName} Phase`;
+
+          // [ADDED] Dynamic Colors for PnP Hub
+          if (phase === "Night") {
+            titleEl.style.color = "#81d4fa"; // Light Blue
+            titleEl.style.textShadow = "0 0 10px #00bcd4"; // Glowing effect
+          } else if (phase === "Accusation") {
+            titleEl.style.color = "#ffb74d"; // Orange
+            titleEl.style.textShadow = "none";
+          } else if (phase === "Lynch_Vote") {
+            titleEl.style.color = "#e57373"; // Red
+            titleEl.style.textShadow = "none";
+          } else {
+            titleEl.style.color = "#bb86fc"; // Standard Purple default
+            titleEl.style.textShadow = "none";
+          }
+        }
 
         els.pnpGrid.innerHTML = allPlayers
           .map((p) => {
@@ -933,7 +951,27 @@
           long: "...",
           rating: "?",
           color: "#fff",
+          team: "Unknown",
         };
+
+        let teamName = rData.team || "Neutral";
+        let teamColor = "#b0bec5"; // Default Grey
+
+        if (teamName === "Werewolves") {
+          teamColor = "#ef5350"; // Red
+          teamName = "🐺 Werewolf Team";
+        } else if (teamName === "Villagers") {
+          teamColor = "#66bb6a"; // Green
+          teamName = "🌻 Villager Team";
+        } else if (
+          teamName === "Monster" ||
+          teamName === "Neutral" ||
+          teamName === "Serial_Killer"
+        ) {
+          teamColor = "#ab47bc"; // Purple
+          teamName = "🎭 Neutral / Solo";
+        }
+
         const tooltipEl = document.getElementById("my-role-tooltip");
         if (tooltipEl) {
           tooltipEl.innerHTML = `
@@ -943,9 +981,9 @@
                   <div style="text-align: left; margin-bottom: 8px; line-height: 1.4;">
                       ${rData.long}
                   </div>
-                  <div style="font-size:0.85em; color:#aaa; border-top:1px solid #555; padding-top:5px; text-align:left;">
-                     ${rData.rating}
-                  </div>`;
+                  <div style="font-size:0.85em; border-top:1px solid #555; padding-top:5px;">
+                  <strong style="color: ${rData.color}; float: left">${rData.rating}</strong>
+                  <span style="float: right; color: ${teamColor};">${teamName}</span></div> `;
         }
       }
 
@@ -1342,6 +1380,17 @@
           totalAccusationDuration = data.total_accusation_duration;
 
         currentPhase = data.phase;
+        const phaseEl = document.getElementById("phase-display");
+        if (currentPhase === "Night") {
+          phaseEl.style.color = "#81d4fa"; // Light Blue for Night
+          phaseEl.style.textShadow = "0 0 5px #00bcd4"; // Subtle glow
+        } else if (currentPhase === "Accusation") {
+          phaseEl.style.color = "#ffb74d"; // Orange for Day/Discussion
+          phaseEl.style.textShadow = "none";
+        } else if (currentPhase === "Lynch_Vote") {
+          phaseEl.style.color = "#e57373"; // Red for Voting/Danger
+          phaseEl.style.textShadow = "none";
+        }
 
         if (data.message_history) publicHistory = data.message_history;
 
@@ -1373,7 +1422,7 @@
           els.gameContainer.style.display = "none";
           renderHub(allPlayers, data.phase);
           let phaseName = data.phase.replace(/_/g, " ");
-          els.phase.textContent = `${phaseName} (Pass Device)`;
+          els.phase.textContent = `${phaseName}`;
         } else {
           // Standard Game Mode OR PnP Day Phase
           els.pnpHub.style.display = "none";
@@ -1602,11 +1651,14 @@
 
           if (!livingIds.includes(p.id)) {
             li.classList.add("dead");
-            li.firstChild.textContent += " 💀";
+            li.style.opacity = "0.5"; // Fade out dead players
+            li.firstChild.innerHTML = `💀 <s>${nameDisplay}</s>`;
           }
           if (isMe) {
             li.style.fontWeight = "bold";
-            li.style.color = "#bb86fc"; // Optional: Purple highlight
+            li.style.color = "#ffffff";
+            li.style.border = "1px solid #bb86fc"; // Purple border
+            li.style.backgroundColor = "rgba(187, 134, 252, 0.1)";
           }
 
           els.playerList.appendChild(li);
