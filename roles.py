@@ -934,7 +934,7 @@ class Revealer(Role):
     team = "Villagers"
     priority = 25
     ui_short = "Reveal a player's role? Reveal: Wolf- Wolf dies; Villager- You die."
-    ui_long = "You have a high-stakes power. You choose a player to 'Reveal.' If they are a Werewolf, they are exposed and killed immediately. If they are a Villager, you die of embarrassment for accusing an innocent."
+    ui_long = "You have a high-stakes power. You choose a player to 'Reveal.' If they are a Werewolf, they are exposed and killed immediately. If they are a Villager, you die of shame for accusing an innocent."
     ui_rating = 0.3
     ui_color = "#5A00A6"
 

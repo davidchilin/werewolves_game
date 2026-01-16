@@ -10,8 +10,8 @@
         font-family:
           -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
           Arial, sans-serif;
-        background-color: #121212;
-        color: #e0e0e0;
+        background-color: #111;
+        color: gainsboro;
         min-height: 100vh;
       }
       .lobby-container {
@@ -32,7 +32,7 @@
         list-style-type: none;
         padding: 8px;
         background-color: #2c2c2c;
-        border-radius: 4px;
+        border-radius: 5px;
       }
       .admin-controls {
         margin-top: 20px;
@@ -41,7 +41,7 @@
       }
       .exclude-btn {
         margin-left: 15px;
-        color: #ff8a80;
+        color: salmon;
         cursor: pointer;
         font-weight: normal;
       }
@@ -54,23 +54,23 @@
         border-radius: 5px;
         border: 1px solid #444;
         background-color: #2c2c2c;
-        color: #e0e0e0;
+        color: gainsboro;
       }
       button {
         padding: 10px 20px;
         border-radius: 5px;
         border: none;
-        background-color: #3f51b5;
-        color: #dddddd;
+        background-color: mediumblue;
+        color: gainsboro;
         cursor: pointer;
         transition: background-color 0.2s;
       }
       button:hover:not(:disabled) {
-        background-color: #5c6bc0;
+        background-color: royalblue;
       }
       button:disabled {
         background-color: #333;
-        color: #777;
+        color: dimgray;
         cursor: not-allowed;
       }
       .timer-setting {
@@ -96,9 +96,9 @@
       /* Individual Role Tile */
       .role-tile {
         position: relative; /* Crucial for positioning the tooltip */
-        background-color: #111111;
-        border: 1px solid #aaa;
-        border-radius: 6px;
+        background-color: #111;
+        border: 1px solid darkgray;
+        border-radius: 5px;
         width: 220px;
         padding: 6px;
         text-align: center;
@@ -122,7 +122,7 @@
         height: 16px;
 
         border: 2px solid var(--role-color, #777);
-        border-radius: 4px;
+        border-radius: 5px;
         cursor: pointer;
         background-color: transparent;
         transition: all 0.2s;
@@ -139,30 +139,29 @@
         top: 0px;
         width: 5px;
         height: 10px;
-        border: solid #121212; /* Dark checkmark for contrast on bright colors */
+        border: solid black; /* Dark checkmark for contrast on bright colors */
         border-width: 0 2px 2px 0;
         transform: rotate(45deg);
       }
       /* Highlight selected tiles */
       .role-tile.selected {
-        border: 1px solid #aa00ff;
-        background-color: #1b1b1b;
+        border: 1px solid darkviolet;
+        background-color: black;
       }
       /* Darken background slightly on selected hover for contrast */
       .role-tile.selected:hover {
-        background-color: #111;
+        background-color: #1e1e1e;
       }
       .role-tile:hover {
         transform: translateY(-4px); /* Slight lift on hover */
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        background-color: #181818;
-        border-color: #ff4422;
+        background-color: #1e1e1e;
+        border-color: orangered;
       }
       .role-tile h3 {
         margin-top: 4px;
         margin-bottom: 2px;
         font-size: 1.2em;
-        color: #ccc;
+        color: gainsboro;
         width: 100%;
         transition: color 0.2s;
       }
@@ -175,7 +174,7 @@
         margin-top: 4px;
         margin-bottom: 2px;
         line-height: 1.2;
-        color: #aaa;
+        color: darkgray;
         /* Color is set via inline JS based on rating */
       }
 
@@ -184,10 +183,10 @@
         visibility: hidden;
         opacity: 0;
         width: 260px;
-        background-color: #222;
-        color: #fff;
+        background-color: #2c2c2c;
+        color: white;
         text-align: left;
-        border-radius: 6px;
+        border-radius: 5px;
         padding: 12px;
 
         /* Position the tooltip above the tile */
@@ -196,7 +195,7 @@
         left: 50%;
         transform: translateX(-50%);
         z-index: 100; /* Ensure it floats on top of everything */
-        transition: opacity 0.3s;
+        transition: opacity 0.2s;
         font-size: 0.85rem;
         line-height: 1.4;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
@@ -212,7 +211,7 @@
         margin-left: -5px;
         border-width: 5px;
         border-style: solid;
-        border-color: #222 transparent transparent transparent;
+        border-color: #2c2c2c transparent transparent transparent;
       }
 
       /* Show tooltip on hover */
@@ -224,8 +223,7 @@
         display: block;
         margin-top: 5px;
         padding-top: 5px;
-        border-top: 1px solid #555;
-        font-weight: bold;
+        border-top: 1px solid #444;
         text-align: right;
       }
 
@@ -238,9 +236,10 @@
       .chat-messages {
         height: 150px;
         overflow-y: auto;
-        border: 1px solid #333;
+        border: 1px solid #444;
+        border-radius: 5px;
         padding: 10px;
-        background: #1e1e1e;
+        background: #111;
         margin-bottom: 10px;
         display: flex;
         flex-direction: column-reverse;
@@ -248,11 +247,10 @@
       .chat-messages div {
         padding-bottom: 5px;
         margin-bottom: 5px;
-        border-bottom: 1px solid #333;
+        border-bottom: 1px solid #444;
       }
       .chat-messages .announcement {
-        color: #bb88cc;
-        font-weight: bold;
+        color: darkviolet;
       }
       #chat-form {
         display: flex;
@@ -276,16 +274,16 @@
         min-width: 300px; /* Forces stacking if screen is too narrow */
         background-color: #2c2c2c; /* Matches your list background */
         padding: 15px;
-        border-radius: 6px;
+        border-radius: 5px;
         border: 1px solid #444;
       }
 
       .settings-group h4 {
         margin-top: 0;
-        border-bottom: 1px solid #555;
+        border-bottom: 1px solid #444;
         padding-bottom: 8px;
         margin-bottom: 15px;
-        color: #bb86fc; /* Consistent accent color */
+        color: darkviolet; /* Consistent accent color */
       }
 
       .settings-group label {
@@ -309,17 +307,17 @@
         cursor: help;
         font-size: 0.9em;
         font-weight: normal;
-        color: #bbb;
+        color: gainsboro;
       }
 
       .legend-tooltip {
         visibility: hidden;
         opacity: 0;
         width: 220px;
-        background-color: #222;
-        color: #eee;
+        background-color: #2c2c2c;
+        color: white;
         text-align: left;
-        border-radius: 6px;
+        border-radius: 5px;
         padding: 10px;
         border: 1px solid #444;
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
@@ -331,7 +329,7 @@
         left: 50%;
         transform: translateX(-50%);
 
-        transition: opacity 0.3s;
+        transition: opacity 0.2s;
         pointer-events: none;
       }
 
@@ -343,7 +341,7 @@
         margin-left: -5px;
         border-width: 5px;
         border-style: solid;
-        border-color: #222 transparent transparent transparent;
+        border-color: #2c2c2c transparent transparent transparent;
       }
 
       .rating-legend-wrapper:hover .legend-tooltip {
@@ -394,7 +392,8 @@
             font-size: 0.8em;
             padding: 10px 10px;
             margin-left: 10px;
-            background-color: #4caf50;
+            color: white;
+            background-color: seagreen;
           "
         >
           Add Player
@@ -409,10 +408,10 @@
           margin: 10px 0;
           border: 1px solid #444:
           border-radius: 5px;
-          color: #e0e0e0;
+          color: gainsboro;
         "
       >
-        <strong style="color: #bb88ff">ROLE COUNT:</strong>
+        <strong style="color: darkviolet">ROLE COUNT:</strong>
         <span id="role-summary-text">Waiting for players...</span>
       </div>
       <div class="chat-container">
@@ -434,8 +433,10 @@
         <h3>Admin Controls</h3>
         <div style="margin-bottom: 20px">
           <button id="start-game-btn" disabled>Start Game</button>
-          <p>
-            <small style="color: #a33">Need at least 4 players to start.</small>
+          <p id="min-players-warning">
+            <small style="color: firebrick"
+              >Need at least 4 players to start.</small
+            >
           </p>
         </div>
 
@@ -448,7 +449,7 @@
                 <input type="checkbox" id="mode-pass-and-play" />
                 <div>
                   <strong>Pass-and-Play Mode</strong><br />
-                  <small style="color: #aaa"
+                  <small style="color: darkgray"
                     >Single device mode. Pauses turns.</small
                   >
                 </div>
@@ -458,7 +459,9 @@
                 <input type="checkbox" id="mode-solo-ends-game" />
                 <div>
                   <strong>Solo win ends game</strong><br />
-                  <small style="color: #aaa">Don't wait for team wins.</small>
+                  <small style="color: darkgray"
+                    >Don't wait for team wins.</small
+                  >
                 </div>
               </label>
 
@@ -466,7 +469,9 @@
                 <input type="checkbox" id="ghost-mode-checkbox" />
                 <div>
                   <strong>Enable Ghost Mode</strong><br />
-                  <small style="color: #aaa">Dead can vote...sometimes.</small>
+                  <small style="color: darkgray"
+                    >Dead can vote...sometimes.</small
+                  >
                 </div>
               </label>
             </div>
@@ -481,9 +486,9 @@
                   border-bottom: 1px solid #444;
                 "
               >
-                <label for="disable-timers-checkbox" style="color: #ffb74d">
+                <label for="disable-timers-checkbox" style="color: gainsboro">
                   <input type="checkbox" id="disable-timers-checkbox" />
-                  <strong>Disable Timers (Infinite)</strong>
+                  <strong>Disable Timers</strong>
                 </label>
               </div>
 
@@ -533,9 +538,9 @@
               id="random-roles-btn"
               onclick="selectRandomRoles()"
               style="
-                width: 28%;
+                width: auto;
                 margin-bottom: 5px;
-                background-color: #7b1fa2;
+                background-color: darkviolet;
                 color: white;
                 margin-right: 10px;
               "
@@ -548,18 +553,18 @@
               <div class="legend-tooltip">
                 <strong>Role Balance Rating:</strong>
                 <div class="legend-item">
-                  <span class="dot" style="background: #4433ff"></span> +
-                  Positive: Villager Alligned
+                  <span class="dot" style="background: blue"></span> + Positive:
+                  Villager Alligned
                 </div>
                 <div class="legend-item">
-                  <span class="dot" style="background: #bb88ff"></span> ~ Zero:
-                  Neutral / Unknown
+                  <span class="dot" style="background: darkviolet"></span> ~
+                  Zero: Neutral / Unknown
                 </div>
                 <div class="legend-item">
-                  <span class="dot" style="background: #f44336"></span> -
+                  <span class="dot" style="background: crimson"></span> -
                   Negative: Werewolf Aligned
                 </div>
-                <hr style="border-color: #555; margin: 5px 0" />
+                <hr style="border-color: #444; margin: 5px 0" />
                 <small
                   >"Random" button selects balanced roles with a total value
                   close to 0.</small
@@ -761,7 +766,7 @@
         } catch (err) {
           console.error("Failed to load roles", err);
           document.getElementById("roles-grid").innerHTML =
-            '<p style="color:red">Error loading roles</p>';
+            '<p style="color:crimson">Error loading roles</p>';
         }
       }
       // --- 2. Socket Events ---
@@ -890,6 +895,10 @@
 
         // Enable start button if enough players
         startGameBtn.disabled = data.players.length < 4;
+        const warningEl = document.getElementById("min-players-warning");
+        if (warningEl) {
+          warningEl.style.display = startGameBtn.disabled ? "block" : "none";
+        }
         setChatMode(data.admin_only_chat);
 
         // Recalculate roles based on new player count
@@ -1212,7 +1221,7 @@
         // 1. Basic Check
         if (numPlayers < 1) {
           summaryElement.textContent = "Waiting for players...";
-          summaryElement.style.color = "#aaa";
+          summaryElement.style.color = "darkgray";
           return;
         }
 
