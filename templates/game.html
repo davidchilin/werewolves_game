@@ -1,4 +1,4 @@
-<!-- Version: 4.9.0 -->
+<!-- Version: 4.9.1 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -6,7 +6,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Werewolves - The Game</title>
     <style>
-      /* --- Base Styles --- */
+      /* --- 1. Variables & Base --- */
+      :root {
+        --bg-body: #111;
+        --bg-panel: #1e1e1e;
+        --bg-item: #2c2c2c;
+        --text-main: gainsboro;
+        --text-muted: darkgray;
+        --border-color: #444;
+
+        --accent-color: darkviolet;
+        --highlight-color: royalblue;
+        --danger-color: crimson;
+        --warning-color: orangered;
+        --success-color: mediumseagreen;
+        --gold-color: gold;
+      }
+
       body {
         font-family:
           -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
@@ -16,29 +32,322 @@
         align-items: center;
         margin: 0;
         min-height: 100vh;
-        background-color: #111;
-        color: gainsboro;
+        background-color: var(--bg-body);
+        color: var(--text-main);
       }
+
+      /* --- 2. Layout & Panels --- */
       .game-container {
         width: 95%;
         max-width: 800px;
         display: flex;
         gap: 20px;
       }
+
       .main-panel {
         flex-grow: 1;
         min-width: 0;
       }
+
       .side-panel {
         width: 250px;
-        border-left: 1px solid #444;
+        border-left: 1px solid var(--border-color);
         padding-left: 20px;
         flex-shrink: 0;
         display: flex;
         flex-direction: column;
       }
 
-      /* --- UI Components --- */
+      /* consolidated panel styles */
+      .action-area,
+      .log-panel,
+      .chat-messages,
+      .role-display,
+      .confirm-box,
+      .game-over-box {
+        background-color: var(--bg-panel);
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        padding: 10px; /* Standardized padding */
+      }
+
+      .action-area {
+        min-height: 100px;
+        padding: 15px;
+        text-align: center;
+        margin-bottom: 20px; /* Spacing */
+      }
+
+      .role-display {
+        text-align: center;
+        margin-bottom: 15px;
+      }
+
+      /* --- 3. Overlays (PnP, Game Over) --- */
+      #pnp-hub,
+      #pnp-overlay,
+      #game-over-screen {
+        display: none; /* Flex when active */
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 100; /* Standard high z-index */
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+
+      #pnp-hub {
+        background-color: #111;
+        z-index: 10;
+        padding: 20px;
+      }
+      #pnp-overlay {
+        background: rgba(0, 0, 0, 0.95);
+        z-index: 2000;
+        text-align: center;
+      }
+      #game-over-screen {
+        background-color: black;
+        overflow-y: auto;
+      }
+
+      /* PnP Specifics */
+      .pnp-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 15px;
+        width: 100%;
+        max-width: 600px;
+        margin-top: 10px;
+      }
+
+      #pnp-log-container {
+        width: 100%;
+        max-width: 600px;
+        margin-top: 15px;
+      }
+
+      .pnp-footer {
+        margin-top: 20px;
+        border-top: 1px solid var(--border-color);
+        padding-top: 15px;
+        width: 100%;
+        text-align: center;
+      }
+
+      /* Overlay Boxes */
+      .confirm-box {
+        border: 2px solid var(--accent-color);
+        max-width: 440px;
+        width: 90%;
+        padding: 40px;
+      }
+      .game-over-box {
+        border: 1px solid var(--accent-color);
+        max-width: 500px;
+        width: 90%;
+        text-align: center;
+        margin: 20px auto;
+        border-radius: 12px;
+      }
+
+      /* --- 4. Typography --- */
+      h2,
+      h4 {
+        margin-top: 0;
+      }
+
+      .phase-display {
+        font-size: 1.5em;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 10px;
+        text-transform: capitalize;
+        color: var(--accent-color);
+      }
+
+      .timer-display {
+        font-size: 1.2em;
+        text-align: center;
+        color: var(--gold-color);
+        margin-bottom: 20px;
+      }
+
+      .announcement {
+        color: var(--accent-color);
+        font-weight: bold;
+      }
+      .ghost-chat {
+        color: var(--accent-color);
+        font-style: italic;
+      }
+      .vote-summary {
+        font-size: 0.9em;
+        color: var(--text-muted);
+      }
+
+      /* PnP Headers (formerly inline) */
+      #pnp-hub h2 {
+        margin-top: 0;
+        color: var(--accent-color);
+      }
+      #pnp-hub p {
+        color: var(--text-muted);
+      }
+
+      /* --- 5. Buttons & Inputs --- */
+      button {
+        cursor: pointer;
+        border: none;
+      }
+
+      /* Big Buttons (PnP, Overlays) */
+      .big-btn {
+        width: 70%;
+        padding: 15px;
+        margin-top: 10px;
+        font-size: 1.1em;
+        background: var(--highlight-color);
+        color: white;
+        border: 1px solid white;
+        border-radius: 5px;
+      }
+      .big-btn:hover {
+        border: 1px solid black;
+        transform: scale(0.98);
+      }
+      .big-btn.cancel {
+        background: var(--danger-color);
+      }
+      .big-btn.danger {
+        background-color: var(--danger-color);
+      }
+      .big-btn.danger:hover {
+        background-color: red;
+      }
+
+      .big-btn.secondary {
+        background: #444;
+        padding: 10px;
+      }
+      .big-btn.secondary:hover {
+        border: 1px solid darkorchid;
+        color: var(--warning-color);
+      }
+
+      /* PnP Grid Buttons */
+      .pnp-btn {
+        padding: 10px;
+        background-color: black;
+        color: white;
+        border: 1px solid var(--accent-color);
+        border-radius: 8px;
+        font-size: 1.1em;
+        text-align: center;
+        transition:
+          transform 0.2s,
+          background-color 0.2s;
+      }
+      .pnp-btn:hover {
+        color: white; /* White text pops better against the glow */
+        background-color: #2a0a3a; /* Deep purple/black background */
+        border: 1px solid #d500f9; /* Bright neon purple border */
+        /* The Cool Purple Glow */
+        box-shadow:
+          0 0 10px #d500f9,
+          0 0 20px #aa00ff,
+          0 0 40px #aa00ff;
+      }
+      .pnp-btn.dead {
+        opacity: 0.5;
+        text-decoration: line-through;
+        background-color: #111;
+        border-color: lightgray;
+      }
+
+      /* Specific ID Buttons */
+      #pnp-return-btn {
+        margin-bottom: 15px;
+        padding: 8px;
+        width: auto;
+        border: 1px solid var(--accent-color);
+        align-self: center;
+        text-align: center;
+      }
+
+      #return-to-lobby-btn {
+        margin-top: 20px;
+        margin-bottom: 5px;
+        padding: 12px 24px;
+        font-size: 1.1em;
+        color: gainsboro;
+        background-color: var(--highlight-color);
+        border-radius: 5px;
+        border: 1px solid transparent;
+      }
+      #return-to-lobby-btn:hover {
+        border: 1px solid white;
+        background-color: slateblue;
+      }
+      #return-to-lobby-btn:disabled {
+        background-color: #444;
+        cursor: not-allowed;
+      }
+
+      /* Action Area Controls */
+      .action-area select,
+      .action-area button {
+        font-size: 1.1em;
+        margin: 10px 5px;
+        padding: 8px;
+        border-radius: 5px;
+        border: 1px solid var(--border-color);
+        background-color: var(--bg-item);
+        color: var(--text-main);
+      }
+      .action-area button {
+        background-color: slateblue;
+      }
+      .action-area button:hover:not(:disabled) {
+        background-color: var(--highlight-color);
+      }
+      .action-area button:disabled {
+        background-color: #333;
+        color: dimgray;
+        cursor: not-allowed;
+      }
+
+      .vote-btn-yes {
+        background-color: var(--success-color) !important;
+      }
+      .vote-btn-yes:hover {
+        background-color: seagreen !important;
+      }
+      .vote-btn-no {
+        background-color: var(--danger-color) !important;
+      }
+      .vote-btn-no:hover {
+        background-color: tomato !important;
+      }
+
+      /* Admin Buttons */
+      #admin-controls-ingame {
+        text-align: center;
+      } /* Moved display:none to inline HTML style or JS default */
+      #admin-controls-ingame button {
+        margin: 5px auto;
+        width: 65%;
+        display: block;
+        background-color: slategray;
+      }
+      .btn-active {
+        background-color: var(--warning-color) !important;
+      }
+
+      /* --- 6. Lists & Chat --- */
       .player-list {
         padding-left: 0;
       }
@@ -50,263 +359,68 @@
         padding: 8px;
         border-radius: 5px;
         margin-bottom: 5px;
-        background-color: #2c2c2c;
+        background-color: var(--bg-item);
       }
       .player-list li.dead {
         text-decoration: line-through;
         color: lightslategray;
-        background-color: #2c2c2c;
+        background-color: var(--bg-item);
       }
+
       .accusation-count {
         font-size: 0.9em;
         font-weight: bold;
-        background-color: orangered;
+        background-color: var(--warning-color);
         color: white;
         padding: 2px 6px;
         border-radius: 10px;
         margin-left: auto;
       }
-      .role-display {
-        padding: 10px;
-        background-color: #1e1e1e;
-        border: 1px solid #444;
-        border-radius: 5px;
-        text-align: center;
-        margin-bottom: 15px;
-      }
-      .phase-display {
-        font-size: 1.5em;
-        font-weight: bold;
-        text-align: center;
-        margin-bottom: 10px;
-        text-transform: capitalize;
-        color: darkviolet;
-      }
-      .timer-display {
-        font-size: 1.2em;
-        text-align: center;
-        color: gold;
-        margin-bottom: 20px;
-      }
 
-      /* --- Action Area --- */
-      .action-area {
-        min-height: 100px;
-        border: 1px #444;
-        padding: 15px;
-        border-radius: 5px;
-        background-color: #1e1e1e;
-        border: 1px solid #444;
-        text-align: center;
-      }
-      .action-area h4 {
-        margin-top: 0;
-      }
-      .action-area select,
-      .action-area button {
-        font-size: 1.1em;
-        margin: 10px 5px;
-        padding: 8px;
-        border-radius: 5px;
-        border: 1px solid #444;
-        background-color: #2c2c2c;
-        color: gainsboro;
-      }
-      .action-area button {
-        background-color: slateblue;
-        border: none;
-        cursor: pointer;
-      }
-      .action-area button:hover:not(:disabled) {
-        background-color: royalblue;
-      }
-      .action-area button:disabled {
-        background-color: #333;
-        color: dimgray;
-        cursor: not-allowed;
-      }
-      .vote-btn-yes {
-        background-color: mediumseagreen !important;
-      }
-      .vote-btn-yes:hover {
-        background-color: seagreen !important;
-      }
-      .vote-btn-no {
-        background-color: crimson !important;
-      }
-      .vote-btn-no:hover {
-        background-color: tomato !important;
-      }
-      hr {
-        border-color: #444;
-        margin: 20px 0;
-      }
-
-      /* --- PnP Styles --- */
-      .pnp-hidden {
-        display: none !important;
-      }
-
-      #pnp-hub {
-        display: none; /* Flex when active */
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: #111;
-        z-index: 10;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        padding: 20px;
-      }
-
-      .pnp-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        gap: 15px;
-        width: 100%;
-        max-width: 600px;
-        margin-top: 15px;
-      }
-
-      .pnp-btn {
-        padding: 10px;
-        background-color: #444;
-        color: white;
-        border: 1px solid darkviolet;
-        border-radius: 8px;
-        font-size: 1.1em;
-        cursor: pointer;
-        text-align: center;
-        transition:
-          transform 0.2s,
-          background-color 0.2s;
-      }
-      .pnp-btn:hover {
-        color: orangered;
-        background-color: dimgray;
-        border: 2px solid darkorchid;
-        transform: translateY(-2px);
-      }
-      .pnp-btn:active {
-        transform: scale(0.98);
-      }
-      .pnp-btn.dead {
-        opacity: 0.5;
-        text-decoration: line-through;
-        background-color: #333;
-        border-color: crimson;
-      }
-
-      /* Confirm Overlay */
-      #pnp-overlay {
-        display: none; /* Flex when active */
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.95);
-        z-index: 2000;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        text-align: center;
-      }
-      .confirm-box {
-        background: #1e1e1e;
-        padding: 40px;
-        border-radius: 12px;
-        border: 2px solid darkviolet;
-        max-width: 440px;
-        width: 90%;
-      }
-      .confirm-box h2 {
-        margin-top: 0;
-        color: darkviolet;
-      }
-      .confirm-box p {
-        font-size: 1.1em;
-        color: gainsboro;
-        margin-bottom: 25px;
-      }
-
-      .big-btn {
-        width: 70%;
-        padding: 15px;
-        margin-top: 10px;
-        font-size: 1.1em;
-        background: royalblue;
-        color: white;
-        border: 1px solid white;
-        border-radius: 5px;
-        cursor: pointer;
-      }
-      .big-btn:hover {
-        border: 1px solid darkorchid;
-        transform: scale(0.98);
-      }
-      .big-btn.cancel {
-        background: crimson;
-      }
-      .big-btn.secondary {
-        background: #444;
-        padding: 10px;
-      }
-      .big-btn.secondary:hover {
-        border: 1px solid darkorchid;
-        color: orangered;
-      }
-      .big-btn.danger {
-        background-color: crimson;
-      }
-      .big-btn.danger:hover {
-        background-color: red;
-      }
-      /* --- Chat & Logs --- */
-      .log-panel {
-        height: 200px;
-        overflow-y: scroll;
-        border: 1px solid #444;
-        border-radius: 5px;
-        padding: 10px;
-        background: #1e1e1e;
-        margin-top: 20px;
+      .log-panel,
+      .chat-messages,
+      .game-over-log {
+        overflow-y: auto;
         display: flex;
         flex-direction: column-reverse;
       }
-      .log-panel div {
+      .log-panel {
+        height: 200px;
+        margin-top: 20px;
+      }
+      .chat-messages {
+        height: 150px;
+        margin-bottom: 10px;
+        background-color: #1e1e1e;
+      } /* Explicit bg for chat contrast */
+      .game-over-log {
+        height: 150px;
+        background: #111;
+        padding: 10px;
+        margin-top: 15px;
+        text-align: left;
+        font-size: 0.9em;
+      }
+
+      .log-panel div,
+      .chat-messages div,
+      .game-over-log div {
         padding-bottom: 5px;
         margin-bottom: 5px;
-        border-bottom: 1px solid #444;
+        border-bottom: 1px solid var(--border-color);
       }
-      .log-panel .vote-summary {
-        font-size: 0.9em;
-        color: darkgray;
-      }
-      /* New Private Message Style */
+
       .private-msg {
-        background-color: #1e1e1e;
-        border-left: 3px solid darkviolet;
+        background-color: var(--bg-panel);
+        border-left: 3px solid var(--accent-color);
         padding: 5px;
         margin-left: 5px;
       }
+
       .chat-container {
         margin-top: 20px;
         display: flex;
         flex-direction: column;
-      }
-      .chat-messages {
-        height: 150px;
-        overflow-y: auto;
-        border: 1px solid #444;
-        padding: 10px;
-        background: #1e1e1e;
-        margin-bottom: 10px;
-        display: flex;
-        flex-direction: column-reverse;
       }
       .chat-form {
         display: flex;
@@ -314,65 +428,22 @@
       .chat-input {
         flex-grow: 1;
         margin-right: 10px;
-      }
-      .ghost-chat {
-        color: darkviolet;
-        font-style: italic;
-      }
-      .announcement {
-        color: darkviolet;
-        font-weight: bold;
+        padding: 8px;
+        border-radius: 5px;
+        border: 1px solid var(--border-color);
+        background: var(--bg-item);
+        color: white;
       }
 
-      /* --- Game Over Overlay --- */
-      #game-over-screen {
-        display: none;
-        flex-direction: column;
-        align-items: center;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: black;
-        z-index: 100;
-        overflow-y: auto;
+      /* --- 7. Misc & Mobile --- */
+      hr {
+        border-color: var(--border-color);
+        margin: 20px 0;
       }
-      .game-over-box {
-        width: 90%;
-        max-width: 500px;
-        padding: 20px;
-        margin: auto;
-        background-color: #1e1e1e;
-        border: 1px solid darkviolet;
-        border-radius: 12px;
-        text-align: center;
-        margin-top: 20px;
-        margin-bottom: 20px;
+      .pnp-hidden {
+        display: none !important;
       }
-      .game-over-log {
-        height: 150px;
-        overflow-y: auto;
-        border: 1px solid #444;
-        border-radius: 5px;
-        background: #111;
-        padding: 10px;
-        margin-top: 15px;
-        text-align: left;
-        display: flex;
-        flex-direction: column-reverse;
-        font-size: 0.9em;
-      }
-      .game-over-log div {
-        border-bottom: 1px solid #444;
-        padding-bottom: 4px;
-        margin-bottom: 4px;
-      }
-      #game-over-title {
-        color: darkvio;
-        margin-top: 0;
-        font-size: 2.5em;
-      }
+
       #final-roles-list {
         list-style-type: none;
         padding: 0;
@@ -383,69 +454,13 @@
         text-align: center;
       }
       #final-roles-list li {
-        background-color: #2c2c2c;
+        background-color: var(--bg-item);
         padding: 10px;
         margin-bottom: 8px;
         border-radius: 5px;
       }
-      #return-to-lobby-btn {
-        margin-top: 20px;
-        padding: 12px 24px;
-        font-size: 1.1em;
-        color: gainsboro;
-        background-color: royalblue;
-        border: 1px solid transparent;
-        border-radius: 5px;
-        cursor: pointer;
-      }
-      #return-to-lobby-btn:hover {
-        border: 1px solid white;
-        background-color: slateblue;
-      }
-      #return-to-lobby-btn:disabled {
-        background-color: #444;
-        cursor: not-allowed;
-      }
-      #rematch-vote-status {
-        margin-top: 15px;
-        font-size: 0.9em;
-        color: darkgray;
-        min-height: 20px;
-      }
-      #admin-controls-ingame {
-        text-align: center;
-      }
-      #admin-controls-ingame button {
-        margin: 5px auto;
-        width: 65%;
-        display: block;
-        background-color: slategray;
-      }
-      .btn-active {
-        background-color: orangered !important;
-      }
 
-      /* Mobile */
-      @media (max-width: 768px) {
-        body {
-          align-items: flex-start;
-          padding-top: 15px;
-        }
-        .game-container {
-          flex-direction: column;
-          gap: 0;
-        }
-        .side-panel {
-          width: 100%;
-          border-left: none;
-          border-top: 1px solid #444;
-          padding-left: 0;
-          padding-top: 20px;
-          margin-top: 20px;
-        }
-      }
-
-      /* Role Tooltip */
+      /* Tooltip */
       #my-role-display {
         position: relative;
         display: inline-block;
@@ -473,34 +488,42 @@
         visibility: visible;
         opacity: 1;
       }
+
+      @media (max-width: 768px) {
+        body {
+          align-items: flex-start;
+          padding-top: 15px;
+        }
+        .game-container {
+          flex-direction: column;
+          gap: 0;
+        }
+        .side-panel {
+          width: 100%;
+          border-left: none;
+          border-top: 1px solid var(--border-color);
+          padding-left: 0;
+          padding-top: 20px;
+          margin-top: 20px;
+        }
+      }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <script src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
   </head>
   <body>
     <div id="pnp-hub">
-      <h2 style="margin-top: 0; color: darkviolet">Night Phase 🌙</h2>
-      <p style="color: darkgray">Select your name to perform player actions.</p>
+      <h2>Night Phase 🌙</h2>
+      <p>Select your name to perform player actions.</p>
       <div id="pnp-grid" class="pnp-grid"></div>
-      <div
-        id="pnp-log-container"
-        style="width: 100%; max-width: 600px; margin-top: 20px"
-      >
+      <div id="pnp-log-container">
         <h3>Game Log</h3>
       </div>
-      <div
-        style="
-          margin-top: 30px;
-          border-top: 1px solid #444;
-          padding-top: 15px;
-          width: 100%;
-          text-align: center;
-        "
-      >
+      <div class="pnp-footer">
         <button
           onclick="confirmAdvancePhase()"
           class="big-btn danger"
-          style="width: auto; font-size: 1em; padding: 10px"
+          style="width: auto; padding: 10px"
         >
           Force Next Phase
         </button>
@@ -530,19 +553,10 @@
         <button
           id="pnp-return-btn"
           class="big-btn secondary pnp-hidden"
-          style="
-            margin-bottom: 15px;
-            padding: 8px;
-            width: auto;
-            border: 1px solid darkviolet;
-            align-self: center;
-            text-align: center;
-          "
           onclick="requestGameSync()"
         >
           Done / Back
         </button>
-
         <div id="role-display" class="role-display">
           <span id="my-role-display">
             Your Role: <strong id="my-role">Unknown</strong> ✨
@@ -778,7 +792,7 @@
 
         // 2. Set Content
         title.innerText = "Force Next Phase";
-        title.style.color = "#ff9800"; // Orange warning color
+        title.style.color = "orange";
         msg.innerHTML =
           "⚠️ <strong>Warning:</strong><br>This will skip remaining turns for this phase.<br>Are you sure?";
 
@@ -824,7 +838,7 @@
             titleEl.style.textShadow =
               "0 0 5px #00bcd4, 0 0 10px #00bcd4, 0 0 20px #00bcd4, 0 0 40px #00bcd4"; // Glowing effect
           } else if (phase === "Accusation") {
-            titleEl.style.color = "orange"; // Orange
+            titleEl.style.color = "white";
             titleEl.textContent += " 🫵";
             titleEl.style.textShadow =
               "0 0 5px #ffb74d, 0 0 10px #ff9800, 0 0 20px #ff9800, 0 0 40px #ff9800";
@@ -1459,7 +1473,7 @@
           els.phase.style.textShadow =
             "0 0 5px #00bcd4, 0 0 10px #00bcd4, 0 0 20px #00bcd4, 0 0 40px #00bcd4"; // Glowing effect
         } else if (currentPhase === "Accusation") {
-          els.phase.style.color = "orange"; // Orange for Day/Discussion
+          els.phase.style.color = "white";
           els.phase.textContent += " 🫵";
           els.phase.style.textShadow =
             "0 0 5px #ffb74d, 0 0 10px #ff9800, 0 0 20px #ff9800, 0 0 40px #ff9800";

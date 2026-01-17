@@ -55,6 +55,22 @@
       button:hover {
         background-color: royalblue;
       }
+      h2 {
+        background: radial-gradient(circle, crimson 0%, darkviolet 100%);
+        background-clip: text;
+        -webkit-background-clip: text;
+        color: transparent;
+        animation: animatedGradient 1s infinite ease;
+        animation-direction: alternate;
+      }
+      @keyframes animatedGradient {
+        from {
+          background-size: 100%;
+        }
+        to {
+          background-size: 250%;
+        }
+      }
     </style>
   </head>
   <body>
