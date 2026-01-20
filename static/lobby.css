@@ -1,0 +1,417 @@
+/* --- Version 4.9.2 --- */
+:root {
+  --bg-body: black;
+  --bg-panel: #111;
+  --bg-item: #222;
+  --text-main: gainsboro;
+  --border-color: #444;
+  --accent-color: darkviolet;
+  --highlight-color: orangered;
+}
+
+body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  min-height: 100vh;
+  margin: 0;
+}
+
+/* --- 2. Layout & Containers --- */
+.lobby-container {
+  width: 90%;
+  max-width: 1025px;
+  margin: 20px auto;
+  padding: 20px;
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  display: grid;
+}
+
+.settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.settings-group {
+  flex: 1;
+  min-width: 300px;
+  background-color: var(--bg-item);
+  padding: 15px;
+  border-radius: 5px;
+  border: 1px solid var(--border-color);
+}
+
+.chat-container {
+  margin-top: 20px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 15px;
+}
+
+.admin-controls {
+  margin-top: 20px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color);
+}
+
+/* --- 3. Typography & Text Utilities --- */
+h2,
+h3,
+h4 {
+  margin-top: 0;
+}
+
+.settings-group h4 {
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
+  margin-bottom: 15px;
+  color: var(--accent-color);
+}
+
+.you {
+  font-weight: bold;
+}
+
+.exclude-btn {
+  margin-left: 15px;
+  color: salmon;
+  cursor: pointer;
+  font-weight: normal;
+}
+
+/* --- 4. Inputs & Buttons --- */
+input[type="text"],
+input[type="number"] {
+  padding: 8px;
+  border-radius: 5px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-item);
+  color: var(--text-main);
+}
+
+/* Timer specific sizing */
+.timer-input-row input {
+  width: 80px;
+}
+#new-game-code-input {
+  margin: 8px;
+}
+#chat-input {
+  flex-grow: 1;
+  margin-right: 10px;
+}
+
+button {
+  padding: 10px 20px;
+  border-radius: 5px;
+  border: none;
+  background-color: slateblue;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+button:hover:not(:disabled) {
+  background-color: dodgerblue;
+}
+button:disabled {
+  background-color: #333;
+  color: dimgray;
+  cursor: not-allowed;
+}
+#add-player-btn {
+  display: none; /* Default hidden, JS toggles this */
+  font-size: 0.8em;
+  padding: 10px;
+  margin: 10px;
+  background-color: seagreen; /* Unique color kept */
+  color: white;
+}
+#add-player-btn:hover {
+  filter: brightness(1.2);
+}
+#random-roles-btn {
+  width: auto;
+  margin-bottom: 5px;
+  margin-right: 10px;
+  background-color: var(--accent-color); /* Uses darkviolet var */
+  color: white;
+}
+#random-roles-btn:hover {
+  filter: brightness(1.2);
+}
+
+/* --- 5. Lists & Chat --- */
+#player-list {
+  padding-left: 0;
+}
+
+#player-list li {
+  margin-bottom: 10px;
+  list-style-type: none;
+  padding: 8px;
+  background-color: var(--bg-item);
+  border-radius: 5px;
+}
+
+.chat-messages {
+  height: 150px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  padding: 10px;
+  background: #111;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+.chat-messages div {
+  padding-bottom: 5px;
+  margin-bottom: 5px;
+  border-bottom: 1px solid var(--border-color);
+}
+.chat-messages .announcement {
+  color: var(--accent-color);
+}
+#chat-form {
+  display: flex;
+}
+
+/* --- 6. Role Tiles (Grid & Cards) --- */
+#roles-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  justify-content: center;
+  padding: 5px;
+}
+
+.role-tile {
+  position: relative;
+  background-color: #111;
+  border: 1px solid darkgray;
+  border-radius: 5px;
+  width: 220px;
+  padding: 6px;
+  text-align: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition:
+    transform 0.2s,
+    background-color 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+}
+
+.role-tile:hover {
+  transform: translateY(-4px);
+  background-color: var(--bg-panel);
+  border-color: var(--highlight-color);
+}
+.role-tile.selected {
+  border: 1px solid var(--accent-color);
+  background-color: black;
+}
+.role-tile.selected:hover {
+  background-color: var(--bg-panel);
+}
+
+.role-tile h3 {
+  margin: 4px 0 2px;
+  font-size: 1.2em;
+  color: var(--text-main);
+  width: 100%;
+  transition: color 0.2s;
+}
+.role-tile:hover h3 {
+  color: var(--role-color);
+}
+
+.role-short-desc {
+  font-size: 0.9em;
+  font-weight: bold;
+  margin: 4px 0 2px;
+  line-height: 1.2;
+  color: darkgray;
+}
+
+/* Checkbox styling */
+.role-tile input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--role-color, #777);
+  border-radius: 5px;
+  cursor: pointer;
+  background-color: transparent;
+  transition: all 0.2s;
+  margin: 0;
+}
+.role-tile input[type="checkbox"]:checked {
+  background-color: var(--role-color, #777);
+  box-shadow: 0 0 5px var(--role-color);
+}
+.role-tile input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 0px;
+  width: 5px;
+  height: 10px;
+  border: solid black;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* --- 7. Tooltips --- */
+.role-tooltip,
+.legend-tooltip {
+  visibility: hidden;
+  opacity: 0;
+  width: 260px;
+  background-color: var(--bg-item);
+  color: white;
+  text-align: left;
+  border-radius: 5px;
+  padding: 12px;
+  position: absolute;
+  z-index: 100;
+  transition: opacity 0.2s;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+/* Role Tooltip Position */
+.role-tooltip {
+  bottom: 110%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.role-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: var(--bg-item) transparent transparent transparent;
+}
+.role-tile:hover .role-tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+.tooltip-rating {
+  display: block;
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid #444;
+  text-align: right;
+}
+
+/* Legend Tooltip Specifics */
+.rating-legend-wrapper {
+  position: relative;
+  display: inline-block;
+  cursor: help;
+  font-size: 0.9em;
+  color: var(--text-main);
+}
+.legend-tooltip {
+  width: 220px;
+  border: 1px solid var(--border-color);
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.legend-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: var(--bg-item) transparent transparent transparent;
+}
+.rating-legend-wrapper:hover .legend-tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  margin-top: 4px;
+  font-size: 0.85em;
+}
+.legend-item .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 8px;
+  display: inline-block;
+}
+
+/* --- 8. Timer & Misc --- */
+.timer-setting {
+  margin-bottom: 10px;
+}
+.timer-setting label {
+  display: inline-block;
+  width: 150px;
+}
+.timer-input-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+#role-summary-container {
+  background-color: var(--bg-item);
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  color: var(--text-main);
+}
+
+#role-summary-container strong {
+  color: var(--accent-color);
+}
+
+/* Refined .settings-group (Uses variables now) */
+.settings-group {
+  flex: 1;
+  min-width: 300px;
+  background-color: var(--bg-item); /* Replaces #2c2c2c */
+  padding: 15px;
+  border-radius: 5px;
+  border: 1px solid var(--border-color); /* Replaces #444 */
+}
+.settings-group label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+
+/* --- 9. Responsive --- */
+@media (max-width: 768px) {
+  .lobby-container {
+    grid-template-columns: 1fr;
+  }
+}

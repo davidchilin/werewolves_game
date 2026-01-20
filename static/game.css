@@ -1,0 +1,519 @@
+/* --- Version 4.9.2 --- */
+:root {
+  --bg-body: black;
+  --bg-panel: #111;
+  --bg-item: #222;
+  --text-main: gainsboro;
+  --text-muted: darkgray;
+  --border-color: #444;
+
+  --accent-color: darkviolet;
+  --highlight-color: royalblue;
+  --danger-color: crimson;
+  --warning-color: orangered;
+  --success-color: mediumseagreen;
+  --gold-color: gold;
+}
+
+body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--bg-body);
+  color: var(--text-main);
+}
+
+/* --- 2. Layout & Panels --- */
+.game-container {
+  width: 95%;
+  max-width: 800px;
+  display: flex;
+  gap: 20px;
+}
+
+.main-panel {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.side-panel {
+  width: 250px;
+  border-left: 1px solid var(--border-color);
+  padding-left: 20px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* consolidated panel styles */
+.action-area,
+.log-panel,
+.chat-messages,
+.role-display,
+.confirm-box,
+.game-over-box {
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 10px; /* Standardized padding */
+}
+
+.action-area {
+  min-height: 100px;
+  padding: 15px;
+  text-align: center;
+  margin-bottom: 20px; /* Spacing */
+}
+
+.role-display {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+/* --- 3. Overlays (PnP, Game Over) --- */
+#pnp-hub,
+#pnp-overlay,
+#game-over-screen {
+  display: none; /* Flex when active */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100; /* Standard high z-index */
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+#pnp-hub {
+  background-color: #111;
+  z-index: 10;
+  padding: 20px;
+}
+#pnp-overlay {
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 2000;
+  text-align: center;
+}
+#game-over-screen {
+  background-color: black;
+  overflow-y: auto;
+}
+
+/* PnP Specifics */
+.pnp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 15px;
+  width: 100%;
+  max-width: 600px;
+  margin-top: 10px;
+}
+
+#pnp-log-container {
+  width: 100%;
+  max-width: 600px;
+  margin-top: 15px;
+}
+
+.pnp-footer {
+  margin-top: 20px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 15px;
+  width: 100%;
+  text-align: center;
+}
+
+/* Overlay Boxes */
+.confirm-box {
+  border: 2px solid var(--accent-color);
+  max-width: 440px;
+  width: 90%;
+  padding: 40px;
+}
+.game-over-box {
+  border: 1px solid var(--accent-color);
+  max-width: 500px;
+  width: 90%;
+  text-align: center;
+  margin: 20px auto;
+  border-radius: 12px;
+}
+
+/* --- 4. Typography --- */
+h2,
+h4 {
+  margin-top: 0;
+}
+
+.phase-display {
+  font-size: 1.5em;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 10px;
+  text-transform: capitalize;
+  color: var(--accent-color);
+}
+
+.timer-display {
+  font-size: 1.2em;
+  text-align: center;
+  color: var(--gold-color);
+  margin-bottom: 20px;
+}
+
+.announcement {
+  color: var(--accent-color);
+  font-weight: bold;
+}
+.ghost-chat {
+  color: var(--accent-color);
+  font-style: italic;
+}
+.vote-summary {
+  font-size: 0.9em;
+  color: var(--text-muted);
+}
+
+/* PnP Headers (formerly inline) */
+#pnp-hub h2 {
+  margin-top: 0;
+  color: var(--accent-color);
+}
+#pnp-hub p {
+  color: var(--text-muted);
+}
+
+/* --- 5. Buttons & Inputs --- */
+button {
+  cursor: pointer;
+  border: none;
+}
+
+/* Big Buttons (PnP, Overlays) */
+.big-btn {
+  width: 70%;
+  padding: 15px;
+  margin-top: 10px;
+  font-size: 1.1em;
+  background: var(--highlight-color);
+  color: white;
+  border: 1px solid white;
+  border-radius: 5px;
+}
+.big-btn:hover {
+  border: 1px solid black;
+  transform: scale(0.98);
+}
+.big-btn.cancel {
+  background: var(--danger-color);
+}
+.big-btn.danger {
+  background-color: var(--accent-color);
+}
+.big-btn.danger:hover {
+  background-color: red;
+}
+
+.big-btn.secondary {
+  background: #444;
+  padding: 10px;
+}
+.big-btn.secondary:hover {
+  border: 1px solid darkorchid;
+  color: var(--warning-color);
+}
+
+/* PnP Grid Buttons */
+#return-to-lobby-btn,
+.pnp-btn {
+  padding: 10px;
+  background-color: black;
+  color: white;
+  border: 1px solid var(--accent-color);
+  border-radius: 8px;
+  font-size: 1.1em;
+  text-align: center;
+  transition:
+    transform 0.2s,
+    background-color 0.2s;
+}
+#return-to-lobby-btn:hover,
+.pnp-btn:hover {
+  color: white; /* White text pops better against the glow */
+  background-color: #2a0a3a; /* Deep purple/black background */
+  border: 1px solid #d500f9; /* Bright neon purple border */
+  /* The Cool Purple Glow */
+  box-shadow:
+    0 0 10px #d500f9,
+    0 0 20px #aa00ff,
+    0 0 40px #aa00ff;
+}
+.pnp-btn.dead {
+  opacity: 0.5;
+  text-decoration: line-through;
+  background-color: #111;
+  border-color: lightgray;
+}
+
+/* Specific ID Buttons */
+#pnp-return-btn {
+  margin-bottom: 15px;
+  padding: 8px;
+  width: auto;
+  border: 1px solid var(--accent-color);
+  align-self: center;
+  text-align: center;
+}
+#return-to-lobby-btn:disabled {
+  background-color: #444;
+  cursor: not-allowed;
+}
+
+/* Action Area Controls */
+.action-area select,
+.action-area button {
+  font-size: 1.1em;
+  margin: 10px 5px;
+  padding: 8px;
+  border-radius: 5px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-item);
+  color: var(--text-main);
+}
+.action-area button {
+  background-color: slateblue;
+}
+.action-area button:hover:not(:disabled) {
+  background-color: var(--highlight-color);
+}
+.action-area button:disabled {
+  background-color: #333;
+  color: dimgray;
+  cursor: not-allowed;
+}
+
+.vote-btn-yes {
+  background-color: var(--success-color) !important;
+}
+.vote-btn-yes:hover {
+  background-color: seagreen !important;
+}
+.vote-btn-no {
+  background-color: var(--danger-color) !important;
+}
+.vote-btn-no:hover {
+  background-color: tomato !important;
+}
+
+/* Admin Buttons */
+#admin-controls-ingame {
+  text-align: center;
+} /* Moved display:none to inline HTML style or JS default */
+#admin-controls-ingame button {
+  margin: 5px auto;
+  width: 65%;
+  display: block;
+  background-color: slategray;
+}
+.btn-active {
+  background-color: var(--warning-color) !important;
+}
+
+/* --- 6. Lists & Chat --- */
+.player-list {
+  padding-left: 0;
+}
+.player-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  list-style-type: none;
+  padding: 8px;
+  border-radius: 5px;
+  margin-bottom: 5px;
+  background-color: var(--bg-item);
+}
+.player-list li.dead {
+  text-decoration: line-through;
+  color: lightslategray;
+  background-color: var(--bg-item);
+}
+
+.accusation-count {
+  font-size: 0.9em;
+  font-weight: bold;
+  background-color: var(--warning-color);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: auto;
+}
+
+.log-panel,
+.chat-messages,
+.game-over-log {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column-reverse;
+}
+.log-panel {
+  height: 200px;
+  margin-top: 20px;
+  background-color: #1e1e1e;
+}
+.chat-messages {
+  height: 150px;
+  margin-bottom: 10px;
+  background-color: #1e1e1e;
+} /* Explicit bg for chat contrast */
+.game-over-log {
+  height: 150px;
+  background: #111;
+  padding: 10px;
+  margin-top: 15px;
+  text-align: left;
+  font-size: 0.9em;
+}
+
+.log-panel div,
+.chat-messages div,
+.game-over-log div {
+  padding-bottom: 5px;
+  margin-bottom: 5px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.private-msg {
+  background-color: var(--bg-panel);
+  border-left: 3px solid var(--accent-color);
+  padding: 5px;
+  margin-left: 5px;
+}
+
+.chat-container {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+}
+.chat-form {
+  display: flex;
+}
+.chat-input {
+  flex-grow: 1;
+  margin-right: 10px;
+  padding: 8px;
+  border-radius: 5px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-item);
+  color: white;
+}
+
+h1 {
+  color: white;
+  margin: 10px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  /* Initial state */
+  text-shadow:
+    0 0 5px darkviolet,
+    0 0 10px darkviolet,
+    0 0 20px darkviolet,
+    0 0 40px darkviolet;
+  animation: neon-pulse 3s infinite alternate;
+}
+@keyframes neon-pulse {
+  0% {
+    text-shadow:
+      0 0 5px darkviolet,
+      0 0 10px darkviolet,
+      0 0 20px darkviolet,
+      0 0 40px darkviolet;
+  }
+  100% {
+    text-shadow:
+      0 0 2px darkviolet,
+      0 0 5px darkviolet,
+      0 0 10px darkviolet,
+      0 0 20px darkviolet;
+    opacity: 0.7; /* Slight dimming for effect */
+  }
+}
+/* --- 7. Misc & Mobile --- */
+hr {
+  border-color: var(--border-color);
+  margin: 20px 0;
+}
+.pnp-hidden {
+  display: none !important;
+}
+
+#final-roles-list {
+  list-style-type: none;
+  padding: 0;
+  margin-top: 20px;
+  max-width: 300px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+#final-roles-list li {
+  background-color: var(--bg-item);
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 5px;
+}
+
+/* Tooltip */
+#my-role-display {
+  position: relative;
+  display: inline-block;
+  cursor: help;
+}
+#my-role-tooltip {
+  visibility: hidden;
+  width: 300px;
+  background-color: rgba(0, 0, 0, 0.9);
+  color: white;
+  text-align: center;
+  border-radius: 6px;
+  padding: 15px;
+  position: absolute;
+  z-index: 1000;
+  top: 120%;
+  left: 50%;
+  transform: translateX(-60%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 1rem;
+  pointer-events: none;
+}
+#my-role-display:hover #my-role-tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  body {
+    align-items: flex-start;
+    padding-top: 15px;
+  }
+  .game-container {
+    flex-direction: column;
+    gap: 0;
+  }
+  .side-panel {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--border-color);
+    padding-left: 0;
+    padding-top: 20px;
+    margin-top: 20px;
+  }
+}
