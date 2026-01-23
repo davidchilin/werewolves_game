@@ -3,7 +3,8 @@
 A feature-rich, self-hosted real-time multiplayer social deduction game. Built
 with Python (Flask) and WebSockets, this project has evolved from a simple
 experiment into a fully playable party game supporting 24 unique roles, mobile
-"Pass-and-Play" support, and complex win conditions. [Install Instructions](#setup-and-running-the-project)
+"Pass-and-Play" support, and complex win conditions.
+[Install Instructions](#setup-and-running-the-project)
 
 ## **Description**
 
@@ -12,17 +13,22 @@ Players join a lobby using a unique game code, are secretly assigned roles
 (Villager, Wolf, or Seer), and then cycle through "night" and "day" phases.
 During the night, wolves secretly choose a player to eliminate, and the seer can
 investigate a player's role. During the day, players discuss and vote to lynch
-someone they suspect is a wolf. The game supports complex interactions: lovers linked by Cupid, chain-reaction deaths (Honeypot/Hunter), solo-winning roles (Serial Killer/Fool), and "Ghost Mode" where dead players can still influence the outcome.
+someone they suspect is a wolf. The game supports complex interactions: lovers
+linked by Cupid, chain-reaction deaths (Honeypot/Hunter), solo-winning roles
+(Serial Killer/Fool), and "Ghost Mode" where dead players can still influence
+the outcome.
 
-The game is designed to be played alongside a separate video or voice chat (like Jitsi Meet or Zoom), where the real-time discussion and deception take place OR in person using one to several phones in **Pass-and-Play** mode. 
+The game is designed to be played alongside a separate video or voice chat (like
+Jitsi Meet or Zoom), where the real-time discussion and deception take place OR
+in person using one to several phones in **Pass-and-Play** mode.
 
 ## **Core Features**
 
 <img src="lobby.jpg" width="50%" align="right" />
 
-- **📱 Pass-and-Play Mode:** Play with a single phone (or several) passed around the room.
-  The UI guides players to confirm their identity before revealing their private
-  role screen.
+- **📱 Pass-and-Play Mode:** Play with a single phone (or several) passed around
+  the room. The UI guides players to confirm their identity before revealing
+  their private role screen.
 - **👻 Ghost Mode:** Dead players aren't just spectators. If enabled, ghosts
   have a small chance to participate during accusation and lynch vote phase.
 - **🎭 24 Unique Roles:** Including complex roles like the **Alpha Werewolf**,
@@ -30,8 +36,8 @@ The game is designed to be played alongside a separate video or voice chat (like
 - **🏆 Solo Win Conditions:** Neutral roles like the **Monster**, **Fool**, or
   **Demented Villager** can win alone, ignoring team allegiances.
 
-- **Robust Admin Controls:** The first player to join becomes the admin and has the
-  ability to:
+- **Robust Admin Controls:** The first player to join becomes the admin and has
+  the ability to:
   - Exclude players from the lobby.
   - Start the game once enough players have joined (minimum of 4).
   - Set custom timer durations (in seconds) for the Night, Accusation, and Lynch
@@ -56,7 +62,7 @@ The game is designed to be played alongside a separate video or voice chat (like
   - **Wolves Win:** When the number of living wolves is equal to or greater than
     the number of living non-wolves.
   - **🏆 Solo Win Conditions:** Neutral roles like the **Monster**, **Fool**, or
-  **Demented Villager** can win alone, ignoring team allegiances.
+    **Demented Villager** can win alone, ignoring team allegiances.
   - When a win condition is met, a "Game Over" screen is displayed to all
     players, showing the winning team, the reason for victory, and a list of all
     players and their final roles.
@@ -101,12 +107,13 @@ The game is designed to be played alongside a separate video or voice chat (like
   choose sleep, the game transitions to night.
 
 ## **Roles**
+
 The game now supports **24 unique roles** divided into teams:
-<img src="game_over.png" width="50%" align="right"/>
 
 ### 🌻 The Village (Good)
 
-- **Villager:** No powers. Must work together to find and eliminate all the Werewolves.
+- **Villager:** No powers. Must work together to find and eliminate all the
+  Werewolves.
 - **Seer / Random Seer:** Investigates one player's role each night.
 - **Bodyguard:** Protects one player from death at night.
 - **Witch:** Has one **Heal** potion and one **Poison** potion.
@@ -122,8 +129,8 @@ The game now supports **24 unique roles** divided into teams:
 
 ### 🐺 The Pack (Evil)
 
-- **Werewolf:** Must work with other wolves to eliminate villagers until they have
-    the majority.
+- **Werewolf:** Must work with other wolves to eliminate villagers until they
+  have the majority.
 - **Alpha Werewolf:** Wins only if they are the last wolf standing.
 - **Backlash Werewolf:** A Wolf that acts like a Hunter if killed.
 - **Tough Werewolf:** A Wolf with armor (survives one hit).
