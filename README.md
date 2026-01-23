@@ -1,35 +1,65 @@
-# **Werewolves - A Flask-based Multiplayer Game**
+# **Werewolves Game**
 
-A self-hosted real-time multiplayer social deduction game inspired by Werewolves and Mafia. This web application is built primarily with Python, using the Flask framework and WebSockets for live player interaction. I made this game to practice using an LLM. [Install](#setup-and-running-the-project)
+A feature-rich, self-hosted real-time multiplayer social deduction game. Built
+with Python (Flask) and WebSockets, this project has evolved from a simple
+experiment into a fully playable party game supporting 24 unique roles, mobile
+"Pass-and-Play" support, and complex win conditions. [Install Instructions](#setup-and-running-the-project)
 
 ## **Description**
 
-This project is a web-based implementation of the classic party game Werewolves. Players join a lobby using a unique game code, are secretly assigned roles (Villager, Wolf, or Seer), and then enter a cycle of "night" and "day" phases. During the night, wolves secretly choose a player to eliminate, and the seer can investigate a player's role. During the day, players discuss and vote to lynch someone they suspect is a wolf. The game is designed to be played alongside a separate video or voice chat (like Jitsi Meet or Zoom), where the real-time discussion and deception take place.
+This project is a web-based implementation of the classic party game Werewolves.
+Players join a lobby using a unique game code, are secretly assigned roles
+(Villager, Wolf, or Seer), and then cycle through "night" and "day" phases.
+During the night, wolves secretly choose a player to eliminate, and the seer can
+investigate a player's role. During the day, players discuss and vote to lynch
+someone they suspect is a wolf. The game supports complex interactions: lovers linked by Cupid, chain-reaction deaths (Honeypot/Hunter), solo-winning roles (Serial Killer/Fool), and "Ghost Mode" where dead players can still influence the outcome.
+
+The game is designed to be played alongside a separate video or voice chat (like Jitsi Meet or Zoom), where the real-time discussion and deception take place OR in person using one to several phones in **Pass-and-Play** mode. 
 
 ## **Core Features**
 
-<img src="lobby.png" width="50%" align="right" />
+<img src="lobby.jpg" width="50%" align="right" />
 
-- **Secure Game Lobby:** Players join a single game instance using a shared game code.
-- **Admin Controls:** The first player to join becomes the admin and has the ability to:
+- **📱 Pass-and-Play Mode:** Play with a single phone (or several) passed around the room.
+  The UI guides players to confirm their identity before revealing their private
+  role screen.
+- **👻 Ghost Mode:** Dead players aren't just spectators. If enabled, ghosts
+  have a small chance to participate during accusation and lynch vote phase.
+- **🎭 24 Unique Roles:** Including complex roles like the **Alpha Werewolf**,
+  **Prostitute**, **Lawyer**, and **Serial Killer**.
+- **🏆 Solo Win Conditions:** Neutral roles like the **Monster**, **Fool**, or
+  **Demented Villager** can win alone, ignoring team allegiances.
+
+- **Robust Admin Controls:** The first player to join becomes the admin and has the
+  ability to:
   - Exclude players from the lobby.
   - Start the game once enough players have joined (minimum of 4).
-  - Set custom timer durations (in seconds) for the Night, Accusation, and Lynch Vote phases.
+  - Set custom timer durations (in seconds) for the Night, Accusation, and Lynch
+    Vote phases.
   - Set a new game code.
   - Set admin only chat.
-- **Persistent Sessions:** Players can refresh their browser or momentarily disconnect without losing their place in the game (although timer might be incorrect)
-- **Dynamic Role Assignment:** At the start of the game, players are randomly and secretly assigned one of three roles:
-  - **Villager:** Must work to find and eliminate the wolves.
-  - **Wolf:** Must work with other wolves to eliminate villagers until they have the majority.
-  - **Seer:** A special villager who can investigate one player's role each night.
-- **Live Game Updates and Chat:** The UI updates in real-time for all players using WebSockets, showing phase changes, player status, game chat, and game log events.
-- **Automated Game Loop & Win Conditions:** The game automatically cycles through phases. After each death (from a wolf kill, a lynch vote) the system checks for win conditions:
+  - Turn on **Pass-and-Play** and **Ghost Mode**.
+- **Persistent Sessions:** Players can refresh their browser or momentarily
+  disconnect without losing their place in the game (although timer might be
+  incorrect)
+- **Live Game Updates and Chat:** The UI updates in real-time for all players
+  using WebSockets, showing phase changes, player status, game chat, and game
+  log events.
+- **Dynamic Role Assignment:** At the start of the game, players are randomly
+  and secretly assigned roles.
+  - "Random Roles" button calculates a balanced setup based on role weights
+    (positive for villagers, negative for wolves).
+- **Automated Game Loop & Win Conditions:** The game automatically cycles
+  through phases. After each death (from a wolf kill, a lynch vote) the system
+  checks for win conditions:
   - **Villagers Win:** When all wolves have been eliminated.
-  - **Wolves Win:** When the number of living wolves is equal to or greater than the number of living non-wolves.
-- **Game Over & Rematch System:**
-  - When a win condition is met, a "Game Over" screen is displayed to all players, showing the winning team, the reason for victory, and a list of all players and their final roles.
-  - From the Game Over screen, players can chat and vote to "Return to Lobby". Once a majority is reached, the game state is reset, and all players are automatically redirected to the lobby to start a fresh game with the same group.
-- **Dark Mode UI:** A clean, modern dark theme for comfortable gameplay.
+  - **Wolves Win:** When the number of living wolves is equal to or greater than
+    the number of living non-wolves.
+  - **🏆 Solo Win Conditions:** Neutral roles like the **Monster**, **Fool**, or
+  **Demented Villager** can win alone, ignoring team allegiances.
+  - When a win condition is met, a "Game Over" screen is displayed to all
+    players, showing the winning team, the reason for victory, and a list of all
+    players and their final roles.
 
 ## **Game Phases**
 
@@ -37,16 +67,18 @@ This project is a web-based implementation of the classic party game Werewolves.
 
 - **Night Phase (Timed):**
 
-  - Phase ends when either the timer runs out OR all Wolves and the Seer have submitted their actions.
-  - **Wolves:** Secretly vote to kill a player. A kill only succeeds if all living wolves vote unanimously for the same player.
-  - **Seer:** Investigates one player's role each night. The result is shown only to the seer.
-  - **Villagers:** Can subtly cast suspision on a player.
-  - After the night's actions, the game checks if a winning condition has been met before proceeding.
+  - Phase ends when either the timer runs out OR all Wolves and the Seer have
+    submitted their actions.
+
+  - After the night's actions, the game checks if a winning condition has been
+    met before proceeding.
 
 - **Accusation Phase (Timed):**
 
-  - Phase ends when either the timer runs out OR all living players have made an accusation.
+  - Phase ends when either the timer runs out OR all living players have made an
+    accusation.
   - Living players vote to accuse one person.
+  - Ghost have a 25% chance to accuse.
   - A live tally of accusations is displayed next to each player's name.
   - Tie-Breaking Logic: If there is a tie for the most accused player:
     - If the tie is between only two players, no lynch vote occurs.
@@ -57,34 +89,76 @@ This project is a web-based implementation of the classic party game Werewolves.
 
   - If a single player has the most accusations, a trial begins.
   - Phase ends when either the timer runs out OR all living players have voted.
-  - Living players vote "Yes" or "No" to lynch the accused player. A majority "Yes" vote is required.
+  - Living players vote "Yes" or "No" to lynch the accused player. A majority
+    "Yes" vote is required. Ghost have a 10% chance to vote during Lynch Vote.
   - If the timer expires, any non-voting player defaults to a "No" vote.
   - A detailed summary of who voted "Yes" and "No" is displayed in the game log.
-  - After the vote, the game checks if a winning condition has been met before proceeding to the night.
+  - After the vote, the game checks if a winning condition has been met before
+    proceeding to the night.
 
-- **General Day Phase Actions:** Living players can vote to end the day phase early (minimum 30 seconds) and start the accusation process. If a majority choose sleep, the game transitions to night.
+- **General Day Phase Actions:** Living players can vote to end the day phase
+  early (minimum 30 seconds) and start the accusation process. If a majority
+  choose sleep, the game transitions to night.
+
+## **Roles**
+The game now supports **24 unique roles** divided into teams:
+<img src="game_over.png" width="50%" align="right"/>
+
+### 🌻 The Village (Good)
+
+- **Villager:** No powers. Must work together to find and eliminate all the Werewolves.
+- **Seer / Random Seer:** Investigates one player's role each night.
+- **Bodyguard:** Protects one player from death at night.
+- **Witch:** Has one **Heal** potion and one **Poison** potion.
+- **Hunter:** If killed, shoots a target of their choice.
+- **Cupid:** Links two lovers. If one dies, the other dies.
+- **Mayor:** Their vote counts as tie-breaker. Can appoint a successor.
+- **Prostitute:** Blocks a player's ability by visiting them.
+- **Lawyer:** Makes a client immune to Lynching the next day.
+- **Revealer:** Can instantly kill a Wolf, but dies if they reveal a Villager.
+- **Martyr:** Grants a "2nd Life" (armor) to someone upon dying.
+- **Tough Villager:** Survives the first attempt on their life.
+- **Wild Child:** Picks a role model. If the model dies, becomes a Werewolf.
+
+### 🐺 The Pack (Evil)
+
+- **Werewolf:** Must work with other wolves to eliminate villagers until they have
+    the majority.
+- **Alpha Werewolf:** Wins only if they are the last wolf standing.
+- **Backlash Werewolf:** A Wolf that acts like a Hunter if killed.
+- **Tough Werewolf:** A Wolf with armor (survives one hit).
+- **Sorcerer:** Works with wolves. Can find Seers/Witches but cannot kill.
+
+### 🎭 Neutral & Solo (Chaos)
+
+- **Serial Killer:** Kills every night. Wins if they are the last survivor.
+- **Fool:** Wins if they get themselves Lynched.
+- **Demented Villager:** Appears good, but wins if the village is destroyed.
+- **Monster:** Immune to Wolf attacks. Wins if left alone with 1 Wolf.
+- **Honeypot:** If killed, the killer dies (Retaliation).
 
 <img src="game_screen.png" width="80%" align="center"/>
 
-## **Tech Stack**
-
-- **Backend:** Python 3.10 - Flask, gunicorn, gevent
-- **Real-time Communication:** Flask-SocketIO
-- **Frontend:** Jinja2 for server-side templating, with vanilla HTML, CSS, and JavaScript for client-side interactivity.
-
-## **Setup and Running the Project**
+## **Setup and Running**
 
 To run this project locally, follow these steps:
 
 1.  **Clone the repository:**
+
     ```bash
     git clone [https://github.com/davidchilin/werewolves_game.git](https://github.com/davidchilin/werewolves_game.git)
+    or download werewolves_game-master.zip and unzip to folder werewolves_game.
     cd werewolves_game
     ```
 
-2. **EITHER** run via Dockerfile (steps 2A & 5) **OR** through docker-compose (steps 2B & 5) **OR** install and run locally (steps 2C-5). **Edit** `.env.werewolves` file: FLASK_SECRET_KEY to_something_long_random, CORS_ALLOWED_ORIGINS to desired game web address http://127.0.0.1:5000,http://your.ip.here:5000,https://your.site.here:5000.
+2.  **EITHER** run via Dockerfile (steps 2A & 5) **OR** through docker-compose
+    (steps 2B & 5) **OR** install and run locally (steps 2C-5). **Edit**
+    `.env.werewolves` file: FLASK_SECRET_KEY to_something_long_random,
+    CORS_ALLOWED_ORIGINS to desired game web address
+    http://127.0.0.1:5000,http://your.ip.here:5000,https://your.site.here:5000.
+
 ```markdown
-    A. Build docker and run. Can change port used in browser to 8080 for example: -p 8080:5000.   
+    A. Build docker and run. Can change port used in browser to 8080 for example: -p 8080:5000.
         - `docker build -t werewolves_game .`
         - `docker run -p 5000:5000 --name werewolves_game werewolves_game`
     B. Build docker compose and run.
@@ -97,31 +171,27 @@ To run this project locally, follow these steps:
         - macOS / Linux: `python3 -m venv venv` followed by `source venv/bin/activate`
 ```
 
-3.  **Install the required dependencies:**
+3.  **Install Dependencies:**
 
     ```bash
     pip install Flask Flask-SocketIO python-uuid python-dotenv
     ```
 
-4.  **Run the Flask application:**
+4.  **Run the App:**
 
     ```bash
     FLASK_APP=app.py flask run -h 0.0.0.0
     ```
-    OR alternatively for better performance and security run the Flask app through gunicorn:
+
+    OR alternatively for better performance and security run the Flask app
+    through gunicorn:
+
     ```bash
     pip install gunicorn gevent
     gunicorn --worker-class gevent -w 1 -b 0.0.0.0:5000 app:app
     ```
 
-5.  **Access the game:** Open your web browser and go to game web address set in `.env.werewolves CORS_ALLOWED_ORIGINS`. Defaults: `http://127.0.0.1:5000`. Open multiple tabs or browsers to simulate different players joining the game. Initial Game Code is `W`
-
-## **Project Roadmap**
-
-With the core gameplay loop complete, future development will focus on adding depth and improving the user experience.
-
-- **Future Enhancements (Planned):**
-  - **Additional Roles:** Introduce new roles like the Doctor, Hunter, or Witch.
-  - **Enhanced UI/UX:** Improve the user interface with more visual cues, animations, and sound effects for a more immersive experience. during certain phases.
-  - **Spectator Mode:** Allow users to join a game as a non-participating spectator.
-  - **Single Phone Mode:** Allow a game to be guided by moderator and passing around a single phone.
+5.  **Access the game:** Open your web browser and go to game web address set in
+    `.env.werewolves CORS_ALLOWED_ORIGINS`. Defaults: `http://127.0.0.1:5000`.
+    Open multiple tabs or browsers to simulate different players joining the
+    game. Initial Game Code is `W` and first player to join is **Admin**.

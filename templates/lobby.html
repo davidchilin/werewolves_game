@@ -1,133 +1,32 @@
-<!-- Version: 1.10.10 -->
+<!-- Version: 4.9.1 -->
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Werewolves Lobby</title>
-    <style>
-      body {
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
-          Arial, sans-serif;
-        background-color: #121212;
-        color: #e0e0e0;
-        min-height: 100vh;
-      }
-      .lobby-container {
-        width: 90%;
-        max-width: 600px;
-        margin: 20px auto;
-        padding: 20px;
-        background-color: #1e1e1e;
-        border: 1px solid #333;
-        border-radius: 8px;
-      }
-      #player-list {
-        padding-left: 0;
-      }
-      #player-list li {
-        margin-bottom: 10px;
-        list-style-type: none;
-        padding: 8px;
-        background-color: #2c2c2c;
-        border-radius: 4px;
-      }
-      .admin-controls {
-        margin-top: 20px;
-        padding-top: 20px;
-        border-top: 1px solid #444;
-      }
-      .exclude-btn {
-        margin-left: 15px;
-        color: #ff8a80;
-        cursor: pointer;
-        font-weight: normal;
-      }
-      .you {
-        font-weight: bold;
-      }
-      input[type="text"],
-      input[type="number"] {
-        padding: 8px;
-        border-radius: 5px;
-        border: 1px solid #444;
-        background-color: #2c2c2c;
-        color: #e0e0e0;
-      }
-      button {
-        padding: 10px 20px;
-        border-radius: 5px;
-        border: none;
-        background-color: #3f51b5;
-        color: #ffffff;
-        cursor: pointer;
-        transition: background-color 0.2s;
-      }
-      button:hover:not(:disabled) {
-        background-color: #5c6bc0;
-      }
-      button:disabled {
-        background-color: #333;
-        color: #777;
-        cursor: not-allowed;
-      }
-      .timer-setting {
-        margin-bottom: 10px;
-      }
-      .timer-setting label {
-        display: inline-block;
-        width: 150px;
-      }
-      .timer-setting input {
-        width: 80px;
-      }
-      .chat-container {
-        margin-top: 20px;
-        border-top: 1px solid #444;
-        padding-top: 15px;
-      }
-      .chat-messages {
-        height: 150px;
-        overflow-y: auto;
-        border: 1px solid #333;
-        padding: 10px;
-        background: #1e1e1e;
-        margin-bottom: 10px;
-        display: flex;
-        flex-direction: column-reverse;
-      }
-      .chat-messages div {
-        padding-bottom: 5px;
-        margin-bottom: 5px;
-        border-bottom: 1px solid #333;
-      }
-      .chat-messages .announcement {
-        color: #bb86fc;
-        font-weight: bold;
-      }
-      #chat-form {
-        display: flex;
-      }
-      #chat-input {
-        flex-grow: 1;
-        margin-right: 10px;
-      }
-      .timer-options {
-        display: block;
-      }
-    </style>
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='lobby.css') }}"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <script src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
   </head>
   <body>
     <div class="lobby-container">
       <h2>Lobby - Waiting for Players</h2>
-      <p id="game-code-area" style="display: none">
+      <p id="game-code-area" style="display: none; margin-bottom: 5px">
         Game Code: <strong id="game-code-display"></strong>
       </p>
-      <h3>Players:</h3>
+      <h3 style="margin: 0px">
+        Players:
+        <button id="add-player-btn">Add Player</button>
+      </h3>
       <ul id="player-list"></ul>
-
+      <div id="role-summary-container">
+        <strong>ROLE COUNT:</strong>
+        <span id="role-summary-text">Waiting for players...</span>
+      </div>
       <div class="chat-container">
         <h4>Lobby Chat</h4>
         <div id="chat-messages" class="chat-messages"></div>
@@ -144,217 +43,154 @@
 
       <div id="admin-panel" style="display: none">
         <hr />
-        <h4>Admin Controls</h4>
-        <button id="start-game-btn" disabled>Start Game</button>
-        <p><small>Need at least 4 players to start.</small></p>
+        <h3>Admin Controls</h3>
+        <div style="margin-bottom: 20px">
+          <button id="start-game-btn" disabled>Start Game</button>
+          <p id="min-players-warning">
+            <small style="color: firebrick"
+              >Need at least 4 players to start.</small
+            >
+          </p>
+        </div>
+
         <div class="admin-controls">
-          <label for="new-game-code">Set New Game Code:</label>
-          <input type="text" id="new-game-code-input" placeholder="New Code" />
+          <div class="settings-row">
+            <div class="settings-group">
+              <h4>Game Mode</h4>
+
+              <label>
+                <input type="checkbox" id="mode-pass-and-play" />
+                <div>
+                  <strong>Pass-and-Play Mode</strong><br />
+                  <small style="color: darkgray"
+                    >Single device mode. Pauses turns.</small
+                  >
+                </div>
+              </label>
+
+              <label>
+                <input type="checkbox" id="mode-solo-ends-game" />
+                <div>
+                  <strong>Solo win ends game</strong><br />
+                  <small style="color: darkgray"
+                    >Don't wait for team wins.</small
+                  >
+                </div>
+              </label>
+
+              <label>
+                <input type="checkbox" id="ghost-mode-checkbox" />
+                <div>
+                  <strong>Enable Ghost Mode</strong><br />
+                  <small style="color: darkgray"
+                    >Dead can vote...sometimes.</small
+                  >
+                </div>
+              </label>
+            </div>
+
+            <div class="settings-group">
+              <h4>Timer Settings (+30sec)</h4>
+              <div>
+                <label for="disable-timers-checkbox" style="color: gainsboro">
+                  <input type="checkbox" id="disable-timers-checkbox" />
+                  <strong>Disable Timers</strong>
+                </label>
+              </div>
+
+              <div id="timer-options" class="timer-options">
+                <div class="timer-input-row">
+                  <label for="night-timer-input">Night (sec):</label>
+                  <input
+                    type="number"
+                    id="night-timer-input"
+                    value="90"
+                    min="30"
+                    style="width: 70px"
+                  />
+                </div>
+                <div class="timer-input-row">
+                  <label for="accusation-timer-input">Accusation (sec):</label>
+                  <input
+                    type="number"
+                    id="accusation-timer-input"
+                    value="90"
+                    min="30"
+                    style="width: 70px"
+                  />
+                </div>
+                <div class="timer-input-row">
+                  <label for="lynch-vote-timer-input">Lynch Vote (sec):</label>
+                  <input
+                    type="number"
+                    id="lynch-vote-timer-input"
+                    value="60"
+                    min="30"
+                    style="width: 70px"
+                  />
+                </div>
+              </div>
+
+              <button id="set-timers-btn" style="width: 50%; margin-top: 10px">
+                Set Timers
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="admin-controls">
+          <h4>
+            Roles
+            <button id="random-roles-btn" onclick="selectRandomRoles()">
+              🎲 Select Random Roles
+            </button>
+
+            <span class="rating-legend-wrapper">
+              <span class="info-icon">💡 Rating Guide</span>
+              <div class="legend-tooltip">
+                <strong>Role Balance Rating:</strong>
+                <div class="legend-item">
+                  <span class="dot" style="background: blue"></span> + Positive:
+                  Villager Alligned
+                </div>
+                <div class="legend-item">
+                  <span class="dot" style="background: darkviolet"></span> ~
+                  Zero: Neutral / Unknown
+                </div>
+                <div class="legend-item">
+                  <span class="dot" style="background: crimson"></span> -
+                  Negative: Werewolf Aligned
+                </div>
+                <hr style="border-color: #444; margin: 5px 0" />
+                <small
+                  >"Random" button selects balanced roles with a total value
+                  close to 0.</small
+                >
+              </div>
+            </span>
+          </h4>
+          <div id="roles-grid">
+            <p>Loading roles...</p>
+          </div>
+        </div>
+
+        <div class="admin-controls">
+          <label for="new-game-code-input">Set New Game Code:</label>
+          <input
+            type="text"
+            id="new-game-code-input"
+            placeholder="New Code"
+            style="margin: 8px"
+          />
           <button id="set-code-btn">Set Code</button>
-        </div>
-        <div class="admin-controls">
-          <button id="toggle-chat-btn">Toggle Admin-Only Chat</button>
-        </div>
-        <div class="admin-controls">
-          <h4>Timer Settings</h4>
-          <div class="timer-setting">
-            <label for="disable-timers-checkbox">Disable Timers</label>
-            <input type="checkbox" id="disable-timers-checkbox" />
-          </div>
-          <div id="timer-options" class="timer-options">
-            <div class="timer-setting">
-              <label for="night-timer-input">Night Phase (sec):</label>
-              <input type="number" id="night-timer-input" value="90" min="30" />
-            </div>
-            <div class="timer-setting">
-              <label for="accusation-timer-input"
-                >Accusation Phase (sec):</label
-              >
-              <input
-                type="number"
-                id="accusation-timer-input"
-                value="90"
-                min="30"
-              />
-            </div>
-            <div class="timer-setting">
-              <label for="lynch-vote-timer-input"
-                >Lynch Vote Phase (sec):</label
-              >
-              <input
-                type="number"
-                id="lynch-vote-timer-input"
-                value="60"
-                min="30"
-              />
-            </div>
-          </div>
-          <button id="set-timers-btn">Set Timers</button>
+          <button id="toggle-chat-btn" style="margin-left: 10px">
+            Toggle Admin Chat
+          </button>
         </div>
       </div>
     </div>
-
     <script>
-      const socket = io();
       let currentPlayerId = "{{ player_id }}";
-      let isPlayerAdmin = false;
-
-      const chatMessages = document.getElementById("chat-messages");
-      const chatForm = document.getElementById("chat-form");
-      const chatInput = document.getElementById("chat-input");
-      const chatSendBtn = document.getElementById("chat-send-btn");
-      const disableTimersCheckbox = document.getElementById(
-        "disable-timers-checkbox",
-      );
-      const timerOptionsDiv = document.getElementById("timer-options");
-
-      function excludePlayer(playerId) {
-        if (confirm("Exclude this player?")) {
-          socket.emit("admin_exclude_player", { player_id: playerId });
-        }
-      }
-
-      function setChatMode(isAdminOnly) {
-        if (isAdminOnly && !isPlayerAdmin) {
-          chatSendBtn.disabled = true;
-          chatInput.placeholder = "Chat is admin-only";
-        } else {
-          chatSendBtn.disabled = false;
-          chatInput.placeholder = "Type a message...";
-        }
-      }
-
-      socket.on("connect", () => {
-        console.log(
-          "[DEBUG] Connected to Lobby, server with session ID:",
-          currentPlayerId,
-        );
-      });
-
-      socket.on("game_started", () => {
-        console.log(
-          "[DEBUG] 'game_started' event received. Redirecting to /game page.",
-        );
-        window.location.href = "/game";
-      });
-
-      socket.on("update_player_list", (data) => {
-        const playerList = document.getElementById("player-list");
-        const adminPanel = document.getElementById("admin-panel");
-        const startGameBtn = document.getElementById("start-game-btn");
-        const gameCodeArea = document.getElementById("game-code-area");
-        const gameCodeDisplay = document.getElementById("game-code-display");
-        playerList.innerHTML = "";
-        const me = data.players.find((p) => p.id === currentPlayerId);
-        isPlayerAdmin = me ? me.is_admin : false;
-        gameCodeArea.style.display = isPlayerAdmin ? "block" : "none";
-        if (isPlayerAdmin) {
-          gameCodeDisplay.textContent = data.game_code;
-        }
-        data.players.forEach((player) => {
-          const li = document.createElement("li");
-          li.textContent = player.username;
-          if (player.id === currentPlayerId) {
-            li.classList.add("you");
-            li.textContent += " (You)";
-          }
-          if (player.is_admin) {
-            li.textContent += " 👑";
-          }
-          if (isPlayerAdmin && player.id !== currentPlayerId) {
-            const excludeBtn = document.createElement("span");
-            excludeBtn.textContent = "Exclude";
-            excludeBtn.className = "exclude-btn";
-            excludeBtn.dataset.playerId = player.id;
-            li.appendChild(excludeBtn);
-          }
-          playerList.appendChild(li);
-        });
-        adminPanel.style.display = isPlayerAdmin ? "block" : "none";
-        startGameBtn.disabled = data.players.length < 4;
-        setChatMode(data.admin_only_chat);
-      });
-
-      socket.on("force_kick", () => {
-        alert("You have been dropped from the lobby.");
-        window.location.href = "/";
-      });
-      socket.on("force_relogin", (data) => {
-        alert(
-          `The admin has set a new game code.\nYou will now be returned to the login screen.`,
-        );
-        window.location.href = "/";
-      });
-      socket.on("message", (data) => {
-        alert(data.text);
-      });
-      socket.on("error", (data) => {
-        alert("Error: " + data.message);
-      });
-
-      socket.on("new_message", (data) => {
-        if (data.channel === "lobby" || data.channel === "announcement") {
-          const messageEl = document.createElement("div");
-          messageEl.innerHTML = data.text;
-          if (data.channel === "announcement") {
-            messageEl.classList.add("announcement");
-          }
-          chatMessages.prepend(messageEl);
-        }
-      });
-
-      socket.on("chat_mode_update", (data) => {
-        setChatMode(data.admin_only);
-      });
-
-      chatForm.addEventListener("submit", (e) => {
-        e.preventDefault();
-        const message = chatInput.value.trim();
-        if (message) {
-          socket.emit("send_message", { message: message });
-          chatInput.value = "";
-        }
-      });
-
-      disableTimersCheckbox.addEventListener("change", (e) => {
-        timerOptionsDiv.style.display = e.target.checked ? "none" : "block";
-      });
-
-      document.getElementById("start-game-btn").onclick = () => {
-        socket.emit("admin_start_game");
-      };
-      document.getElementById("set-code-btn").onclick = () => {
-        const newCodeInput = document.getElementById("new-game-code-input");
-        const newCode = newCodeInput.value.trim().toUpperCase();
-        if (newCode) {
-          socket.emit("admin_set_new_code", { new_code: newCode });
-          newCodeInput.value = "";
-        } else {
-          alert("Please enter a new code.");
-        }
-      };
-      document.getElementById("toggle-chat-btn").onclick = () => {
-        socket.emit("admin_toggle_chat");
-      };
-      document.getElementById("set-timers-btn").onclick = () => {
-        const timers = {
-          timers_disabled: disableTimersCheckbox.checked,
-          night: document.getElementById("night-timer-input").value,
-          accusation: document.getElementById("accusation-timer-input").value,
-          lynch_vote: document.getElementById("lynch-vote-timer-input").value,
-        };
-        socket.emit("admin_set_timers", timers);
-      };
-      document
-        .getElementById("player-list")
-        .addEventListener("click", function (e) {
-          if (e.target && e.target.className === "exclude-btn") {
-            const playerId = e.target.dataset.playerId;
-            if (playerId) {
-              excludePlayer(playerId);
-            }
-          }
-        });
     </script>
+    <script src="{{ url_for('static', filename='lobby.js') }}"></script>
   </body>
 </html>
