@@ -1,4 +1,4 @@
-<!-- Version: 4.9.1 -->
+<!-- Version: 4.9.4 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -14,21 +14,29 @@
   </head>
   <body>
     <div class="lobby-container">
-      <h2>Lobby - Waiting for Players</h2>
+      <h2 data-i18n="ui.lobby.title">Lobby - Waiting for Players</h2>
       <p id="game-code-area" style="display: none; margin-bottom: 5px">
-        Game Code: <strong id="game-code-display"></strong>
+        <span data-i18n="ui.lobby.game_code">Game Code:</span>
+        <strong id="game-code-display"></strong>
       </p>
+
       <h3 style="margin: 0px">
-        Players:
-        <button id="add-player-btn">Add Player</button>
+        <span data-i18n="ui.lobby.players_header">Players:</span>
+        <button id="add-player-btn" data-i18n="ui.lobby.add_player_btn">
+          Add Player
+        </button>
       </h3>
       <ul id="player-list"></ul>
+
       <div id="role-summary-container">
-        <strong>ROLE COUNT:</strong>
-        <span id="role-summary-text">Waiting for players...</span>
+        <strong data-i18n="ui.lobby.role_count_label">ROLE COUNT:</strong>
+        <span id="role-summary-text" data-i18n="ui.lobby.waiting_text"
+          >Waiting for players...</span
+        >
       </div>
+
       <div class="chat-container">
-        <h4>Lobby Chat</h4>
+        <h4 data-i18n="ui.lobby.chat_header">Lobby Chat</h4>
         <div id="chat-messages" class="chat-messages"></div>
         <form id="chat-form" action="#">
           <input
@@ -36,18 +44,33 @@
             type="text"
             placeholder="Type a message..."
             autocomplete="off"
+            data-i18n-placeholder="ui.lobby.chat_placeholder"
           />
-          <button id="chat-send-btn" type="submit">Send</button>
+          <button
+            id="chat-send-btn"
+            type="submit"
+            data-i18n="ui.lobby.send_btn"
+          >
+            Send
+          </button>
         </form>
       </div>
 
       <div id="admin-panel" style="display: none">
         <hr />
-        <h3>Admin Controls</h3>
+        <h3 data-i18n="ui.lobby.admin_header">Admin Controls</h3>
         <div style="margin-bottom: 20px">
-          <button id="start-game-btn" disabled>Start Game</button>
+          <button
+            id="start-game-btn"
+            disabled
+            data-i18n="ui.lobby.start_game_btn"
+          >
+            Start Game
+          </button>
           <p id="min-players-warning">
-            <small style="color: firebrick"
+            <small
+              style="color: firebrick"
+              data-i18n="ui.lobby.min_players_warning"
               >Need at least 4 players to start.</small
             >
           </p>
@@ -56,13 +79,15 @@
         <div class="admin-controls">
           <div class="settings-row">
             <div class="settings-group">
-              <h4>Game Mode</h4>
+              <h4 data-i18n="ui.lobby.game_mode_header">Game Mode</h4>
 
               <label>
                 <input type="checkbox" id="mode-pass-and-play" />
                 <div>
-                  <strong>Pass-and-Play Mode</strong><br />
-                  <small style="color: darkgray"
+                  <strong data-i18n="ui.lobby.pnp_mode"
+                    >Pass-and-Play Mode</strong
+                  ><br />
+                  <small style="color: darkgray" data-i18n="ui.lobby.pnp_desc"
                     >Single device mode. Pauses turns.</small
                   >
                 </div>
@@ -71,8 +96,12 @@
               <label>
                 <input type="checkbox" id="mode-solo-ends-game" />
                 <div>
-                  <strong>Solo win ends game</strong><br />
-                  <small style="color: darkgray"
+                  <strong data-i18n="ui.lobby.solo_win_mode"
+                    >Solo win ends game</strong
+                  ><br />
+                  <small
+                    style="color: darkgray"
+                    data-i18n="ui.lobby.solo_win_desc"
                     >Don't wait for team wins.</small
                   >
                 </div>
@@ -81,8 +110,10 @@
               <label>
                 <input type="checkbox" id="ghost-mode-checkbox" />
                 <div>
-                  <strong>Enable Ghost Mode</strong><br />
-                  <small style="color: darkgray"
+                  <strong data-i18n="ui.lobby.ghost_mode"
+                    >Enable Ghost Mode</strong
+                  ><br />
+                  <small style="color: darkgray" data-i18n="ui.lobby.ghost_desc"
                     >Dead can vote...sometimes.</small
                   >
                 </div>
@@ -90,17 +121,25 @@
             </div>
 
             <div class="settings-group">
-              <h4>Timer Settings (+30sec)</h4>
+              <h4 data-i18n="ui.lobby.timers_header">
+                Timer Settings (+30sec)
+              </h4>
               <div>
                 <label for="disable-timers-checkbox" style="color: gainsboro">
                   <input type="checkbox" id="disable-timers-checkbox" />
-                  <strong>Disable Timers</strong>
+                  <strong data-i18n="ui.lobby.disable_timers"
+                    >Disable Timers</strong
+                  >
                 </label>
               </div>
 
               <div id="timer-options" class="timer-options">
                 <div class="timer-input-row">
-                  <label for="night-timer-input">Night (sec):</label>
+                  <label
+                    for="night-timer-input"
+                    data-i18n="ui.lobby.timer_night"
+                    >Night (sec):</label
+                  >
                   <input
                     type="number"
                     id="night-timer-input"
@@ -110,7 +149,11 @@
                   />
                 </div>
                 <div class="timer-input-row">
-                  <label for="accusation-timer-input">Accusation (sec):</label>
+                  <label
+                    for="accusation-timer-input"
+                    data-i18n="ui.lobby.timer_accusation"
+                    >Accusation (sec):</label
+                  >
                   <input
                     type="number"
                     id="accusation-timer-input"
@@ -120,7 +163,11 @@
                   />
                 </div>
                 <div class="timer-input-row">
-                  <label for="lynch-vote-timer-input">Lynch Vote (sec):</label>
+                  <label
+                    for="lynch-vote-timer-input"
+                    data-i18n="ui.lobby.timer_lynch"
+                    >Lynch Vote (sec):</label
+                  >
                   <input
                     type="number"
                     id="lynch-vote-timer-input"
@@ -131,7 +178,11 @@
                 </div>
               </div>
 
-              <button id="set-timers-btn" style="width: 50%; margin-top: 10px">
+              <button
+                id="set-timers-btn"
+                style="width: 50%; margin-top: 10px"
+                data-i18n="ui.lobby.set_timers_btn"
+              >
                 Set Timers
               </button>
             </div>
@@ -139,29 +190,43 @@
         </div>
         <div class="admin-controls">
           <h4>
-            Roles
-            <button id="random-roles-btn" onclick="selectRandomRoles()">
+            <span data-i18n="ui.lobby.roles_header">Roles</span>
+            <button
+              id="random-roles-btn"
+              onclick="selectRandomRoles()"
+              data-i18n="ui.lobby.random_roles_btn"
+            >
               🎲 Select Random Roles
             </button>
 
             <span class="rating-legend-wrapper">
-              <span class="info-icon">💡 Rating Guide</span>
+              <span class="info-icon" data-i18n="ui.lobby.rating_guide"
+                >💡 Rating Guide</span
+              >
               <div class="legend-tooltip">
-                <strong>Role Balance Rating:</strong>
+                <strong data-i18n="ui.lobby.rating_title"
+                  >Role Balance Rating:</strong
+                >
                 <div class="legend-item">
-                  <span class="dot" style="background: blue"></span> + Positive:
-                  Villager Alligned
+                  <span class="dot" style="background: blue"></span>
+                  <span data-i18n="ui.lobby.rating_pos"
+                    >+ Positive: Villager Aligned</span
+                  >
                 </div>
                 <div class="legend-item">
-                  <span class="dot" style="background: darkviolet"></span> ~
-                  Zero: Neutral / Unknown
+                  <span class="dot" style="background: darkviolet"></span>
+                  <span data-i18n="ui.lobby.rating_neu"
+                    >~ Zero: Neutral / Unknown</span
+                  >
                 </div>
                 <div class="legend-item">
-                  <span class="dot" style="background: crimson"></span> -
-                  Negative: Werewolf Aligned
+                  <span class="dot" style="background: crimson"></span>
+                  <span data-i18n="ui.lobby.rating_neg"
+                    >- Negative: Werewolf Aligned</span
+                  >
                 </div>
                 <hr style="border-color: #444; margin: 5px 0" />
-                <small
+                <small data-i18n="ui.lobby.rating_note"
                   >"Random" button selects balanced roles with a total value
                   close to 0.</small
                 >
@@ -174,15 +239,24 @@
         </div>
 
         <div class="admin-controls">
-          <label for="new-game-code-input">Set New Game Code:</label>
+          <label for="new-game-code-input" data-i18n="ui.lobby.set_code_label"
+            >Set New Game Code:</label
+          >
           <input
             type="text"
             id="new-game-code-input"
             placeholder="New Code"
             style="margin: 8px"
+            data-i18n-placeholder="ui.lobby.new_code_placeholder"
           />
-          <button id="set-code-btn">Set Code</button>
-          <button id="toggle-chat-btn" style="margin-left: 10px">
+          <button id="set-code-btn" data-i18n="ui.lobby.set_code_btn">
+            Set Code
+          </button>
+          <button
+            id="toggle-chat-btn"
+            style="margin-left: 10px"
+            data-i18n="ui.lobby.toggle_chat_btn"
+          >
             Toggle Admin Chat
           </button>
         </div>
@@ -190,6 +264,7 @@
     </div>
     <script>
       let currentPlayerId = "{{ player_id }}";
+      window.userLang = "{{ session.get('language', 'en') }}";
     </script>
     <script src="{{ url_for('static', filename='lobby.js') }}"></script>
   </body>

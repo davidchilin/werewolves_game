@@ -1,4 +1,4 @@
-<!-- Version: 4.9.2 -->
+<!-- Version: 4.9.4 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -14,17 +14,20 @@
   </head>
   <body>
     <div id="pnp-hub">
-      <h2>Night Phase 🌙</h2>
-      <p>Select your name to perform player actions.</p>
+      <h2 data-i18n="ui.game.night_phase_title">Night Phase 🌙</h2>
+      <p data-i18n="ui.game.pnp_instruction">
+        Select your name to perform player actions.
+      </p>
       <div id="pnp-grid" class="pnp-grid"></div>
       <div id="pnp-log-container">
-        <h3>Game Log</h3>
+        <h3 data-i18n="ui.game.game_log_title">Game Log</h3>
       </div>
       <div class="pnp-footer">
         <button
           onclick="confirmAdvancePhase()"
           class="big-btn danger"
           style="width: auto; padding: 10px"
+          data-i18n="ui.game.force_phase_btn"
         >
           Force Next Phase
         </button>
@@ -33,7 +36,9 @@
 
     <div id="pnp-overlay">
       <div class="confirm-box">
-        <h2 id="overlay-title">Identity Check</h2>
+        <h2 id="overlay-title" data-i18n="ui.game.identity_check_title">
+          Identity Check
+        </h2>
         <p id="overlay-msg">...</p>
         <div id="overlay-actions"></div>
         <div id="overlay-action-area"></div>
@@ -42,11 +47,19 @@
 
     <div class="game-container">
       <div class="main-panel">
-        <div id="phase-display" class="phase-display">Loading...</div>
+        <div
+          id="phase-display"
+          class="phase-display"
+          data-i18n="ui.game.loading"
+        >
+          Loading...
+        </div>
         <div id="timer-display" class="timer-display"></div>
-        <div id="action-area" class="action-area"><p>Please wait...</p></div>
+        <div id="action-area" class="action-area">
+          <p data-i18n="ui.game.loading">Please wait...</p>
+        </div>
 
-        <h3>Game Log</h3>
+        <h3 data-i18n="ui.game.game_log_title">Game Log</h3>
         <div id="log-panel" class="log-panel"></div>
       </div>
 
@@ -55,27 +68,45 @@
           id="pnp-return-btn"
           class="big-btn secondary pnp-hidden"
           onclick="requestGameSync()"
+          data-i18n="ui.game.done_back_btn"
         >
           Done / Back
         </button>
         <div id="role-display" class="role-display">
           <span id="my-role-display">
-            Your Role: <strong id="my-role">Unknown</strong> ✨
-            <div id="my-role-tooltip">Loading info...</div>
+            <span data-i18n="ui.game.your_role_label">Your Role:</span>
+            <strong id="my-role">Unknown</strong> ✨
+            <div id="my-role-tooltip" data-i18n="ui.game.loading">
+              Loading info...
+            </div>
           </span>
         </div>
 
         <div id="admin-controls-ingame" style="display: none">
-          <button id="admin-next-phase-btn">Next Phase</button>
-          <button id="admin-pause-timer-btn">Pause Timers ⏸️</button>
-          <button id="admin-chat-toggle-btn">Toggle Admin Chat</button>
+          <button id="admin-next-phase-btn" data-i18n="ui.game.next_phase_btn">
+            Next Phase
+          </button>
+          <button
+            id="admin-pause-timer-btn"
+            data-i18n="ui.game.pause_timers_btn"
+          >
+            Pause Timers ⏸️
+          </button>
+          <button
+            id="admin-chat-toggle-btn"
+            data-i18n="ui.lobby.toggle_chat_btn"
+          >
+            Toggle Admin Chat
+          </button>
         </div>
 
-        <h3>Players</h3>
+        <h3 data-i18n="ui.game.players_header">Players</h3>
         <ul id="player-list" class="player-list"></ul>
 
         <div id="game-chat-container" class="chat-container">
-          <h4 id="chat-title">Living Chat</h4>
+          <h4 id="chat-title" data-i18n="ui.game.living_chat_title">
+            Living Chat
+          </h4>
           <div id="game-chat-messages" class="chat-messages"></div>
           <form id="game-chat-form" class="chat-form" action="#">
             <input
@@ -84,8 +115,16 @@
               type="text"
               placeholder="Type a message..."
               autocomplete="off"
+              data-i18n-placeholder="ui.lobby.chat_placeholder"
             />
-            <button id="game-chat-send-btn" type="submit">Send</button>
+            <button
+              id="game-chat-send-btn"
+              type="submit"
+              data-i18n="ui.lobby.send_btn"
+              style="border-radius: 5px"
+            >
+              Send
+            </button>
           </form>
         </div>
       </div>
@@ -93,16 +132,20 @@
 
     <div id="game-over-screen">
       <div class="game-over-box">
-        <h1 id="game-over-title"></h1>
+        <h1 id="game-over-title" data-i18n="ui.game.game_over_title">
+          Game Over
+        </h1>
         <h2 id="game-over-reason"></h2>
-        <h3>Final Roles:</h3>
+        <h3 data-i18n="ui.game.final_roles">Final Roles:</h3>
         <ul id="final-roles-list"></ul>
-        <button id="return-to-lobby-btn">Vote to Return to Lobby</button>
+        <button id="return-to-lobby-btn" data-i18n="ui.game.return_lobby_btn">
+          Vote to Return to Lobby
+        </button>
         <div id="rematch-vote-status" style="margin-top: 14px"></div>
-        <h3>Game History</h3>
+        <h3 data-i18n="ui.game.game_history">Game History</h3>
         <div id="game-over-log" class="game-over-log"></div>
         <div id="game-over-chat-container" class="chat-container">
-          <h4>Post-Game Chat</h4>
+          <h4 data-i18n="ui.game.post_game_chat">Post-Game Chat</h4>
           <div id="game-over-chat-messages" class="chat-messages"></div>
           <form id="game-over-chat-form" class="chat-form" action="#">
             <input
@@ -111,8 +154,15 @@
               type="text"
               placeholder="Type a message..."
               autocomplete="off"
+              data-i18n-placeholder="ui.lobby.chat_placeholder"
             />
-            <button id="game-over-chat-send-btn" type="submit">Send</button>
+            <button
+              id="game-over-chat-send-btn"
+              type="submit"
+              data-i18n="ui.lobby.send_btn"
+            >
+              Send
+            </button>
           </form>
         </div>
       </div>
@@ -120,6 +170,7 @@
 
     <script>
       let myPlayerId = "{{ player_id }}"; // Injected by Flask
+      window.userLang = "{{ session.get('language', 'en') }}";
     </script>
     <script src="{{ url_for('static', filename='game.js') }}"></script>
   </body>

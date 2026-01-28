@@ -1,6 +1,6 @@
 """
 roles.py
-Version: 4.9.0
+Version: 4.9.4
 Defines the behavior of all roles using a generic base class and specific subclasses.
 """
 import random
@@ -107,8 +107,12 @@ class Role:
         current_prompt = self.VILLAGER_PROMPTS[safe_idx]
 
         return {
-            "pre": f'<h4>{current_prompt}</h4><select id="action-select"></select> <button id="action-btn">Select</button>',
-            "post": '<p>You made an interesting choice, picking <span style="color: springgreen">${playerPicked}</span>. <p>You are now dreaming of yummy pupusas while the night creatures are stirring ...</p>',
+            "template": {
+                "header": f"roles.{self.name_key}.night.prompt",
+                "button": f"roles.{self.name_key}.night.button",
+                "success": f"roles.{self.name_key}.night.feedback",
+                "variables": {"prompt": current_prompt},  # Pass dynamic variables
+            },
             "targets": [
                 {"id": p.id, "name": p.name}
                 for p in self.get_valid_targets(game_context)
@@ -155,8 +159,6 @@ class Villager(Role):
     name_key = ROLE_VILLAGER
     description_key = "desc_villager"
     team = "Villagers"
-    ui_short = "Find the Werewolves and vote them out."
-    ui_long = "You have no special night abilities. Your strength lies in your vote and your deduction skills. Listen to the others, find the inconsistencies, and lynch the beasts."
     ui_rating = 0.4
     ui_color = "#4D00B3"
 
@@ -180,8 +182,6 @@ class Werewolf(Role):
     description_key = "desc_werewolf"
     team = "Werewolves"
     priority = 45  # Wolves attack after defensive roles
-    ui_short = "Kill Villagers at night. Don't get caught."
-    ui_long = "You are part of the pack. Every night, you wake up with the other Werewolves and must agree unanimously on a victim to kill. During the day, you must colloborate with the other Werwolves while still acting like an innocent Villager to avoid being caught."
     ui_rating = -0.6
     ui_color = "#CC0033"
 
@@ -195,8 +195,12 @@ class Werewolf(Role):
 
     def get_night_ui_schema(self, player_obj, game_context):
         return {
-            "pre": '<h4>Werewolf, who will you eat?</h4><select id="action-select"></select> <button id="action-btn">Kill</button>',
-            "post": '<p>You are hungry for <span style="color: red" strong >${playerPicked}</span>. Waiting...</p>',
+            "template": {
+                # These keys map directly to the JSON structure we added
+                "header": f"roles.{self.name_key}.night.prompt",
+                "button": f"roles.{self.name_key}.night.button",
+                "success": f"roles.{self.name_key}.night.feedback",
+            },
             "targets": [
                 {"id": p.id, "name": p.name}
                 for p in self.get_valid_targets(game_context)
@@ -211,8 +215,6 @@ class Seer(Role):
     description_key = "desc_seer"
     team = "Villagers"
     priority = 3  # Seer acts early
-    ui_short = "See a player's sole at night! (Werewolf?)"
-    ui_long = "You are the village's most powerful investigator. Every night, you select one player to reveal that player's team - werewolves or villagers. Note the Monster is seen as a Werewolf."
     ui_rating = 1.0
     ui_color = "#0000FF"
 
@@ -240,8 +242,12 @@ class Seer(Role):
 
     def get_night_ui_schema(self, player_obj, game_context):
         return {
-            "pre": '<h4>Seer, whose role will you see?</h4><select id="action-select"></select> <button id="action-btn">Investigate</button>',
-            "post": '<p>You saw <span style="color: yellow">${playerPicked}</span>\'s role. Waiting ...</p>',
+            "template": {
+                # These keys map directly to the JSON structure we added
+                "header": f"roles.{self.name_key}.night.prompt",
+                "button": f"roles.{self.name_key}.night.button",
+                "success": f"roles.{self.name_key}.night.feedback",
+            },
             "targets": [
                 {"id": p.id, "name": p.name}
                 for p in self.get_valid_targets(game_context)
@@ -253,8 +259,6 @@ class Seer(Role):
 @register_role
 class Alpha_Werewolf(Werewolf):
     name_key = ROLE_ALPHA_WEREWOLF
-    ui_short = "Solo wins if last one standing."
-    ui_long = "You are the leader of the Werewolves. You vote with the pack to kill at night. However, your goal is to sit alone on your mountain. Solo win if only living werewolf with maximum of one living non-Monster."
     ui_rating = -0.5
     ui_color = "#C00040"
 
@@ -287,8 +291,6 @@ class Bodyguard(Role):
     description_key = "desc_bodyguard"
     team = "Villagers"
     priority = 17  # Priority PROTECT BEFORE ATTACK
-    ui_short = "Chooses a player to protect from Werewolves."
-    ui_long = "Every night, you may choose one player to guard. If the Werewolves attack that player, your protection saves them, and nobody dies. You cannot protect the same person two nights in a row."
     ui_rating = 0.5
     ui_color = "#4000C0"
 
@@ -318,8 +320,12 @@ class Bodyguard(Role):
 
     def get_night_ui_schema(self, player_obj, game_context):
         return {
-            "pre": '<h4>Bodyguard, who will you protect?</h4><select id="action-select"></select> <button id="action-btn">Protect</button>',
-            "post": '<p>Sending protection orders for <span style="color: turquoise">${playerPicked}</span>. Waiting ...</p>',
+            "template": {
+                # These keys map directly to the JSON structure we added
+                "header": f"roles.{self.name_key}.night.prompt",
+                "button": f"roles.{self.name_key}.night.button",
+                "success": f"roles.{self.name_key}.night.feedback",
+            },
             "targets": [
                 {"id": p.id, "name": p.name}
                 for p in self.get_valid_targets(game_context)
@@ -332,8 +338,6 @@ class Bodyguard(Role):
 class Cupid(Villager):
     name_key = ROLE_CUPID
     priority = 9  # Very early, before wolves
-    ui_short = "Link two players in fatal love."
-    ui_long = "On your first night, choose two players to be 'Lovers.' These two learn their lover name. Their fates are linked: if one is killed (at night or by lynching), the other dies immediately of a broken heart."
     ui_rating = -0.2
     ui_color = "#990066"
 
@@ -383,8 +387,12 @@ class Cupid(Villager):
             return Villager.get_night_ui_schema(self, player_obj, game_context)
 
         return {
-            "pre": '<h4>Select the lovers:</h4><p class="role-desc">The selected players are fatally in love. If one dies, the other dies of heartache.</p><select id="action-select"></select><select id="action-select-2"></select><button id="action-btn">Shoot Arrow</button>',
-            "post": '<p>Love is in the air... <span style="color: orchid">${playerPicked} & ${playerPicked2}</span>.</p>',
+            "template": {
+                "header": f"roles.{self.name_key}.night.prompt",
+                "description": f"roles.{self.name_key}.night.description",  # Extra field
+                "button": f"roles.{self.name_key}.night.button",
+                "success": f"roles.{self.name_key}.night.feedback",
+            },
             "targets": [
                 {"id": p.id, "name": p.name}
                 for p in self.get_valid_targets(game_context)
@@ -397,8 +405,6 @@ class Cupid(Villager):
 class Demented(Villager):
     name_key = ROLE_DEMENTED_VILLAGER
     team = "Neutral"  # Wins alone
-    ui_short = "Solo wins if last one standing."
-    ui_long = "You have no special powers and appear as a Villager to the Seer. However, ChatGPT convinced you to kill everyone for the WIN. Note you won't be last if left with a Monster, Honeypot, Hunter, Serial Killer, and Wild Child."
     ui_rating = 0.2
     ui_color = "#660099"
 
@@ -436,8 +442,6 @@ class Demented(Villager):
 class Fool(Villager):
     name_key = ROLE_FOOL
     team = "Neutral"
-    ui_short = "Tries to get themselves lynched by the village."
-    ui_long = "You are a neutral chaos agent. You are not part of the villagers nor the werewolves. Although your ultimate win is successful if you convince the town to Lynch you."
     ui_rating = -0.2
     ui_color = "#990066"
 
@@ -450,8 +454,6 @@ class Fool(Villager):
 @register_role
 class Honeypot(Villager):
     name_key = ROLE_HONEYPOT
-    ui_short = "A trap role. If killed, their killer dies too."
-    ui_long = "You are a Villager, but dangerous to touch. If you are killed, whether by Werewolves or a Lynch mob — they will pay with their life."
     ui_rating = 0
     ui_color = "#800080"
 
@@ -539,8 +541,6 @@ class Hunter(Role):
     name_key = ROLE_HUNTER
     team = "Villagers"
     priority = 48
-    ui_short = "Can strike another player with last dying breath."
-    ui_long = "During the night you may select someone to kill upon your death."
     ui_rating = 0.4
     ui_color = "#4D00B3"
 
@@ -568,8 +568,12 @@ class Hunter(Role):
 
     def get_night_ui_schema(self, player_obj, game_context):
         return {
-            "pre": '<h4>Hunter: Who will you shoot IF you die?</h4><select id="action-select"></select> <button id="action-btn">Aim</button>',
-            "post": '<p>You are aiming at <span style="color:crimson">${playerPicked}</span> (only fires if you die).</p>',
+            "template": {
+                # These keys map directly to the JSON structure we added
+                "header": f"roles.{self.name_key}.night.prompt",
+                "button": f"roles.{self.name_key}.night.button",
+                "success": f"roles.{self.name_key}.night.feedback",
+            },
             "targets": [
                 {"id": p.id, "name": p.name}
                 for p in self.get_valid_targets(game_context)
@@ -584,8 +588,6 @@ class Backlash_Werewolf(Hunter):
     name_key = ROLE_BACKLASH_WEREWOLF
     team = "Werewolves"
     priority = 50
-    ui_short = "Can strike another player with last dying breath."
-    ui_long = "You are a Werewolf with deathly reflexes. You may choose a player at Night to avenge upon your death."
     ui_rating = -1.0
     ui_color = "#FF0000"
 
@@ -596,15 +598,12 @@ class Backlash_Werewolf(Hunter):
     def get_night_ui_schema(self, player_obj, game_context):
         return {
             # We provide a UI with TWO dropdowns
-            "pre": """
-                <h4>Backlash Wolf Actions</h4>
-                <p>1. Vote for the Night Kill (Pack Action)<br>
-                   2. Select a Grudge Target (Dies if you die)</p>
-                <select id="action-select"></select>
-                <select id="action-select-2"></select>
-                <button id="action-btn">Submit Choices</button>
-            """,
-            "post": '<p>You voted to kill <span style="color:crimson">${playerPicked}</span> and marked <span style="color:darkred">${playerPicked2}</span> for backlash.</p>',
+            "template": {
+                "header": f"roles.{self.name_key}.night.prompt",
+                "description": f"roles.{self.name_key}.night.description",  # Extra field
+                "button": f"roles.{self.name_key}.night.button",
+                "success": f"roles.{self.name_key}.night.feedback",
+            },
             "targets": [
                 {"id": p.id, "name": p.name}
                 for p in self.get_valid_targets(game_context)
@@ -640,8 +639,6 @@ class Lawyer(Villager):
     name_key = ROLE_LAWYER
     description_key = "desc_lawyer"
     priority = 14  # Acts around the same time as Bodyguard
-    ui_short = "Chooses a client to be unlynchable the next day."
-    ui_long = "You work to defend the accused. At night, you select a player to be your client. If that player goes to lynch trial, the lynching will fail, and they will survive."
     ui_rating = 0.2
     ui_color = "#660099"
 
@@ -660,8 +657,12 @@ class Lawyer(Villager):
 
     def get_night_ui_schema(self, player_obj, game_context):
         return {
-            "pre": '<h4>Lawyer, who will you defend in this monkey court?</h4><select id="action-select"></select> <button id="action-btn">Defend</button>',
-            "post": '<p>You are preparing a defense for <span style="color: gold">${playerPicked}</span>.</p>',
+            "template": {
+                # These keys map directly to the JSON structure we added
+                "header": f"roles.{self.name_key}.night.prompt",
+                "button": f"roles.{self.name_key}.night.button",
+                "success": f"roles.{self.name_key}.night.feedback",
+            },
             "targets": [
                 {"id": p.id, "name": p.name}
                 for p in self.get_valid_targets(game_context)
@@ -673,8 +674,6 @@ class Lawyer(Villager):
 @register_role
 class Martyr(Villager):
     name_key = "Martyr"
-    ui_short = "Gifts a player to receive a 2nd life upon their death."
-    ui_long = "At night you can select a player to absorb your life force upon your death."
     ui_rating = 0.2
     ui_color = "#660099"
 
@@ -701,8 +700,12 @@ class Martyr(Villager):
 
     def get_night_ui_schema(self, player_obj, game_context):
         return {
-            "pre": '<h4>Martyr, Who will you bestow a 2nd Life upon your death?</h4><select id="action-select"></select> <button id="action-btn">Protect</button>',
-            "post": '<p>You are watching over <span style="color:deeppink">${playerPicked}</span>.</p>',
+            "template": {
+                # These keys map directly to the JSON structure we added
+                "header": f"roles.{self.name_key}.night.prompt",
+                "button": f"roles.{self.name_key}.night.button",
+                "success": f"roles.{self.name_key}.night.feedback",
+            },
             "targets": [
                 {"id": p.id, "name": p.name}
                 for p in self.get_valid_targets(game_context)
@@ -727,8 +730,6 @@ class Mayor(Villager):
     name_key = ROLE_MAYOR
     description_key = "desc_mayor"
     priority = 12
-    ui_short = "Vote can break a tie during accusations."
-    ui_long = "You are the leader of the village. Because of your political influence, your vote carries tie-breaking weight during the daily accusation. You can secretly announce your successor. Your successor can only name their successor if their role has no night actions, like a Villager or Monster."
     ui_rating = 0.4
     ui_color = "#4D00B3"
 
@@ -759,8 +760,12 @@ class Mayor(Villager):
             return Villager.get_night_ui_schema(self, player_obj, game_context)
 
         return {
-            "pre": '<h4>Mayor, who will be the next mayor?</h4><select id="action-select"></select> <button id="action-btn">Elect</button>',
-            "post": '<p>Politics is great, right <span style="color: turquoise">${playerPicked}</span> ;)</p>',
+            "template": {
+                # These keys map directly to the JSON structure we added
+                "header": f"roles.{self.name_key}.night.prompt",
+                "button": f"roles.{self.name_key}.night.button",
+                "success": f"roles.{self.name_key}.night.feedback",
+            },
             "targets": [
                 {"id": p.id, "name": p.name}
                 for p in self.get_valid_targets(game_context)
@@ -825,8 +830,6 @@ class Monster(Villager):
     # seen as Werewolf, but cannot be killed by Werewolf
     name_key = ROLE_MONSTER
     team = "Monster"
-    ui_short = "Solo wins if last one standing. Teamless"
-    ui_long = "You are a supernatural beast. You are not on the Villager team or the Werewolf team; you are on your own. You are immune to the Werewolf attacks and are seen as a Werewolf. Solo win if alive with maximum of one living Werewolf."
     ui_rating = 0.3
     ui_color = "#5A00A6"
 
@@ -859,8 +862,6 @@ class Prostitute(Role):
     name_key = ROLE_PROSTITUTE
     priority = 5
     team = "Villagers"
-    ui_short = "Visit a player at night and block their night choices."
-    ui_long = "Each night, you can visit another player. The visiting player's night selection is secretly cancelled. If you or the visiting player is killed, you both die. Visit most of the players for a solo win!"
     ui_rating = 0.4
     ui_color = "#4D00B3"
 
@@ -892,8 +893,12 @@ class Prostitute(Role):
 
     def get_night_ui_schema(self, player_obj, game_context):
         return {
-            "pre": '<h4>Prostitute, Who to visit tonight?</h4><select id="action-select"></select> <button id="action-btn">Visit</button>',
-            "post": '<p>Visiting <span style="color:deeppink">${playerPicked}</span>.</p>',
+            "template": {
+                # These keys map directly to the JSON structure we added
+                "header": f"roles.{self.name_key}.night.prompt",
+                "button": f"roles.{self.name_key}.night.button",
+                "success": f"roles.{self.name_key}.night.feedback",
+            },
             "targets": [
                 {"id": p.id, "name": p.name}
                 for p in self.get_valid_targets(game_context)
@@ -905,8 +910,6 @@ class Prostitute(Role):
 @register_role
 class Random_Seer(Seer):
     name_key = ROLE_RANDOM_SEER
-    ui_short = "Has secret attribute: sane, paranoid, naive, insane"
-    ui_long = "25% sane normal, 25% paranoid (see werewolves everywhere), 25% naive (sees only villagers), 25% insane (sees opposite role). Should be played with normal Seer. Seer mental state is a secret attribute."
     ui_rating = -0.1
     ui_color = "#8D0073"
 
@@ -933,8 +936,6 @@ class Revealer(Role):
     name_key = ROLE_REVEALER
     team = "Villagers"
     priority = 25
-    ui_short = "Reveal a player's role? Reveal: Wolf- Wolf dies; Villager- You die."
-    ui_long = "You have a high-stakes power. You choose a player to 'Reveal.' If they are a Werewolf, they are exposed and killed immediately. If they are a Villager, you die of shame for accusing an innocent."
     ui_rating = 0.3
     ui_color = "#5A00A6"
 
@@ -963,8 +964,12 @@ class Revealer(Role):
 
     def get_night_ui_schema(self, player_obj, game_context):
         return {
-            "pre": '<h4>Revealer: Expose a wolf. If you\'re wrong, you die💀</h4><select id="action-select"></select> <button id="action-btn">Reveal</button>',
-            "post": '<p>You revealed <span style="color:orangered">${playerPicked}</span>.</p>',
+            "template": {
+                # These keys map directly to the JSON structure we added
+                "header": f"roles.{self.name_key}.night.prompt",
+                "button": f"roles.{self.name_key}.night.button",
+                "success": f"roles.{self.name_key}.night.feedback",
+            },
             "targets": [
                 {"id": p.id, "name": p.name}
                 for p in self.get_valid_targets(game_context)
@@ -978,8 +983,6 @@ class Serial_Killer(Role):
     name_key = "Serial_Killer"
     team = "Serial_Killer"
     priority = 15  # Kills before wolves
-    ui_short = "Kills one person nightly. Wins if last one standing."
-    ui_long = "You are a third party. You do not win with the Villagers or the Werewolves. Every night, you choose a victim to mutilate. Your kills cannot be stopped by the Bodyguard. You can only solo win with maximum of one other living human."
     ui_rating = -0.2
     ui_color = "#990066"
 
@@ -1017,8 +1020,12 @@ class Serial_Killer(Role):
 
     def get_night_ui_schema(self, player_obj, game_context):
         return {
-            "pre": '<h4>Serial Killer, Who is your next victim?</h4><select id="action-select"></select> <button id="action-btn">Murder</button>',
-            "post": '<p>You prepared your tools for <span style="color: crimson">${playerPicked}</span>.</p>',
+            "template": {
+                # These keys map directly to the JSON structure we added
+                "header": f"roles.{self.name_key}.night.prompt",
+                "button": f"roles.{self.name_key}.night.button",
+                "success": f"roles.{self.name_key}.night.feedback",
+            },
             "targets": [
                 {"id": p.id, "name": p.name}
                 for p in self.get_valid_targets(game_context)
@@ -1038,8 +1045,6 @@ class Sorcerer(Role):
     name_key = "Sorcerer"
     team = "Werewolves"  # Wins with wolves
     priority = 11  # Acts around Seer time
-    ui_short = "Team Werewolf. Search for other magic roles."
-    ui_long = "You are on the Werewolf team but do not wake up with them to kill. Instead, you investigate players to identify who the Seer is or other magic users like the Witch and the Revealer."
     ui_rating = -0.4
     ui_color = "#B3004D"
 
@@ -1068,8 +1073,12 @@ class Sorcerer(Role):
 
     def get_night_ui_schema(self, player_obj, game_context):
         return {
-            "pre": '<h4>Sorcerer, find the Seer or Witch!</h4><select id="action-select"></select> <button id="action-btn">Scan</button>',
-            "post": '<p>You gazed into the void and saw <span style="color: purple">${playerPicked}</span> role.</p>',
+            "template": {
+                # These keys map directly to the JSON structure we added
+                "header": f"roles.{self.name_key}.night.prompt",
+                "button": f"roles.{self.name_key}.night.button",
+                "success": f"roles.{self.name_key}.night.feedback",
+            },
             "targets": [
                 {"id": p.id, "name": p.name}
                 for p in self.get_valid_targets(game_context)
@@ -1081,8 +1090,6 @@ class Sorcerer(Role):
 @register_role
 class Tough_Villager(Villager):
     name_key = ROLE_TOUGH_VILLAGER
-    ui_short = "Villager who can survive one death."
-    ui_long = "You have no active powers, but you are wearing armor. The first time you die, you will mysteriously survive. You only really die upon your second death."
     ui_rating = 0.7
     ui_color = "#2600D9"
 
@@ -1096,8 +1103,6 @@ class Tough_Villager(Villager):
 @register_role
 class Tough_Werewolf(Werewolf):
     name_key = ROLE_TOUGH_WEREWOLF
-    ui_short = "Will survive the first attempt on their life."
-    ui_long = "You hunt with the pack. If a Hunter shoots you, a Witch poisons you, Lynch-mob targets you, or the Serial Killer attacks you, you survive that first strike."
     ui_rating = -0.8
     ui_color = "#E6001A"
 
@@ -1111,8 +1116,6 @@ class Tough_Werewolf(Werewolf):
 @register_role
 class Wild_Child(Villager):
     name_key = ROLE_WILD_CHILD
-    ui_short = "Picks a role model. If they die, child becomes a Werewolf."
-    ui_long = "On the first night, you choose another player to be your 'Role Model.' As long as they live, and nurture you, you stay human. If they die, you become a Werewolf and join the pack."
     ui_rating = -0.3
     ui_color = "#A6005A"
 
@@ -1153,30 +1156,40 @@ class Wild_Child(Villager):
             return {"action": "kill_vote", "target": target_player_obj.id}
         return {"action": "villager_vote", "target": target_player_obj.id}
 
+
     def get_night_ui_schema(self, player_obj, game_context):
-        # select role model
+        # 1. Select Role Model (First Night)
         if self.role_model_id is None:
             return {
-                "pre": '<h4>Wild Child, Choose your Rolemodel:</h4><select id="action-select"></select> <button id="action-btn">Choose</button>',
-                "post": '<p>You look up to <span style="color:darkorange">${playerPicked}</span>.</p>',
+                "template": {
+                    "header": f"roles.{self.name_key}.night.prompt",
+                    "button": f"roles.{self.name_key}.night.button",
+                    "success": f"roles.{self.name_key}.night.feedback",
+                },
                 "targets": [
                     {"id": p.id, "name": p.name}
                     for p in self.get_valid_targets(game_context)
                 ],
                 "can_skip": False,
             }
-        # werewolf ui
+
+        # 2. Transformed Werewolf UI
+        # We reuse the standard Werewolf translation keys here so it matches the pack
         if self.transformed:
             return {
-                "pre": '<h4>Werewolf, who will you eat?</h4><select id="action-select"></select> <button id="action-btn">Kill</button>',
-                "post": '<p>You are hungry for <span style="color: red" strong >${playerPicked}</span>. Waiting...</p>',
+                "template": {
+                    "header": "roles.Werewolf.night.prompt",
+                    "button": "roles.Werewolf.night.button",
+                    "success": "roles.Werewolf.night.feedback",
+                },
                 "targets": [
                     {"id": p.id, "name": p.name}
                     for p in self.get_valid_targets(game_context)
                 ],
                 "can_skip": True,
             }
-        # villager ui if not transformed
+
+        # 3. Untransformed Villager UI
         else:
             return Villager.get_night_ui_schema(self, player_obj, game_context)
 
@@ -1185,8 +1198,6 @@ class Wild_Child(Villager):
 class Witch(Villager):
     name_key = ROLE_WITCH
     priority = 20  # After Seer, Before Wolves to set heal
-    ui_short = "Has two potions: one to kill, one to heal."
-    ui_long = "You wake up before the Werewolves. You can use your Healing Potion to possibly save the victim if you guess right, or your Poison Potion to kill another player of your choice. You can use each potion only once per game."
     ui_rating = 0.3
     ui_color = "#5A00A6"
 
@@ -1234,15 +1245,28 @@ class Witch(Villager):
 
         # Format potions as {id, name} so populateSelect works
         potions = []
+        # We construct the keys dynamically for the potions
         if self.has_heal_potion:
-            potions.append({"id": "heal", "name": "Heal Potion"})
+            potions.append(
+                {"id": "heal", "name_key": f"roles.{self.name_key}.night.potion_heal"}
+            )
         if self.has_kill_potion:
-            potions.append({"id": "poison", "name": "Poison Potion"})
-        potions.append({"id": "none", "name": "Do Nothing"})
+            potions.append(
+                {
+                    "id": "poison",
+                    "name_key": f"roles.{self.name_key}.night.potion_poison",
+                }
+            )
+        potions.append(
+            {"id": "none", "name_key": f"roles.{self.name_key}.night.potion_none"}
+        )
 
         return {
-            "pre": '<h4>Witch, who will consume a potion?</h4><select id="action-select"></select> <select id="action-select-2"></select><button id="action-btn">Feed Potion</button>',
-            "post": '<p><span style="color: lawngreen">${playerPicked}</span> consumed <span style="gold">${playerPicked2}</span>.</p>',
+            "template": {
+                "header": f"roles.{self.name_key}.night.prompt",
+                "button": f"roles.{self.name_key}.night.button",
+                "success": f"roles.{self.name_key}.night.feedback",
+            },
             "targets": [
                 {"id": p.id, "name": p.name}
                 for p in self.get_valid_targets(game_context)
