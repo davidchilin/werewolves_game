@@ -1,6 +1,6 @@
 """
 game_engine.py
-Version: 4.9.4
+Version: 4.9.5
 Manages the game flow, player states, complex role interactions, and phase transitions.
 """
 import random
@@ -60,7 +60,7 @@ class Game:
         self.phase_start_time = None
         self.phase_end_time = 0
 
-        self.prompt_order = list(range(len(Role.VILLAGER_PROMPTS)))
+        self.prompt_order = list(range(Role.VILLAGER_PROMPT_COUNT))
         random.shuffle(self.prompt_order)
         self.night_count = -1
 
@@ -263,11 +263,12 @@ class Game:
             self.set_phase(PHASE_NIGHT)
 
     def get_current_prompt_index(self):
-        """Returns the specific index for this night from the shuffled list."""
         if not self.prompt_order:
             return 0
-        # Cycle through the shuffled list
-        return self.prompt_order[self.night_count % len(self.prompt_order)]
+        # Use night_count to rotate through the shuffled list
+        # We use absolute value or max(0) to ensure positive index if night_count is -1
+        safe_night = max(0, self.night_count)
+        return self.prompt_order[safe_night % len(self.prompt_order)]
 
     def receive_night_action(self, player_id, target_id):
         """
@@ -415,7 +416,6 @@ class Game:
             if player.linked_partner_id:
                 partner = self.players.get(player.linked_partner_id)
                 if partner and partner.is_alive and partner.id not in processed_ids:
-                    # msg = f"💘 <span style='color:#f06292'>Lovers Pact:</span> <strong>{partner.name}</strong> dies of broken heart 💔 They were a <strong>{partner.role.name_key}</strong>"
                     msg = {
                         "key": "events.lovers_pact",
                         "variables": {
@@ -436,7 +436,6 @@ class Game:
                     and other_node.is_alive
                     and other_node.id not in processed_ids
                 ):
-                    # msg = f"👠 <span style='color:#e91e63'>Date Damage:</span> <strong>{other_node.name}</strong> dies too 🔞 They were a <strong>{other_node.role.name_key}</strong>"
                     msg = {
                         "key": "events.prostitute_collat",
                         "variables": {
@@ -582,17 +581,21 @@ class Game:
             # Find most common
             vote_counts = Counter(villager_votes)
             top_target_id, count = vote_counts.most_common(1)[0]
+
             if top_target_id in self.players:
                 idx = self.get_current_prompt_index()
-                prompt_text = Role.VILLAGER_PROMPTS[idx]
+
+                # [CHANGED] Generate key instead of accessing list
+                safe_idx = idx % Role.VILLAGER_PROMPT_COUNT
+                prompt_key = f"prompts.villager_{safe_idx}"
+
                 final_events.append(
                     {
                         "type": "announcement",
-                        # "message": f"📊 <strong>Village Poll:</strong> <em>{prompt_text} </em><span style='color: #ff5252'><strong>{self.players[top_target_id].name}</strong></span>",
                         "message": {
                             "key": "events.village_poll",
                             "variables": {
-                                "prompt": prompt_text,
+                                "prompt": prompt_key,  # Frontend will translate this key recursively
                                 "target": self.players[top_target_id].name,
                             },
                         },
@@ -812,7 +815,6 @@ class Game:
             if "no_lynch" in target_obj.status_effects:
                 # Cancel the death
                 result_data["killed_id"] = None
-                # msg = f"⚖️ <strong>{target_obj.name}</strong> was voted out, but their <strong>Lawyer</strong> found a loophole! The lynch is cancelled!"
                 msg = {
                     "key": "events.lawyer_save",
                     "variables": {"name": target_obj.name},

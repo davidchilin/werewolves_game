@@ -1,10 +1,9 @@
 """
 roles.py
-Version: 4.9.4
+Version: 4.9.5
 Defines the behavior of all roles using a generic base class and specific subclasses.
 """
 import random
-from config import VILLAGER_PROMPTS
 
 # --- Roles ---
 # Simplified keys, add manually to lobby.html
@@ -65,6 +64,7 @@ class Role:
     description_key = "desc_generic"
     team = "Neutral"  # Villager, Werewolf, Neutral
     priority = 8  # 0 = First (e.g., Bodyguard), 50 = Last (e.g.,Werewolf)
+    VILLAGER_PROMPT_COUNT = 8
 
     ui_short = "No description."
     ui_long = "No description."
@@ -75,8 +75,6 @@ class Role:
         # Basic Metadata
         self.is_night_active = False
         self.player_id = None
-
-    VILLAGER_PROMPTS = VILLAGER_PROMPTS
 
     def on_assign(self, player_obj):
         """
@@ -102,16 +100,16 @@ class Role:
         return {}
 
     def get_night_ui_schema(self, player_obj, game_context):
-        idx = game_context.get("villager_promt_index", 0)
-        safe_idx = idx % len(self.VILLAGER_PROMPTS) if self.VILLAGER_PROMPTS else 0
-        current_prompt = self.VILLAGER_PROMPTS[safe_idx]
+        idx = game_context.get("villager_prompt_index", 0)
+        safe_idx = idx % self.VILLAGER_PROMPT_COUNT
+        prompt_key = f"prompts.villager_{safe_idx}"
 
         return {
             "template": {
                 "header": f"roles.{self.name_key}.night.prompt",
                 "button": f"roles.{self.name_key}.night.button",
                 "success": f"roles.{self.name_key}.night.feedback",
-                "variables": {"prompt": current_prompt},  # Pass dynamic variables
+                "variables": {"prompt": prompt_key},  # Pass dynamic variables
             },
             "targets": [
                 {"id": p.id, "name": p.name}
@@ -1155,7 +1153,6 @@ class Wild_Child(Villager):
         elif self.transformed:
             return {"action": "kill_vote", "target": target_player_obj.id}
         return {"action": "villager_vote", "target": target_player_obj.id}
-
 
     def get_night_ui_schema(self, player_obj, game_context):
         # 1. Select Role Model (First Night)

@@ -1,6 +1,6 @@
 """
 app.py
-Version: 4.9.0
+Version: 4.9.5
 """
 import logging
 import os
@@ -309,7 +309,10 @@ def perform_tally_accusations():
             print(f"perform_tally_accusations message: {outcome.get('message')}")
             socketio.emit("message", {"text": outcome["message"]}, to=game["game_code"])
 
-        trial_msg = f"⛓️ <strong>{outcome['target_name']}</strong> is on trial!"
+        trial_msg = {
+            "key": "events.trial_started",
+            "variables": {"target": outcome["target_name"]},
+        }
         game_instance.message_history.append(trial_msg)
 
         socketio.emit(
@@ -767,13 +770,16 @@ def resolve_lynch():
             game_instance.message_history.append(ann)
             print(f"resolve_lynch announcement: {ann}")
             socketio.emit("message", {"text": ann}, to=game["game_code"])
-    msg = "No one was lynched 🕊️"
+    msg = {"key": "events.lynch_fail", "variables": {}}
     if result.get("armor_save"):
-        msg = "⚖️ The village voted to lynch, but... <strong>strangely, nobody dies.</strong>"
+        msg = {"key": "events.lynch_armor", "variables": {}}
     elif result["killed_id"]:
         name = game_instance.players[result["killed_id"]].name
         role = game_instance.players[result["killed_id"]].role.name_key
-        msg = f"⚖️ <strong>{name}</strong> was lynched! They were a <strong>{role}</strong> ⚰️"
+        msg = {
+            "key": "events.lynch_success",
+            "variables": {"name": name, "role": role}
+        }
     game_instance.message_history.append(msg)
     socketio.emit(
         "lynch_vote_result",
@@ -1003,6 +1009,7 @@ def handle_hero_choice(data):
             )
     if game_instance.mode == "pass_and_play":
         emit("pnp_action_confirmed", {})
+        socketio.emit("pnp_player_done", {"player_id": player_id}, to=game["game_code"])
     else:
         broadcast_game_state()
 
@@ -1030,9 +1037,10 @@ def handle_accuse_player(data):
         else:
             target_name = "Nobody"
 
-        hist_msg = (
-            f"🫵 <strong>{accuser_name}</strong> accuses <strong>{target_name}</strong>!"
-        )
+        hist_msg = {
+            "key": "events.accusation_made",
+            "variables": {"accuser": accuser_name, "target": target_name},
+        }
         game_instance.message_history.append(hist_msg)
         emit(
             "accusation_made",
@@ -1050,6 +1058,7 @@ def handle_accuse_player(data):
         perform_tally_accusations()
     elif game_instance.mode == "pass_and_play":
         emit("pnp_action_confirmed", {})
+        socketio.emit("pnp_player_done", {"player_id": pid}, to=game["game_code"])
 
 
 @socketio.on("cast_lynch_vote")
@@ -1062,6 +1071,7 @@ def handle_cast_lynch_vote(data):
         resolve_lynch()
     elif game_instance.mode == "pass_and_play":
         emit("pnp_action_confirmed", {})
+        socketio.emit("pnp_player_done", {"player_id": pid}, to=game["game_code"])
 
 
 # --- Resolution ---
@@ -1081,7 +1091,7 @@ def resolve_night():
             event_type = event.get("type", "death")
 
             if event_type == "armor_save":
-                msg = "<strong>Strangely, nobody dies...</strong>"
+                msg = {"key": "events.strangely", "variables": {}}
                 game_instance.message_history.append(msg)
                 socketio.emit("message", {"text": msg}, to=game["game_code"])
 
@@ -1106,26 +1116,24 @@ def resolve_night():
                 reason = event.get("reason", "Unknown")
                 name = event.get("name", "Unknown")
                 role = event.get("role", "Unknown")
-                hist_msg = reason
+                hist_msg = {"key": "events.death_wolf", "variables": {"name": name, "role": role}}
                 if reason == "Werewolf meat":
-                    hist_msg = f"🐾 <span style='color:#e57373'>Remnants of a body were found!</span> <strong>{name}</strong> was killed 🫀 They were a <strong>{role}</strong> ⚰️"
+                    hist_msg["key"] = "events.death_wolf"
                 if reason == "Witch Poison":
-                    hist_msg = f"⚗️ <span style='color:#ba68c8'>A bubbling sound was heard..</span> ☠ <strong>{name}</strong> dissolved into muck. They were a <strong>{role}</strong> ⚰️"
+                    hist_msg["key"] = "events.death_witch"
                 elif reason == "Love Pact":
-                    hist_msg = f"💕 <span style='color:#f06292'><strong>{name}</strong> died of a broken heart!</span> 😈 They were a <strong>{role}</strong> ⚰️"
+                    hist_msg["key"] = "events.death_love"
                 elif reason == "Retaliation":
-                    hist_msg = f"⚔️ <span style='color:#ffb74d'><strong>{name}</strong> fucked with the wrong person!</span> They were a <strong>{role}</strong> ⚰️"
+                    hist_msg["key"] = "events.death_retaliation"
                 elif reason == "revealed_werewolf":
-                    hist_msg = f"🔦 <span style='color:#fff176'><strong>{name}</strong> was revealed to be a <strong>{role}</strong> and strung up!</span> ⚰️"
+                    hist_msg["key"] = "events.death_reveal_wolf"
                 elif reason == "revealed_wrongly":
-                    hist_msg = f"🤦 <span style='color:#90a4ae'><strong>{name}</strong> revealed a <strong>Villager</strong> and died of shame!</span> ⚰️"
+                    hist_msg["key"] = "events.death_reveal_human"
                 elif reason == "Serial Killer":
-                    hist_msg = f"🔪 <span style='color:#b71c1c'>A mutilated body was found!</span> <strong>{name}</strong> was the victim of a <strong>Serial Killer</strong>! 🩸 They were a <strong>{role}</strong> ⚰️"
+                    hist_msg["key"] = "events.death_serial"
                 elif "Honeypot" in reason:
-                    # Clean up prefix for display if needed
-                    clean_reason = reason.replace("Honeypot retaliation: ", "")
-                    hist_msg = f"🍯 <span style='color:#ffb74d'><strong>{role} {name}</strong> fell into a trap!</span> {clean_reason} 🐝"
-
+                    hist_msg["key"] = "events.death_honey"
+                    hist_msg["variables"]["reason"] = reason.replace("Honeypot retaliation: ", "")
                 game_instance.message_history.append(hist_msg)
 
                 socketio.emit(
@@ -1144,7 +1152,7 @@ def resolve_night():
                     send_werewolf_info(werewolf.id)
 
     if not actual_death:
-        msg = "🌞 The sun rises, and no one was killed."
+        msg = {"key": "events.sun_rise_safe", "variables": {}}
         game_instance.message_history.append(msg)
         socketio.emit("message", {"text": msg}, to=game["game_code"])
 
