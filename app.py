@@ -204,7 +204,7 @@ def generate_player_payload(player_id, player_wrapper=None, public_data=None):
     ):
         ctx = {
             "players": list(game_instance.players.values()),
-            "villager_promt_index": game_instance.get_current_prompt_index(),
+            "villager_prompt_index": game_instance.get_current_prompt_index(),
         }
         night_ui = engine_player_obj.role.get_night_ui_schema(engine_player_obj, ctx)
 

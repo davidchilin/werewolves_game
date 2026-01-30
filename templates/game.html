@@ -1,4 +1,4 @@
-<!-- Version: 4.9.4 -->
+<!-- Version: 4.9.5 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -9,7 +9,7 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='game.css') }}"
     />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <script src="{{ url_for('static', filename='purify.min.js') }}"></script>
     <script src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
   </head>
   <body>
