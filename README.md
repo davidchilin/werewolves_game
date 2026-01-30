@@ -3,7 +3,7 @@
 A feature-rich, self-hosted real-time multiplayer social deduction game. Built
 with Python (Flask) and WebSockets, this project has evolved from a simple
 experiment into a fully playable party game supporting 24 unique roles, mobile
-"Pass-and-Play" support, and complex win conditions.
+"Pass-and-Play" support, multiple languages, and complex win conditions.
 [Install Instructions](#setup-and-running-the-project)
 
 ## **Description**
@@ -19,8 +19,8 @@ linked by Cupid, chain-reaction deaths (Honeypot/Hunter), solo-winning roles
 the outcome.
 
 The game is designed to be played alongside a separate video or voice chat (like
-Jitsi Meet or Zoom), where the real-time discussion and deception take place OR
-in person using one to several phones in **Pass-and-Play** mode.
+_Jitsi Meet_ or Zoom), where the real-time discussion and deception take place
+OR in person using one to several phones in **Pass-and-Play** mode.
 
 ## **Core Features**
 
@@ -33,6 +33,8 @@ in person using one to several phones in **Pass-and-Play** mode.
   have a small chance to participate during accusation and lynch vote phase.
 - **🎭 24 Unique Roles:** Including complex roles like the **Alpha Werewolf**,
   **Prostitute**, **Lawyer**, and **Serial Killer**.
+- シ **Multiple Language** - Play a single game in multiple languages
+  simultaneously.
 - **🏆 Solo Win Conditions:** Neutral roles like the **Monster**, **Fool**, or
   **Demented Villager** can win alone, ignoring team allegiances.
 
@@ -153,10 +155,11 @@ To run this project locally, follow these steps:
 1.  **Clone the repository:**
 
     ```bash
-    git clone [https://github.com/davidchilin/werewolves_game.git](https://github.com/davidchilin/werewolves_game.git)
-    or download werewolves_game-master.zip and unzip to folder werewolves_game.
+    git clone https://github.com/davidchilin/werewolves_game.git
     cd werewolves_game
     ```
+
+    or download werewolves_game-master.zip and unzip to folder werewolves_game.
 
 2.  **EITHER** run via Dockerfile (steps 2A & 5) **OR** through docker-compose
     (steps 2B & 5) **OR** install and run locally (steps 2C-5). **Edit**
@@ -164,24 +167,45 @@ To run this project locally, follow these steps:
     CORS_ALLOWED_ORIGINS to desired game web address
     http://127.0.0.1:5000,http://your.ip.here:5000,https://your.site.here:5000.
 
-```markdown
-    A. Build docker and run. Can change port used in browser to 8080 for example: -p 8080:5000.
-        - `docker build -t werewolves_game .`
-        - `docker run -p 5000:5000 --name werewolves_game werewolves_game`
+    A. Build docker and run. Can change port used in browser to 8080 for
+    example: -p 8080:5000.
+
+    ```bash
+    docker build -t werewolves_game .
+    docker run -p 5000:5000 --name werewolves_game werewolves_game
+    ```
+
     B. Build docker compose and run.
-        - `docker compose up --build`
-        - `docker compose up`
+
+    ```bash
+    docker compose up --build
+    docker compose up
+    ```
+
         For nginx docker compose version: edit `.env.werewolves` file: NGINX_PORT to desired port (default 5000) and server_name in nginx.conf
-        - `docker compose -f ./docker-compose-nginx.yml up --build`
-    C. Create and activate a virtual environment:
-        - Windows: `python -m venv venv` followed by `.\venv\Scripts\activate`
-        - macOS / Linux: `python3 -m venv venv` followed by `source venv/bin/activate`
-```
+
+    ```bash
+    docker compose -f ./docker-compose-nginx.yml up --build
+    ```
+
+    C. Create and activate a virtual environment: - Windows:
+
+        ```bash
+        python -m venv venv
+        .\venv\Scripts\activate
+        ```
+
+        - macOS / Linux:
+
+        ```bash
+        python3 -m venv venv
+        source venv/bin/activate
+        ```
 
 3.  **Install Dependencies:**
 
     ```bash
-    pip install Flask Flask-SocketIO python-uuid python-dotenv
+    pip install Flask Flask-SocketIO python-dotenv
     ```
 
 4.  **Run the App:**
@@ -191,7 +215,7 @@ To run this project locally, follow these steps:
     ```
 
     OR alternatively for better performance and security run the Flask app
-    through gunicorn:
+    through your preferred port and gunicorn:
 
     ```bash
     pip install gunicorn gevent

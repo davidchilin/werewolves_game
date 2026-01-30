@@ -110,6 +110,7 @@ def broadcast_player_list():
         to=game["game_code"],
     )
 
+
 def get_public_game_state():
     """
     Generates the game state data common to ALL players.
@@ -175,6 +176,7 @@ def get_public_game_state():
         print(f"DEBUG ERROR in Public Data: {e}")
         return None
 
+
 def generate_player_payload(player_id, player_wrapper=None, public_data=None):
     """
     Generates the specific game state payload for a given player ID.
@@ -238,22 +240,25 @@ def generate_player_payload(player_id, player_wrapper=None, public_data=None):
     # We copy public_data to avoid modifying the cached dictionary
     payload = public_data.copy()
 
-    payload.update({
-        "is_admin": is_admin,
-        "is_alive": is_alive,
-        "my_lynch_vote": my_phase_target_id,
-        "my_phase_target_id": my_phase_target_id,
-        "my_phase_metadata": my_phase_metadata,
-        "my_phase_target_name": my_phase_target_name,
-        "my_rematch_vote": player_id in game_instance.rematch_votes,
-        "my_sleep_vote": my_sleep_vote,
-        "night_ui": night_ui,
-        "this_player_id": player_id,
-        "valid_targets": valid_targets_data,
-        "your_role": role_str,
-    })
+    payload.update(
+        {
+            "is_admin": is_admin,
+            "is_alive": is_alive,
+            "my_lynch_vote": my_phase_target_id,
+            "my_phase_target_id": my_phase_target_id,
+            "my_phase_metadata": my_phase_metadata,
+            "my_phase_target_name": my_phase_target_name,
+            "my_rematch_vote": player_id in game_instance.rematch_votes,
+            "my_sleep_vote": my_sleep_vote,
+            "night_ui": night_ui,
+            "this_player_id": player_id,
+            "valid_targets": valid_targets_data,
+            "your_role": role_str,
+        }
+    )
 
     return payload
+
 
 def broadcast_game_state():
     """Syncs the FULL Engine state to all clients efficiently."""
@@ -267,9 +272,12 @@ def broadcast_game_state():
             continue
 
         # 2. Generate private payload using cached public data
-        payload = generate_player_payload(player_id, player_wrapper, public_data=public_data)
+        payload = generate_player_payload(
+            player_id, player_wrapper, public_data=public_data
+        )
         if payload:
             socketio.emit("game_state_sync", payload, to=player_wrapper.sid)
+
 
 # --- Timer System ---
 game_loop_running = False
@@ -426,14 +434,17 @@ def get_roles():
     return jsonify([cls().to_dict() for cls in AVAILABLE_ROLES.values()])
 
 
-# no caching for flask app
+# Only disable caching for HTML and JSON (Game Data)
 @app.after_request
-def add_header(r):
-    r.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    r.headers["Pragma"] = "no-cache"
-    r.headers["Expires"] = "0"
-    r.headers["Cache-Control"] = "public, max-age=0"
-    return r
+def add_header(response):
+    if (
+        "text/html" in response.content_type
+        or "application/json" in response.content_type
+    ):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
 
 
 # --- SocketIO Events ---
@@ -951,6 +962,7 @@ def handle_client_ready_for_game():
 
     if payload:
         emit("game_state_sync", payload, to=player_wrapper.sid)
+
 
 @socketio.on("hero_choice")
 def handle_hero_choice(data):
