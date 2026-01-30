@@ -1,4 +1,4 @@
-// Version 4.9.2
+// Version 4.9.5
 const PHASE_LOBBY = "Lobby";
 const PHASE_NIGHT = "Night";
 const PHASE_ACCUSATION = "Accusation";
@@ -6,6 +6,108 @@ const PHASE_LYNCH = "Lynch_Vote";
 const PHASE_GAME_OVER = "Game_Over";
 
 const socket = io();
+
+let translations = {};
+const currentLang = window.userLang || "en";
+
+// 1. Load the appropriate JSON file
+async function loadTranslations() {
+  try {
+    const response = await fetch(`/static/${currentLang}.json`);
+    translations = await response.json();
+    console.log(`Loaded translations for ${currentLang}`);
+
+    // [ADDED] Trigger UI update immediately after loading
+    updateStaticUIText();
+
+    if (myRole) {
+      updateRoleTooltip(myRole);
+      const displayRole = myRole === "Random_Seer" ? "Seer" : myRole;
+      const roleName = t({ key: `roles.${displayRole}.name` }) || displayRole;
+      els.role.textContent = roleName + (isAdmin ? " 👑" : "");
+    }
+    if (currentPhase) updatePhaseDisplay(currentPhase);
+    if (publicHistory && publicHistory.length > 0) {
+      resetLog(publicHistory);
+    }
+  } catch (err) {
+    console.error("Failed to load translations:", err);
+  }
+}
+loadTranslations();
+
+function t(data) {
+  // If it's already a string, return it (backward compatibility)
+  if (typeof data === "string") return data;
+  if (!data || !data.key) return "Error: Unknown message";
+
+  // Traverse JSON keys (e.g., "events.night_kill")
+  const keys = data.key.split(".");
+  let template = translations;
+  for (let k of keys) {
+    template = template ? template[k] : null;
+  }
+  if (!template || typeof template !== "string") return data.key;
+
+  // Replace Variables
+  let text = template;
+  if (data.variables) {
+    for (const [varName, varValue] of Object.entries(data.variables)) {
+      let insertVal = varValue;
+
+      // 1. Role Name Check (Existing)
+      if (
+        translations.roles &&
+        translations.roles[varValue] &&
+        translations.roles[varValue].name
+      ) {
+        insertVal = translations.roles[varValue].name;
+      }
+
+      // 2. [ADDED] Recursive Translation Check
+      // If the variable looks like a key (e.g. "prompts.villager_0"), try to translate it
+      else if (typeof insertVal === "string" && insertVal.includes(".")) {
+        const translated = t({ key: insertVal });
+        // If translation found (result != key), use it
+        if (translated !== insertVal) {
+          insertVal = translated;
+        }
+      }
+
+      text = text.replace(`{${varName}}`, insertVal);
+    }
+  }
+  return text;
+}
+
+function updateStaticUIText() {
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const key = el.getAttribute("data-i18n");
+    const text = t({ key: key });
+
+    if (text && text !== key) {
+      // Preserve icons if they exist (optional complexity),
+      // simple innerText replacement is usually safest for buttons
+      el.innerText = text;
+    }
+  });
+
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-placeholder");
+    const text = t({ key: key });
+    if (text && text !== key) {
+      el.placeholder = text;
+    }
+  });
+
+  // [ADDED] Manual Placeholder Updates (since placeholders aren't innerText)
+  if (translations.ui && translations.ui.lobby) {
+    const chatInput = document.getElementById("game-chat-input");
+    if (chatInput)
+      chatInput.placeholder = translations.ui.lobby.chat_placeholder;
+  }
+}
+
 // Global State
 let ROLE_DATA = {};
 let myRole;
@@ -79,8 +181,10 @@ const els = {
 
 // --- Helper Functions ---
 function logMessage(message, isPrivate = false) {
+  let text = t(message);
+
   let div = document.createElement("div");
-  div.innerHTML = DOMPurify.sanitize(message);
+  div.innerHTML = DOMPurify.sanitize(text);
   if (isPrivate) {
     div.classList.add("private-msg");
   }
@@ -103,10 +207,12 @@ function updateAdminControls() {
     els.adminControls.style.display = "block";
     const pauseBtn = document.getElementById("admin-pause-timer-btn");
     if (pauseBtn) {
-      pauseBtn.textContent = timersDisabled
-        ? "Resume Timers ▶️"
-        : "Pause Timers ⏸️";
-      pauseBtn.style.backgroundColor = timersDisabled ? orangered : "";
+      const resumeText =
+        t({ key: "ui.game.resume_timers_btn" }) || "Resume Timers ▶️";
+      const pauseText =
+        t({ key: "ui.game.pause_timers_btn" }) || "Pause Timers ⏸️";
+      pauseBtn.textContent = timersDisabled ? resumeText : pauseText;
+      pauseBtn.style.backgroundColor = timersDisabled ? "orangered" : "";
     }
   } else {
     els.adminControls.style.display = "none";
@@ -162,28 +268,26 @@ function confirmAdvancePhase() {
   const actions = document.getElementById("overlay-actions");
   const actionArea = document.getElementById("overlay-action-area");
 
-  // Clear any previous injected buttons
   if (actionArea) actionArea.innerHTML = "";
 
-  // 1. Show Overlay
   overlay.style.display = "flex";
 
-  // 2. Set Content
-  title.innerText = "Force Next Phase";
+  // [CHANGED] Use Translation Keys
+  title.innerText = t({ key: "ui.pnp.force_title" });
   title.style.color = "orange";
-  msg.innerHTML =
-    "⚠️ <strong>Warning:</strong><br>This will skip remaining turns for this phase.<br>Are you sure?";
+  msg.innerHTML = t({ key: "ui.pnp.force_msg" });
 
-  // 3. Define Actions
-  // UPDATED: Calls named function doForcePhase() for better reliability
+  const btnYes = t({ key: "ui.pnp.force_yes" });
+  const btnCancel = t({ key: "ui.pnp.btn_cancel" });
+
   actions.innerHTML = `
-                  <button class="big-btn" style="background-color: crimson;" onclick="doForcePhase()">
-                      Yes, Force Next Phase
-                  </button>
-                  <button class="big-btn cancel" style="background-color: royalblue" onclick="closeOverlay()">
-                      Cancel
-                  </button>
-              `;
+      <button class="big-btn" style="background-color: crimson;" onclick="doForcePhase()">
+          ${btnYes}
+      </button>
+      <button class="big-btn cancel" style="background-color: royalblue" onclick="closeOverlay()">
+          ${btnCancel}
+      </button>
+  `;
 }
 
 function requestGameSync() {
@@ -203,41 +307,40 @@ function renderHub(allPlayers, phase) {
     pnpLogContainer.appendChild(els.log);
   }
 
-  const phaseName = phase ? phase.replace(/_/g, " ") : "Game";
-  // Ensure the h2 element exists before setting text
+  let phaseKey = "ui.game.night_phase_title";
+  if (phase === PHASE_ACCUSATION) phaseKey = "ui.pnp.hub_day";
+  if (phase === PHASE_LYNCH) phaseKey = "ui.pnp.hub_vote";
+
   const titleEl = document.querySelector("#pnp-hub h2");
   if (titleEl) {
-    titleEl.textContent = `${phaseName} Phase`;
+    // [CHANGED] Set text once. Do not append icons manually afterwards.
+    titleEl.textContent = t({ key: phaseKey }) || phase;
 
-    // [ADDED] Dynamic Colors for PnP Hub
+    // Set Colors/Glow
     if (phase === "Night") {
-      titleEl.style.color = "lightskyblue"; // Light Blue
-      titleEl.textContent += " 🌙";
+      titleEl.style.color = "lightskyblue";
       titleEl.style.textShadow =
-        "0 0 5px #00bcd4, 0 0 10px #00bcd4, 0 0 20px #00bcd4, 0 0 40px #00bcd4"; // Glowing effect
+        "0 0 5px #00bcd4, 0 0 10px #00bcd4, 0 0 20px #00bcd4, 0 0 40px #00bcd4";
     } else if (phase === "Accusation") {
       titleEl.style.color = "white";
-      titleEl.textContent += " 🫵";
       titleEl.style.textShadow =
         "0 0 5px #ffb74d, 0 0 10px #ff9800, 0 0 20px #ff9800, 0 0 40px #ff9800";
     } else if (phase === "Lynch_Vote") {
       titleEl.style.color = "white";
-      titleEl.textContent += " 🔥";
       titleEl.style.textShadow =
         "0 0 5px #ff5252, 0 0 10px #ff1744, 0 0 20px #d50000, 0 0 40px #b71c1c";
     } else {
-      titleEl.style.color = "darkviolet"; // Standard Purple default
+      titleEl.style.color = "darkviolet";
       titleEl.style.textShadow = "none";
     }
   }
 
   els.pnpGrid.innerHTML = allPlayers
     .map((p) => {
-      // Show All Players, disable if acted or dead without ghost mode
       const isDay = phase === PHASE_ACCUSATION || phase === PHASE_LYNCH;
       const isGhostActive = !p.is_alive && ghostModeActive && isDay;
 
-      // button clickable if not acted and alive, or ghost
+      // Button clickable if not acted and alive, or ghost
       const isInteractive =
         !hasActed.has(p.id) && (p.is_alive || isGhostActive);
       let deadClass = "pnp-btn";
@@ -249,12 +352,20 @@ function renderHub(allPlayers, phase) {
         : "";
 
       let label = p.name;
-      if (!p.is_alive) label += " 👻"; // Add Ghost icon for clarity
-      if (hasActed.has(p.id)) label += " (Done)";
+      if (!p.is_alive) label += " 👻";
+      if (hasActed.has(p.id)) {
+        // [CHANGED] Use translation for "(Done)"
+        const doneText = t({ key: "ui.pnp.done_title" }) || "Done";
+        label += ` (${doneText})`;
+      }
 
       return `<div class="${deadClass}" onclick="${clickAction}">${label}</div>`;
     })
     .join("");
+}
+
+function closeOverlay() {
+  els.pnpOverlay.style.display = "none";
 }
 
 function startConfirmFlow(pid, name) {
@@ -264,22 +375,34 @@ function startConfirmFlow(pid, name) {
   const actions = document.getElementById("overlay-actions");
   const actionArea = document.getElementById("overlay-action-area");
 
-  // Reset action area so previous buttons don't persist
   if (actionArea) actionArea.innerHTML = "";
 
   overlay.style.display = "flex";
-  title.innerText = "Identity Check";
+
+  // [CHANGED] Pass object {key: ...} instead of string
+  title.innerText = t({ key: "ui.pnp.identity_title" });
   title.style.color = "#bb86fc";
-  msg.innerHTML = `Are you <strong>${name}</strong>?`;
+
+  // [CHANGED] Pass variables object
+  let msgText = t({
+    key: "ui.pnp.identity_ask",
+    variables: { name: name },
+  });
+  msg.innerHTML = msgText;
+
+  let btnYes = t({
+    key: "ui.pnp.btn_yes",
+    variables: { name: name },
+  });
+  let btnNo = t({ key: "ui.pnp.btn_no" });
+
+  // Escape name for the onclick handler to prevent syntax errors with quotes
+  const safeName = name.replace(/'/g, "\\'");
 
   actions.innerHTML = `
-            <button class="big-btn" onclick="confirmLevel2('${pid}', '${name.replace(/'/g, "\\'")}')">Yes, I am ${name}</button>
-            <button class="big-btn cancel" onclick="closeOverlay()">No, go back</button>
-        `;
-}
-
-function closeOverlay() {
-  els.pnpOverlay.style.display = "none";
+      <button class="big-btn" onclick="confirmLevel2('${pid}', '${safeName}')">${btnYes}</button>
+      <button class="big-btn cancel" onclick="closeOverlay()">${btnNo}</button>
+  `;
 }
 
 function confirmLevel2(pid, name) {
@@ -287,14 +410,23 @@ function confirmLevel2(pid, name) {
   const msg = document.getElementById("overlay-msg");
   const actions = document.getElementById("overlay-actions");
 
-  title.innerText = "Confirm Identity";
-  title.style.color = "#f44336"; // Warning Red
-  msg.innerHTML = `Make sure <strong>${name}</strong> has the device.<br>Don't show the screen to anyone else.`;
+  // [CHANGED] Correct translation calls
+  title.innerText = t({ key: "ui.pnp.confirm_title" });
+  title.style.color = "#f44336";
+
+  let msgText = t({
+    key: "ui.pnp.confirm_msg",
+    variables: { name: name },
+  });
+  msg.innerHTML = msgText;
+
+  let btnReady = t({ key: "ui.pnp.btn_ready" });
+  let btnCancel = t({ key: "ui.pnp.btn_cancel" });
 
   actions.innerHTML = `
-            <button class="big-btn" onclick="socket.emit('pnp_request_state', { player_id: '${pid}' })">I am Ready</button>
-            <button class="big-btn cancel" onclick="closeOverlay()">Cancel</button>
-        `;
+      <button class="big-btn" onclick="socket.emit('pnp_request_state', { player_id: '${pid}' })">${btnReady}</button>
+      <button class="big-btn cancel" onclick="closeOverlay()">${btnCancel}</button>
+  `;
 }
 
 socket.on("pnp_state_sync", (data) => {
@@ -335,7 +467,10 @@ socket.on("pnp_state_sync", (data) => {
   // 5. Update UI Components
   // Role Display
   const displayRole = myRole === "Random_Seer" ? "Seer" : myRole;
-  els.role.textContent = displayRole.replace(/_/g, " ");
+
+  const roleName =
+    t({ key: `roles.${displayRole}.name` }) || displayRole.replace(/_/g, " ");
+  els.role.textContent = roleName + (isAdmin ? " 👑" : "");
   if (typeof updateRoleTooltip === "function") updateRoleTooltip(myRole);
 
   // Action Area (Night UI)
@@ -361,39 +496,56 @@ function updateRoleTooltip(roleStr) {
     long: "...",
     rating: "?",
     color: "#fff",
-    team: "Unknown",
+    team: "Neutral",
   };
 
-  let teamName = rData.team || "Neutral";
+  // 1. Logic uses the RAW key (e.g. "Villagers") so it works in any language
+  const rawTeam = rData.team || "Neutral";
   let teamColor = "darkgray";
+  let prefix = "";
 
-  if (teamName === "Werewolves") {
+  if (rawTeam === "Werewolves") {
     teamColor = "red";
-    teamName = "🐺 Team Werewolf";
-  } else if (teamName === "Villagers") {
+    prefix = "🐺 ";
+  } else if (rawTeam === "Villagers") {
     teamColor = "mediumblue";
-    teamName = "🌻 Team Villager";
+    prefix = "🌻 ";
   } else if (
-    teamName === "Monster" ||
-    teamName === "Neutral" ||
-    teamName === "Serial_Killer"
+    rawTeam === "Monster" ||
+    rawTeam === "Neutral" ||
+    rawTeam === "Serial_Killer"
   ) {
     teamColor = "darkviolet"; // Purple
-    teamName = "🎭 Solo Squad";
+    prefix = "🎭 ";
   }
+
+  // 2. Translate the Team Name for Display
+  let displayTeamName = rawTeam;
+  if (translations.teams && translations.teams[rawTeam]) {
+    displayTeamName = translations.teams[rawTeam];
+  }
+
+  // Combine Prefix + Translated Name
+  const finalTeamString = prefix + displayTeamName;
+
+  // 3. Translate Role Name & Description
+  const safeKey = roleKey.replace(/ /g, "_");
+  const translatedDesc = t({ key: `roles.${safeKey}.long` }) || rData.long;
+  const translatedName = t({ key: `roles.${safeKey}.name` }) || roleKey;
 
   const tooltipEl = document.getElementById("my-role-tooltip");
   if (tooltipEl) {
     tooltipEl.innerHTML = `
-                  <strong style="color: ${rData.color || "yellow"}; font-size: 1.2em; display:block; margin-bottom:8px;">
-                      ${roleKey}
-                  </strong>
-                  <div style="text-align: left; margin-bottom: 8px; line-height: 1.4;">
-                      ${rData.long}
-                  </div>
-                  <div style="font-size:0.85em; border-top:1px solid #444; padding-top:5px;">
-                  <strong style="color: ${rData.color}; float: left">${rData.rating}</strong>
-                  <span style="float: right; color: ${teamColor};">${teamName}</span></div> `;
+        <strong style="color: ${rData.color || "yellow"}; font-size: 1.2em; display:block; margin-bottom:8px;">
+            ${translatedName}
+        </strong>
+        <div style="text-align: left; margin-bottom: 8px; line-height: 1.4;">
+            ${translatedDesc}
+        </div>
+        <div style="font-size:0.85em; border-top:1px solid #444; padding-top:5px;">
+            <strong style="color: ${rData.color}; float: left">${rData.rating}</strong>
+            <span style="float: right; color: ${teamColor};">${finalTeamString}</span>
+        </div> `;
   }
 }
 
@@ -416,7 +568,10 @@ function populateSelect(
 ) {
   const select = document.getElementById(elementId);
   if (!select) return;
-  select.innerHTML = includeNobody ? `<option value="">Nobody</option>` : "";
+  const nobodyText = t({ key: "ui.game.nobody" }) || "Nobody";
+  select.innerHTML = includeNobody
+    ? `<option value="">${nobodyText}</option>`
+    : "";
   [...players]
     .sort(() => 0.5 - Math.random())
     .forEach((p) => {
@@ -432,7 +587,10 @@ function submitNightAction(uiData) {
   const val2 = select2 ? select2.value : null;
 
   if (val1 && val2 && val1 === val2 && val1 !== "Nobody") {
-    alert("Cannot select the same person twice!");
+    alert(
+      t({ key: "ui.game.cannot_select_same" }) ||
+        "Cannot select the same person twice!",
+    );
     return;
   }
 
@@ -457,65 +615,181 @@ function submitNightAction(uiData) {
     select2 && select2.selectedIndex >= 0
       ? select2.options[select2.selectedIndex].text
       : "Nobody";
-  els.action.innerHTML = uiData.post
-    .replace("${playerPicked}", p1)
-    .replace("${playerPicked2}", p2);
+
+  if (uiData.template && uiData.template.success) {
+    let rawText = t({ key: uiData.template.success });
+    rawText = rawText
+      .replace(
+        "{target}",
+        `<span style="color:var(--highlight-color)">${p1}</span>`,
+      )
+      .replace(
+        "{target2}",
+        `<span style="color:var(--gold-color)">${p2}</span>`,
+      )
+      .replace(
+        "{potion}",
+        `<span style="color:var(--gold-color)">${p2}</span>`,
+      );
+    els.action.innerHTML = `<p>${rawText}</p>`;
+  } else {
+    els.action.innerHTML = "<p>Action Submitted.</p>";
+  }
 }
 
-// Updated to allow rendering into a specific container (for PnP reuse)
+/**
+ * Renders the Night Phase UI using the i18n Translation System.
+ * Aligned with roles.py template structure.
+ */
 function renderNightUI(uiData, containerId = null) {
   const container = containerId
     ? document.getElementById(containerId)
     : els.action;
   if (!container) return;
 
+  // ============================================================
+  // CASE A: ACTION PENDING (User must select a target)
+  // ============================================================
   if (myPhaseTargetId === null) {
-    if (!uiData || !uiData.pre) {
-      container.innerHTML = "<p>Sleeping...</p>";
+    // 1. Sleeping / Loading State
+    if (!uiData) {
+      container.innerHTML = `<p>${t({ key: "ui.game.game_loading" })}</p>`; // Uses en.json value "Sleeping..."
       return;
     }
-    container.innerHTML = uiData.pre;
-    // 1st dropdown
+
+    // 2. Build Header Text
+    // Use fallback "Action Required" if key missing
+    let headerText =
+      t({
+        key: uiData.template.header,
+        variables: uiData.template.variables,
+      }) || "Action Required";
+
+    let html = `<h4>${headerText}</h4>`;
+
+    // Add Description (Optional - used by Cupid/Backlash)
+    if (uiData.template.description) {
+      const descText = t({
+        key: uiData.template.description,
+        variables: uiData.template.variables,
+      });
+      html += `<p class="role-desc">${descText}</p>`;
+    }
+
+    // 3. Detect Multi-Target Roles (Need 2nd Dropdown)
+    const hKey = uiData.template.header || "";
+    const isMultiTarget =
+      uiData.potions ||
+      hKey.includes("Cupid") ||
+      hKey.includes("Backlash") ||
+      hKey.includes("Witch");
+
+    // 4. Build Controls
+    html += `<select id="action-select"></select> `;
+    if (isMultiTarget) {
+      html += `<select id="action-select-2"></select> `;
+    }
+    const btnText = t({ key: uiData.template.button }) || "Submit";
+    html += `<button id="action-btn">${btnText}</button>`;
+
+    // Render to DOM
+    container.innerHTML = html;
+
+    // 5. Populate Dropdowns
     if (uiData.targets) {
       populateSelect("action-select", uiData.targets, uiData.can_skip, true);
-      // 2nd dropdown
-      if (uiData.potions)
-        populateSelect("action-select-2", uiData.potions, false, false);
-      else if (document.getElementById("action-select-2"))
+
+      // Secondary List Logic
+      if (uiData.potions) {
+        // WITCH: Populate with Potion Names (Translated)
+        // uiData.potions contains { id: "heal", name_key: "roles.Witch.night.potion_heal" }
+        const translatedPotions = uiData.potions.map((p) => ({
+          id: p.id,
+          // If name_key exists, translate it. Otherwise use raw name.
+          name: p.name_key ? t({ key: p.name_key }) : p.name,
+        }));
+        populateSelect("action-select-2", translatedPotions, false, false);
+      } else if (isMultiTarget) {
+        // CUPID/BACKLASH: Populate with same Player List
         populateSelect(
           "action-select-2",
           uiData.targets,
           uiData.can_skip,
           true,
         );
+      }
     }
-    // 4. Handle Button Click (Default standard behavior)
+
+    // 6. Bind Click Event
     const btn = container.querySelector("#action-btn");
-    if (btn && !containerId) btn.onclick = () => submitNightAction(uiData);
-  } else {
-    // Night Action already performed
+    if (btn && !containerId) {
+      btn.onclick = () => submitNightAction(uiData);
+    }
+  }
+
+  // ============================================================
+  // CASE B: ACTION COMPLETED (Show Success/Feedback)
+  // ============================================================
+  else {
+    // 1. Seer Results (Server sends direct HTML string sometimes)
     if (lastSeerResult) {
       container.innerHTML = `<p>${lastSeerResult}</p>`;
       return;
     }
-    let p2 = "Unknown";
-    if (myNightMetadata && myNightMetadata.potion)
-      p2 =
-        myNightMetadata.potion === "heal"
-          ? "Heal Potion"
-          : myNightMetadata.potion === "poison"
-            ? "Poison Potion"
-            : "Nothing";
-    // If Cupid: metadata.target_id2
-    else if (myNightMetadata && myNightMetadata.target_id2)
-      p2 =
-        allPlayers.find((p) => p.id === myNightMetadata.target_id2)?.name ||
-        "Nobody";
 
-    const target = allPlayers.find((p) => p.id === myPhaseTargetId);
-    container.innerHTML = (uiData.post || "<p>Action submitted.</p>")
-      .replace("${playerPicked}", target ? target.name : "Nobody")
-      .replace("${playerPicked2}", p2);
+    // 2. Resolve Variable Names for Feedback Message
+    const targetObj = allPlayers.find((p) => p.id === myPhaseTargetId);
+    let targetName = targetObj ? targetObj.name : "Nobody";
+    let secondaryName = "Unknown";
+
+    if (myNightMetadata) {
+      if (myNightMetadata.potion) {
+        // WITCH: Translate potion ID back to readable name
+        // We construct the key: roles.Witch.night.potion_heal
+        const roleKey = myRole || "Witch";
+        const potionId = myNightMetadata.potion;
+        const pKey = `roles.${roleKey}.night.potion_${potionId}`;
+
+        // Attempt translation
+        let pTrans = t({ key: pKey });
+
+        // Fallback: If translation fails (returns key), just Capitalize ID
+        if (pTrans === pKey) {
+          pTrans = potionId.charAt(0).toUpperCase() + potionId.slice(1);
+        }
+        secondaryName = pTrans;
+      } else if (myNightMetadata.target_id2) {
+        // CUPID/BACKLASH: Resolve 2nd player name
+        const t2 = allPlayers.find((p) => p.id === myNightMetadata.target_id2);
+        secondaryName = t2 ? t2.name : "Nobody";
+      }
+    }
+
+    // 3. Build & Translate Success Message
+    let successMsg = `<p>${t({ key: "ui.pnp.done_msg" }) || "Action Submitted"}</p>`;
+
+    if (uiData && uiData.template && uiData.template.success) {
+      let rawText = t({ key: uiData.template.success });
+
+      // Replace variables
+      rawText = rawText
+        .replace(
+          "{target}",
+          `<span style="color:var(--highlight-color)">${targetName}</span>`,
+        )
+        .replace(
+          "{target2}",
+          `<span style="color:var(--gold-color)">${secondaryName}</span>`,
+        )
+        .replace(
+          "{potion}",
+          `<span style="color:var(--gold-color)">${secondaryName}</span>`,
+        );
+
+      successMsg = `<p>${rawText}</p>`;
+    }
+
+    container.innerHTML = successMsg;
   }
 }
 
@@ -529,18 +803,27 @@ function renderAccusationUI(currentDuration) {
 
   if (myPhaseTargetId !== null)
     if (myPhaseTargetId === "Ghost_Fail") {
-      html += `<h3 style="color: royalblue; font-style: italic;">👻 Your ghostly wails went unheard...</h3><p>Vote failed.</p>`;
+      const ghostFail = t({ key: "ui.game.ghost_fail" });
+      const voteFail = t({ key: "ui.game.vote_failed" });
+      html += `<h3 style="color: royalblue; font-style: italic;">${ghostFail}</h3><p>${voteFail}</p>`;
     } else {
       const target = allPlayers.find((p) => p.id === myPhaseTargetId);
-      html += `<h3>You have accused <span style="color:#ff5252">${
-        target ? target.name : "Nobody"
-      }</span>.</h3><p>Waiting for others...</p>`;
+      const tName = target ? target.name : "Nobody";
+      // [CHANGED]
+      const accusedMsg = t({
+        key: "ui.game.you_accused",
+        variables: { name: tName },
+      });
+      const waitMsg = t({ key: "ui.game.waiting_others" });
+      html += `<h3>${accusedMsg}</h3><p>${waitMsg}</p>`;
     }
   else {
+    const prompt = t({ key: "ui.game.accusation_prompt" });
+    const btnAccuse = t({ key: "actions.accuse" }) || "Accuse";
     html += `
-                <h4>Who is the Werewolf? Time for discussion!</h4>
+                <h4>${prompt}</h4>
                 <select id="accuse-select"></select>
-                <button id="accuse-btn">Accuse</button>`;
+                <button id="accuse-btn">${btnAccuse}</button>`;
   }
 
   const timeToEnable =
@@ -598,35 +881,41 @@ function renderAccusationUI(currentDuration) {
 function renderLynchVoteUI() {
   let html = "";
   if (!isAlive && ghostModeActive) {
-    html += "<h4 style='color: royalblue'>👻 Ghost Mode Active: ...</h4>";
+    html += `<h4 style='color: royalblue'>${t({ key: "ui.game.ghost_active" })}</h4>`;
   }
   if (myLynchVote === "Ghost_Fail") {
-    html += `<h3 style="color: royalblue; font-style: italic;">👻 Your ghostly voice faded...</h3><p>Vote failed.</p>`;
+    html += `<h3 style="color: royalblue; font-style: italic;">${t({ key: "ui.game.ghost_fail" })}</h3><p>${t({ key: "ui.game.vote_failed" })}</p>`;
     els.action.innerHTML = html;
   } else if (myLynchVote === "yes" || myLynchVote === "no") {
-    els.action.innerHTML = `<h3>You voted: <span style="color:${
-      myLynchVote === "yes" ? "green" : "red"
-    }">${myLynchVote.toUpperCase()}</span></h3><p>Waiting for result...</p>`;
+    const votedTxt = translations.ui.game.voted_btn || "Voted!";
+    els.action.innerHTML = `<h3>${votedTxt} <span style="color:${myLynchVote === "yes" ? "green" : "red"}">${myLynchVote.toUpperCase()}</span></h3><p>Waiting for result...</p>`;
   } else {
     // If not voted, SHOW BUTTONS
+    const yesTxt = t({ key: "actions.lynch_yes" }) || "YES";
+    const noTxt = t({ key: "actions.lynch_no" }) || "NO";
+    // [CHANGED]
+    const prompt = t({
+      key: "ui.game.lynch_prompt",
+      variables: { name: currentLynchTargetName },
+    });
     els.action.innerHTML = `
-             <h4>Will you lynch <span style="color:#bb86fc">${currentLynchTargetName}</span>?</h4>
-             <button onclick="submitLynchVote('yes')" class="vote-btn-yes">YES</button>
-             <button onclick="submitLynchVote('no')" class="vote-btn-no">NO</button>`;
+             <h4>${prompt}</h4>
+             <button onclick="submitLynchVote('yes')" class="vote-btn-yes">${yesTxt}</button>
+             <button onclick="submitLynchVote('no')" class="vote-btn-no">${noTxt}</button>`;
   }
 }
 
 function renderActionUI(phase, currentDuration = 0) {
   els.action.innerHTML = "";
+  if (phase) updatePhaseDisplay(phase);
+
   // DEAD VIEW
   if (!isAlive) {
     if (!ghostModeActive) {
-      els.action.innerHTML =
-        "<h3>You are dead 💀 You can observe the game in silence.</h3>";
+      els.action.innerHTML = t({ key: "ui.game.dead_message" });
       return;
     }
-    els.action.innerHTML =
-      "<h4 style='color: darkgray'>👻 Ghost Mode Active: ...</h4>";
+    els.action.innerHTML = `<h4 style='color: darkgray'>${t({ key: "ui.game.ghost_active" })}</h4>`;
   }
   if (phase === PHASE_NIGHT) renderNightUI(currentNightUI);
   else if (phase === PHASE_ACCUSATION) renderAccusationUI(currentDuration);
@@ -634,11 +923,36 @@ function renderActionUI(phase, currentDuration = 0) {
   else els.action.innerHTML = "<p>Please wait...</p>";
 }
 
+function updatePhaseDisplay(phase) {
+  if (!phase) return;
+
+  // Map phase ID to translation key
+  let phaseKey = "ui.game.night_phase_title";
+  if (phase === PHASE_ACCUSATION) phaseKey = "ui.pnp.hub_day";
+  if (phase === PHASE_LYNCH) phaseKey = "ui.pnp.hub_vote";
+  if (phase === PHASE_GAME_OVER) phaseKey = "ui.game.game_over_title";
+
+  // Set Text
+  els.phase.textContent = t({ key: phaseKey }) || phase.replace(/_/g, " ");
+
+  // Set Styles
+  if (phase === "Night") {
+    els.phase.style.color = "lightskyblue";
+    els.phase.style.textShadow = "0 0 5px #00bcd4, 0 0 10px #00bcd4";
+  } else if (phase === "Accusation") {
+    els.phase.style.color = "white";
+    els.phase.style.textShadow = "0 0 5px #ffb74d, 0 0 10px #ff9800";
+  } else if (phase === "Lynch_Vote") {
+    els.phase.style.color = "white";
+    els.phase.style.textShadow = "0 0 5px #ff5252, 0 0 10px #ff1744";
+  }
+}
+
 function startTimer(endTimeStamp) {
   if (timerInterval) clearInterval(timerInterval);
   els.timer.textContent = "";
   if (timersDisabled) {
-    els.timer.textContent = "Timer ♾️";
+    els.timer.textContent = t({ key: "ui.game.timer_disabled" }) || "Timer ♾️";
     return;
   }
   if (!endTimeStamp) return;
@@ -647,10 +961,13 @@ function startTimer(endTimeStamp) {
     const timeLeft = Math.max(0, Math.ceil(endTimeStamp - Date.now() / 1000));
     const min = Math.floor(timeLeft / 60),
       sec = Math.floor(timeLeft % 60);
-    els.timer.textContent = `Time left: ${min}:${("0" + sec).slice(-2)}`;
+    const label = t({ key: "ui.game.timer_left" }) || "Time left: ";
+    const done = t({ key: "ui.game.time_up" }) || "Time's up!";
+
+    els.timer.textContent = `${label}${min}:${("0" + sec).slice(-2)}`;
     if (timeLeft <= 0) {
       clearInterval(timerInterval);
-      els.timer.textContent = "Time's up!";
+      els.timer.textContent = done;
     }
   };
   update();
@@ -661,18 +978,23 @@ function showGameOverScreen(data, rematchInfo = {}) {
   if (timerInterval) clearInterval(timerInterval);
   els.gameContainer.style.display = "none";
   els.gameOverScreen.style.display = "flex";
-
-  // Ensure PnP hub is hidden
   els.pnpHub.style.display = "none";
 
-  document.getElementById("game-over-title").textContent =
-    data.winning_team === "Villagers" || data.winning_team === "Werewolves"
-      ? `The ${data.winning_team} Win!`
-      : `${data.winning_team} Won!`;
-  document.getElementById("game-over-reason").innerHTML = data.reason;
+  // 1. Title
+  let titleKey = "ui.game.win_generic";
+  if (data.winning_team === "Villagers") titleKey = "ui.game.win_villagers";
+  if (data.winning_team === "Werewolves") titleKey = "ui.game.win_werewolves";
 
+  let titleText = t({ key: titleKey, variables: { team: data.winning_team } });
+  document.getElementById("game-over-title").textContent = titleText;
+
+  // 2. Reason (Handle Object or String)
+  document.getElementById("game-over-reason").innerHTML = t(data.reason);
+
+  // 3. Final Roles List
   const list = document.getElementById("final-roles-list");
   list.innerHTML = "";
+
   data.final_player_states.forEach((p) => {
     const isWinner =
       (data.winning_team === "Villagers" && p.team === "Villagers") ||
@@ -686,7 +1008,23 @@ function showGameOverScreen(data, rematchInfo = {}) {
     if (isSoloWinner) badges += " 🥇";
     if (!p.is_alive) badges += " 💀";
 
-    list.innerHTML += `<li><strong>${p.name}</strong>${badges} was a ${p.role}</li>`;
+    // [CHANGED] Translate Role Name
+    const roleKey = p.role.replace(/ /g, "_");
+    const roleName = t({ key: `roles.${roleKey}.name` }) || p.role;
+
+    // [CHANGED] Use a sentence template for "Bob was a Villager"
+    // Fallback included if key is missing
+    let lineText = t({
+      key: "ui.game.final_role_item",
+      variables: { name: p.name, role: roleName, badges: badges },
+    });
+
+    // Fallback if translation key is missing
+    if (lineText === "ui.game.final_role_item") {
+      lineText = `<strong>${p.name}</strong>${badges} was a ${roleName}`;
+    }
+
+    list.innerHTML += `<li>${lineText}</li>`;
   });
 
   const mainLog = document.getElementById("log-panel");
@@ -697,14 +1035,22 @@ function showGameOverScreen(data, rematchInfo = {}) {
   btn.onclick = (e) => {
     socket.emit("vote_for_rematch");
     e.target.disabled = true;
-    e.target.textContent = "Voted!";
+    e.target.textContent = t({ key: "ui.game.voted_btn" }) || "Voted!";
   };
   btn.disabled = rematchInfo.hasVoted;
-  btn.textContent = rematchInfo.hasVoted ? "Voted!" : "Vote to Return to Lobby";
+
+  const btnText = t({ key: "ui.game.return_lobby_btn" }) || "Vote to Return";
+  const votedText = t({ key: "ui.game.voted_btn" }) || "Voted!";
+  btn.textContent = rematchInfo.hasVoted ? votedText : btnText;
 
   const status = document.getElementById("rematch-vote-status");
-  if (status && rematchInfo.count !== undefined)
-    status.textContent = `${rematchInfo.count} / ${rematchInfo.total} players have voted to return.`;
+  if (status && rematchInfo.count !== undefined) {
+    let statText = t({
+      key: "ui.game.rematch_status",
+      variables: { count: rematchInfo.count, total: rematchInfo.total },
+    });
+    status.textContent = statText;
+  }
 
   document.getElementById("game-over-chat-container").style.display = isPnP
     ? "none"
@@ -798,8 +1144,7 @@ socket.on("game_state_sync", (data) => {
     // Force hide standard game, show Hub
     els.gameContainer.style.display = "none";
     renderHub(allPlayers, data.phase);
-    let phaseName = data.phase.replace(/_/g, " ");
-    els.phase.textContent = `${phaseName}`;
+    updatePhaseDisplay(data.phase);
   } else {
     // Standard Game Mode OR PnP Day Phase
     els.pnpHub.style.display = "none";
@@ -818,32 +1163,18 @@ socket.on("game_state_sync", (data) => {
     }
 
     const displayRole = myRole === "Random_Seer" ? "Seer" : myRole;
-    els.role.textContent = displayRole + (isAdmin ? " 👑" : "");
+
+    const roleName = t({ key: `roles.${displayRole}.name` }) || displayRole;
+    els.role.textContent = roleName + (isAdmin ? " 👑" : "");
     if (typeof updateRoleTooltip === "function") updateRoleTooltip(displayRole);
 
-    if (data.phase) els.phase.textContent = data.phase.replace(/_/g, " ");
+    updatePhaseDisplay(data.phase);
     renderActionUI(data.phase, data.duration);
 
     setChatMode(data.admin_only_chat, data.phase);
   }
 
   currentPhase = data.phase;
-  if (currentPhase === "Night") {
-    els.phase.style.color = "lightskyblue"; // Light Blue for Night
-    els.phase.textContent += " 🌙";
-    els.phase.style.textShadow =
-      "0 0 5px #00bcd4, 0 0 10px #00bcd4, 0 0 20px #00bcd4, 0 0 40px #00bcd4"; // Glowing effect
-  } else if (currentPhase === "Accusation") {
-    els.phase.style.color = "white";
-    els.phase.textContent += " 🫵";
-    els.phase.style.textShadow =
-      "0 0 5px #ffb74d, 0 0 10px #ff9800, 0 0 20px #ff9800, 0 0 40px #ff9800";
-  } else if (currentPhase === "Lynch_Vote") {
-    els.phase.textContent += " 🔥";
-    els.phase.style.color = "white";
-    els.phase.style.textShadow =
-      "0 0 5px #ff5252, 0 0 10px #ff1744, 0 0 20px #d50000, 0 0 40px #b71c1c";
-  }
 
   if (data.phase === PHASE_ACCUSATION) {
     const needed =
@@ -903,15 +1234,28 @@ socket.on("pnp_action_confirmed", () => {
   if (myPlayerId) hasActed.add(myPlayerId);
   // Show overlay message
   /* els.pnpOverlay.style.display = "flex";
-        document.getElementById("overlay-title").innerText = "Done";
+        document.getElementById("overlay-title").innerText = t("ui.pnp.done_title", "Done");
         document.getElementById("overlay-title").style.color = "#4caf50";
-        document.getElementById("overlay-msg").innerText = "Action Recorded.";
-        document.getElementById("overlay-actions").innerHTML =
-          "<p>Please pass the device...</p>";
+        document.getElementById("overlay-msg").innerText = t("ui.pnp.done_msg", "Action Recorded");
+        document.getElementById("overlay-actions").innerHTML = `<p>${t("ui.pnp.pass_device", "Pass device...")}</p>`;
         document.getElementById("overlay-action-area").innerHTML = "";
-
               setTimeout(() => requestGameSync(), 2000);
         */
+});
+
+socket.on("pnp_player_done", (data) => {
+  if (data && data.player_id) {
+    // 1. Always update the background state
+    hasActed.add(data.player_id);
+
+    // 2. SAFETY CHECK: Only refresh UI if we are actually looking at the Hub
+    const isHubVisible = els.pnpHub && els.pnpHub.style.display !== "none";
+
+    if (isPnP && isHubVisible) {
+      // Pass the current global 'allPlayers' and 'currentPhase'
+      renderHub(allPlayers, currentPhase);
+    }
+  }
 });
 
 socket.on("night_result_kill", (data) => {
@@ -939,15 +1283,23 @@ socket.on("cupid_info", (data) => {
 });
 
 socket.on("werewolf_team_info", (data) => {
-  const msg = data.teammates.length
-    ? `You are a Werewolf 🐺 Your fellow Werewolves are: <strong>${data.teammates.join(", ")}</strong>.`
-    : "You are the lone Werewolf 🐺";
+  // [CHANGED] Use translation keys
+  let msg;
+  if (data.teammates.length) {
+    msg = t({
+      key: "events.wolf_team",
+      variables: { mates: data.teammates.join(", ") },
+    });
+  } else {
+    msg = t({ key: "events.wolf_lone" });
+  }
   logMessage(msg, true);
 });
 
 socket.on("lynch_vote_result", (data) => {
+  let baseMsg = t(data.message);
   let msg =
-    data.message +
+    baseMsg +
     (data.summary
       ? `<div class="vote-summary">Voted Yes: ${
           data.summary.yes.join(", ") || "None"
@@ -995,7 +1347,7 @@ socket.on("lynch_vote_started", (data) => {
   currentPhase = PHASE_LYNCH;
   hasActed.clear();
 
-  els.phase.textContent = "Lynch Vote";
+  updatePhaseDisplay("Lynch_Vote");
   renderActionUI(PHASE_LYNCH);
   startTimer(data.phase_end_time);
 
@@ -1017,11 +1369,13 @@ socket.on("redirect_to_lobby", () => {
 });
 
 socket.on("force_relogin", (data) => {
-  alert(`New game code set.\nYou will now be returned to the login screen.`);
+  alert(t({ key: "ui.game.alert_relogin" }));
   window.location.href = "/";
 });
 
-socket.on("error", (data) => alert("Error: " + data.message));
+socket.on("error", (data) => {
+  alert(t({ key: "ui.game.alert_error", variables: { msg: data.message } }));
+});
 
 function updatePlayerListView(accusationCounts = {}) {
   els.playerList.innerHTML = "";
@@ -1030,7 +1384,9 @@ function updatePlayerListView(accusationCounts = {}) {
     const li = document.createElement("li");
 
     const isMe = p.id === myPlayerId;
-    const nameDisplay = isMe ? `${p.name} (You)` : p.name;
+
+    let youTag = isMe ? ` ${t({ key: "ui.lobby.you_suffix" }) || "(You)"}` : "";
+    let nameDisplay = `${p.name}${youTag}`;
 
     let html = `<span>${nameDisplay}</span>`;
 

@@ -1,0 +1,421 @@
+{
+  "_comment": "version 4.9.5; update language in index.html",
+  "prompts": {
+    "villager_0": "Who is most likely to have an OnlyFans?",
+    "villager_1": "Who would die first in a zombie apocalypse?",
+    "villager_2": "Who looks the most suspicious right now?",
+    "villager_3": "Who is the most lightweight drinker?",
+    "villager_4": "Who has the highest body count?",
+    "villager_5": "Who has the cutest smile?",
+    "villager_6": "Who is a finger licker?",
+    "villager_7": "Dim didi dum :)"
+  },
+  "teams": {
+    "Villagers": "Villagers",
+    "Werewolves": "Werewolves",
+    "Neutral": "Neutral",
+    "Monster": "Monster",
+    "Serial_Killer": "Serial Killer"
+  },
+  "ui": {
+    "lobby": {
+      "add_player_btn": "Add Player",
+      "admin_header": "Admin Controls",
+      "chat_header": "Lobby Chat",
+      "chat_placeholder": "Type a message...",
+      "chat_restricted": "Chat is admin-only",
+      "disable_timers": "Disable Timers",
+      "exclude_btn": "Exclude",
+      "game_code": "Game Code:",
+      "game_mode_header": "Game Mode",
+      "ghost_desc": "Dead can vote...sometimes.",
+      "ghost_mode": "Enable Ghost Mode",
+      "min_players_warning": "Need at least 4 players to start.",
+      "new_code_placeholder": "New Code",
+      "players_header": "Players:",
+      "pnp_desc": "Single device mode. Pauses turns.",
+      "pnp_mode": "Pass-and-Play Mode",
+      "random_roles_btn": "🎲 Select Random Roles",
+      "rating_guide": "💡 Rating Guide",
+      "rating_neg": "- Negative: Werewolf Aligned",
+      "rating_neu": "~ Zero: Neutral / Unknown",
+      "rating_note": "\"Random\" button selects balanced roles with a total value close to 0.",
+      "rating_pos": "+ Positive: Villager Aligned",
+      "rating_title": "Role Balance Rating:",
+      "role_count_label": "ROLE COUNT:",
+      "roles_header": "Roles",
+      "roles_warning": "⚠️ Too many roles selected! Deselect {count} role(s).",
+      "send_btn": "Send",
+      "set_code_btn": "Set Code",
+      "set_code_label": "Set New Game Code:",
+      "set_timers_btn": "Set Timers",
+      "solo_win_desc": "Don't wait for team wins.",
+      "solo_win_mode": "Solo win ends game",
+      "start_game_btn": "Start Game",
+      "timer_accusation": "Accusation (sec):",
+      "timer_lynch": "Lynch Vote (sec):",
+      "timer_night": "Night (sec):",
+      "timers_header": "Timer Settings (+30sec)",
+      "title": "Lobby - Waiting for Players",
+      "toggle_chat_btn": "Toggle Admin Chat",
+      "waiting_text": "Waiting for players...",
+      "you_suffix": "(You)"
+    },
+    "game": {
+      "accusation_prompt": "Who is the Werewolf? Time for discussion!",
+      "alert_error": "Error: {msg}",
+      "alert_relogin": "New game code set.\nYou will now be returned to the login screen.",
+      "cannot_select_same": "Cannot select the same person twice!",
+      "dead_message": "<h3>You are dead 💀 You can observe the game in silence.</h3>",
+      "done_back_btn": "Done / Back",
+      "final_role_item": "<strong>{name}</strong>{badges} was a {role}",
+      "final_roles": "Final Roles:",
+      "force_phase_btn": "Force Next Phase",
+      "game_history": "Game History",
+      "game_loading": "Sleeping...",
+      "game_log_title": "Game Log",
+      "game_over_title": "Game Over",
+      "ghost_active": "👻 Ghost Mode Active: ...",
+      "ghost_chat_title": "Ghost Chat 👻",
+      "ghost_fail": "👻 Your ghostly wails went unheard...",
+      "identity_check_title": "Identity Check",
+      "living_chat_title": "Living Chat",
+      "loading": "Loading...",
+      "lynch_prompt": "Will you lynch <span style='color:#bb86fc'>{name}</span>?",
+      "next_phase_btn": "Next Phase",
+      "night_phase_title": "Night Phase 🌙",
+      "nobody": "Nobody",
+      "pause_timers_btn": "Pause Timers ⏸️",
+      "players_header": "Players",
+      "pnp_instruction": "Select your name to perform player actions.",
+      "post_game_chat": "Post-Game Chat",
+      "rematch_status": "{count} / {total} players have voted to return.",
+      "resume_timers_btn": "Resume Timers ▶️",
+      "return_lobby_btn": "Vote to Return to Lobby",
+      "timer_disabled": "Timer ♾️",
+      "timer_left": "Time left: ",
+      "time_up": "Time's up!",
+      "voted_btn": "Voted!",
+      "vote_failed": "Vote failed.",
+      "waiting_others": "Waiting for others...",
+      "win_generic": "{team} Won!",
+      "win_villagers": "The Villagers Win!",
+      "win_werewolves": "The Werewolves Win!",
+      "you_accused": "You have accused <span style='color:#ff5252'>{name}</span>.",
+      "your_role_label": "Your Role:"
+    },
+    "pnp": {
+      "btn_cancel": "Cancel",
+      "btn_no": "No, go back",
+      "btn_ready": "I am Ready",
+      "btn_yes": "Yes, I am {name}",
+      "confirm_msg": "Make sure <strong>{name}</strong> has the device.<br>Don't show the screen to anyone else.",
+      "confirm_title": "Confirm Identity",
+      "done_msg": "Action Recorded.",
+      "done_title": "Done",
+      "force_msg": "⚠️ <strong>Warning:</strong><br>This will skip remaining turns for this phase.<br>Are you sure?",
+      "force_title": "Force Next Phase",
+      "force_yes": "Yes, Force Next Phase",
+      "hub_day": "Accusation 🫵",
+      "hub_night": "Night Phase 🌙",
+      "hub_vote": "Lynch Vote 🔥",
+      "identity_ask": "Are you <strong>{name}</strong>?",
+      "identity_title": "Identity Check",
+      "pass_device": "Please pass the device..."
+    }
+  },
+  "roles": {
+    "Villager": {
+      "name": "Villager",
+      "short": "Find the Werewolves and vote them out.",
+      "long": "You have no special night abilities. Your strength lies in your vote and your deduction skills. Listen to the others, find the inconsistencies, and lynch the beasts.",
+      "night": {
+        "prompt": "{prompt}",
+        "button": "Select",
+        "feedback": "You made an interesting choice, picking {target}. You are now dreaming of yummy pupusas while the night creatures are stirring ..."
+      }
+    },
+    "Werewolf": {
+      "name": "Werewolf",
+      "short": "Kill Villagers at night. Don't get caught.",
+      "long": "You are part of the pack. Every night, you wake up with the other Werewolves and must agree unanimously on a victim to kill. During the day, you must colloborate with the other Werwolves while still acting like an innocent Villager to avoid being caught.",
+      "night": {
+        "prompt": "Werewolf, who will you eat?",
+        "button": "Kill",
+        "feedback": "You are hungry for {target}."
+      }
+    },
+    "Seer": {
+      "name": "Seer",
+      "short": "See a player's role at night! (Werewolf?)",
+      "long": "You are the village's most powerful investigator. Every night, you select one player to reveal that player's team - werewolves or villagers. Note the Monster is seen as a Werewolf.",
+      "night": {
+        "prompt": "Seer, whose role will you see?",
+        "button": "Investigate",
+        "feedback": "You saw {target}'s role."
+      }
+    },
+    "Alpha_Werewolf": {
+      "name": "Alpha Werewolf",
+      "short": "Solo wins if last one standing.",
+      "long": "You are the leader of the Werewolves. You vote with the pack to kill at night. However, your goal is to sit alone on your mountain. Solo win if only living werewolf with maximum of one living non-Monster.",
+      "night": {
+        "prompt": "Werewolf, who will you eat?",
+        "button": "Kill",
+        "feedback": "You are hungry for {target}."
+      }
+    },
+    "Bodyguard": {
+      "name": "Bodyguard",
+      "short": "Chooses a player to protect from Werewolves.",
+      "long": "Every night, you may choose one player to guard. If the Werewolves attack that player, your protection saves them, and nobody dies. You cannot protect the same person two nights in a row.",
+      "night": {
+        "prompt": "Bodyguard, who will you protect?",
+        "button": "Protect",
+        "feedback": "Sending protection orders for {target}."
+      }
+    },
+    "Cupid": {
+      "name": "Cupid",
+      "short": "Link two players in fatal love.",
+      "long": "On your first night, choose two players to be 'Lovers.' These two learn their lover name. Their fates are linked: if one is killed (at night or by lynching), the other dies immediately of a broken heart.",
+      "night": {
+        "prompt": "Select the lovers:",
+        "description": "The selected players are fatally in love. If one dies, the other dies of heartache.",
+        "button": "Shoot Arrow",
+        "feedback": "Love is in the air... {target} & {target2}."
+      }
+    },
+    "Demented_Villager": {
+      "name": "Demented Villager",
+      "short": "Solo wins if last one standing.",
+      "long": "You have no special powers and appear as a Villager to the Seer. However, ChatGPT convinced you to kill everyone for the WIN. Note you won't be last if left with a Monster, Honeypot, Hunter, Serial Killer, or Wild Child.",
+      "night": {
+        "prompt": "{prompt}",
+        "button": "Select",
+        "feedback": "You made an interesting choice, picking {target}."
+      }
+    },
+    "Fool": {
+      "name": "Fool",
+      "short": "Tries to get themselves lynched by the village.",
+      "long": "You are a neutral chaos agent. You are not part of the villagers nor the werewolves. Although your ultimate win is successful if you convince the town to Lynch you.",
+      "night": {
+        "prompt": "{prompt}",
+        "button": "Select",
+        "feedback": "You made an interesting choice, picking {target}."
+      }
+    },
+    "Honeypot": {
+      "name": "Honeypot",
+      "short": "A trap role. If killed, their killer dies too.",
+      "long": "You are a Villager, but dangerous to touch. If you are killed, whether by Werewolves or a Lynch mob — they will pay with their life.",
+      "night": {
+        "prompt": "{prompt}",
+        "button": "Select",
+        "feedback": "You made an interesting choice, picking {target}."
+      }
+    },
+    "Hunter": {
+      "name": "Hunter",
+      "short": "Can strike another player with last dying breath.",
+      "long": "During the night you may select someone to kill upon your death.",
+      "night": {
+        "prompt": "Hunter: Who will you shoot IF you die?",
+        "button": "Aim",
+        "feedback": "You are aiming at {target} (only fires if you die)."
+      }
+    },
+    "Backlash_Werewolf": {
+      "name": "Backlash Werewolf",
+      "short": "Can strike another player with last dying breath.",
+      "long": "You are a Werewolf with deathly reflexes. You may choose a player at Night to avenge upon your death.",
+      "night": {
+        "prompt": "Backlash Wolf Actions",
+        "description": "1. Vote for the Night Kill (Pack Action)<br>2. Select a Grudge Target (Dies if you die)",
+        "button": "Submit Choices",
+        "feedback": "You voted to kill {target} and marked {target2} for backlash."
+      }
+    },
+    "Lawyer": {
+      "name": "Lawyer",
+      "short": "Chooses a client to be unlynchable the next day.",
+      "long": "You work to defend the accused. At night, you select a player to be your client. If that player goes to lynch trial, the lynching will fail, and they will survive.",
+      "night": {
+        "prompt": "Lawyer, who will you defend in this monkey court?",
+        "button": "Defend",
+        "feedback": "You are preparing a defense for {target}."
+      }
+    },
+    "Martyr": {
+      "name": "Martyr",
+      "short": "Gifts a player a 2nd life upon their death.",
+      "long": "At night you can select a player to absorb your life force upon your death.",
+      "night": {
+        "prompt": "Martyr, Who will you bestow a 2nd Life upon your death?",
+        "button": "Bless",
+        "feedback": "You are watching over {target}."
+      }
+    },
+    "Mayor": {
+      "name": "Mayor",
+      "short": "Vote can break a tie during accusations.",
+      "long": "You are the leader of the village. Because of your political influence, your vote carries tie-breaking weight during the daily accusation. You can secretly announce your successor. Your successor can only name their successor if their role has no night actions, like a Villager or Monster.",
+      "night": {
+        "prompt": "Mayor, who will be the next mayor?",
+        "button": "Elect",
+        "feedback": "Politics is great, right {target} ;)"
+      }
+    },
+    "Monster": {
+      "name": "Monster",
+      "short": "Solo wins if last one standing. Teamless",
+      "long": "You are a supernatural beast. You are not on the Villager team or the Werewolf team; you are on your own. You are immune to the Werewolf attacks and are seen as a Werewolf. Solo win if alive with maximum of one living Werewolf.",
+      "night": {
+        "prompt": "{prompt}",
+        "button": "Select",
+        "feedback": "You made an interesting choice, picking {target}."
+      }
+    },
+    "Prostitute": {
+      "name": "Prostitute",
+      "short": "Visit a player at night and block their night actions.",
+      "long": "Each night, you can visit another player. The visiting player's night selection is secretly cancelled. If you or the visiting player is killed, you both die. Visit most of the players for a solo win!",
+      "night": {
+        "prompt": "Prostitute, Who to visit tonight?",
+        "button": "Visit",
+        "feedback": "Visiting {target}."
+      }
+    },
+    "Random_Seer": {
+      "name": "Random Seer",
+      "short": "Has secret attribute: sane, paranoid, naive, insane",
+      "long": "25% sane normal, 25% paranoid (see werewolves everywhere), 25% naive (sees only villagers), 25% insane (sees opposite role). Should be played with normal Seer. Seer mental state is a secret attribute.",
+      "night": {
+        "prompt": "Seer, whose role will you see?",
+        "button": "Investigate",
+        "feedback": "You saw {target}'s role."
+      }
+    },
+    "Revealer": {
+      "name": "Revealer",
+      "short": "Reveal a player's role? Reveal: Wolf- Wolf dies; Villager- You die.",
+      "long": "You have a high-stakes power. You choose a player to 'Reveal.' If they are a Werewolf, they are exposed and killed immediately. If they are a Villager, you die of shame for accusing an innocent.",
+      "night": {
+        "prompt": "Revealer: Expose a wolf. If you're wrong, you die💀",
+        "button": "Reveal",
+        "feedback": "You revealed {target}."
+      }
+    },
+    "Serial_Killer": {
+      "name": "Serial Killer",
+      "short": "Kills one person nightly. Wins if last one standing.",
+      "long": "You are a third party. You do not win with the Villagers or the Werewolves. Every night, you choose a victim to mutilate. Your kills cannot be stopped by the Bodyguard. You can only solo win with maximum of one other living human.",
+      "night": {
+        "prompt": "Serial Killer, Who is your next victim?",
+        "button": "Murder",
+        "feedback": "🪚You prepared your tools for {target}."
+      }
+    },
+    "Sorcerer": {
+      "name": "Sorcerer",
+      "short": "Team Werewolf. Search for other magic roles.",
+      "long": "You are on the Werewolf team but do not wake up with them to kill. Instead, you investigate players to identify who the Seer is or other magic users like the Witch and the Revealer.",
+      "night": {
+        "prompt": "Sorcerer, find the Seer or Witch!",
+        "button": "Scan",
+        "feedback": "You gazed into the void and saw {target} role."
+      }
+    },
+    "Tough_Villager": {
+      "name": "Tough Villager",
+      "short": "Villager who can survive one death.",
+      "long": "You have no active powers, but you are wearing armor. The first time you die, you will mysteriously survive. You only really die upon your second death.",
+      "night": {
+        "prompt": "{prompt}",
+        "button": "Select",
+        "feedback": "You made an interesting choice, picking {target}."
+      }
+    },
+    "Tough_Werewolf": {
+      "name": "Tough Werewolf",
+      "short": "Will survive the first attempt on their life.",
+      "long": "You hunt with the pack. If a Hunter shoots you, a Witch poisons you, Lynch-mob targets you, or the Serial Killer attacks you, you survive that first strike.",
+      "night": {
+        "prompt": "Werewolf, who will you eat?",
+        "button": "Kill",
+        "feedback": "You are hungry for {target}."
+      }
+    },
+    "Wild_Child": {
+      "name": "Wild Child",
+      "short": "Picks a role model. If they die, child becomes a Werewolf.",
+      "long": "On the first night, you choose another player to be your 'Role Model.' As long as they live, and nurture you, you stay human. If they die, you become a Werewolf and join the pack.",
+      "night": {
+        "prompt": "Wild Child, Choose your Rolemodel:",
+        "button": "Choose",
+        "feedback": "You look up to {target}."
+      }
+    },
+    "Witch": {
+      "name": "Witch",
+      "short": "Has two potions: one to kill, one to heal.",
+      "long": "You wake up before the Werewolves. You can use your Healing Potion to possibly save the victim if you guess right, or your Poison Potion to kill another player of your choice. You can use each potion only once per game.",
+      "night": {
+        "prompt": "Witch, who will consume a potion?",
+        "button": "Feed Potion",
+        "feedback": "{target} consumed {potion}.",
+        "potion_heal": "Heal Potion",
+        "potion_poison": "Poison Potion",
+        "potion_none": "Do Nothing"
+      }
+    }
+  },
+  "actions": {
+    "accuse": "Accuse",
+    "vote_sleep": "Vote to Sleep",
+    "vote_sleep_timer": "Vote to Sleep ({time}s)",
+    "voted_sleep": "Voted to Sleep 💤",
+    "lynch_yes": "YES",
+    "lynch_no": "NO",
+    "kill": "Kill",
+    "protect": "Protect",
+    "heal": "Heal",
+    "poison": "Poison"
+  },
+  "events": {
+    "accusation_made": "🫵 <strong>{accuser}</strong> accuses <strong>{target}</strong>!",
+    "death_honey": "🍯 <strong>{role} {name}</strong> fell into a trap! {reason} 🐝",
+    "death_love": "💕 <strong>{name}</strong> died of a broken heart! 😈 They were a <strong>{role}</strong> ⚰️",
+    "death_retaliation": "⚔️ <strong>{name}</strong> messed with the wrong person! They were a <strong>{role}</strong> ⚰️",
+    "death_reveal_human": "🤦 <strong>{name}</strong> revealed a Villager and died of shame! ⚰️",
+    "death_reveal_wolf": "🔦 <strong>{name}</strong> was revealed to be a <strong>{role}</strong> and strung up! ⚰️",
+    "death_serial": "🔪 A mutilated body was found! <strong>{name}</strong> was the victim of a Serial Killer! 🩸 They were a <strong>{role}</strong> ⚰️",
+    "death_witch": "⚗️ A bubbling sound was heard... ☠ <strong>{name}</strong> dissolved into muck. They were a <strong>{role}</strong> ⚰️",
+    "death_wolf": "🐾 Remnants of a body were found! <strong>{name}</strong> was killed 🫀 They were a <strong>{role}</strong> ⚰️",
+    "fool_win": "🤡 The Fool {name} tricked you all and got lynched for a Solo Win! 🥇",
+    "lawyer_save": "⚖️ <strong>{name}</strong> was voted out, but their Lawyer found a loophole!",
+    "lovers_pact": "💘 <strong>Lovers Pact:</strong> {name} dies of a broken heart 💔 They were a {role}.",
+    "lynch_armor": "⚖️ The village voted to lynch, but... <strong>strangely, nobody dies.</strong>",
+    "lynch_fail": "No one was lynched 🕊️",
+    "lynch_result": "⚖️ {name} was lynched! They were a {role} ⚰️",
+    "lynch_success": "⚖️ <strong>{name}</strong> was lynched! They were a <strong>{role}</strong> ⚰️",
+    "mayor_tie": "⚖️ <strong>Tie Vote!</strong> The Mayor broke the tie against {target}!",
+    "night_kill": "🐾 Remnants of a body were found! {name} was killed. They were a {role}.",
+    "prostitute_block": "💋 You were visited by the Prostitute and were too distracted! 💦",
+    "prostitute_collat": "👠 <strong>Date Damage:</strong> {name} dies too 🔞 They were a {role}.",
+    "prostitute_win": "🥰 The Prostitute made many friends and achieved a Solo Win 🥇",
+    "seer_result": "🔮 Your vision reveals that <strong>{name}</strong> is a <strong>{role}</strong>.",
+    "strangely": "Strangely, nobody dies...",
+    "sun_rise_safe": "🌞 The sun rises, and no one was killed.",
+    "tie_deadlock": "Deadlock tie. No one lynched.",
+    "tie_restart": "⚖️ Tie vote! Re-discuss.",
+    "trial_started": "⛓️ <strong>{target}</strong> is on trial!",
+    "village_poll": "📊 <strong>Village Poll:</strong> <em>{prompt}</em> <span style='color: #ff5252'><strong>{target}</strong></span>",
+    "win_solo": "Solo Winner {role} {name} has met their goals!",
+    "win_villagers": "All of the Werewolves have been eradicated.",
+    "win_werewolves": "The Werewolves have taken over the village.",
+    "wolf_lone": "You are the lone Werewolf 🐺",
+    "wolf_team": "You are a Werewolf 🐺 Your fellow Werewolves are: <strong>{mates}</strong>."
+  }
+}

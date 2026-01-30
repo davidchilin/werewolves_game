@@ -1,4 +1,4 @@
-<!-- Version: 1.10.3 -->
+<!-- Version: 4.9.4 -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -99,20 +99,94 @@
   </head>
   <body>
     <div class="container">
-      <h2>Join Werewolves Game</h2>
+      <h2 data-i18n="title">Join Werewolves Game</h2>
       <form method="POST">
-        <input type="text" name="name" placeholder="Enter Your Name" required />
+        <input
+          type="text"
+          name="name"
+          placeholder="Enter Your Name"
+          data-i18n-placeholder="enter_name"
+          required
+        />
         <input
           type="text"
           name="game_code"
           placeholder="Enter Game Code"
+          data-i18n-placeholder="enter_code"
           required
         />
-        <button type="submit">Join Lobby</button>
+        <div
+          style="
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            align-items: center;
+          "
+        >
+          <button
+            type="submit"
+            style="margin-top: 0; flex-grow: 1; width: auto"
+            data-i18n="join_btn"
+          >
+            Join Lobby
+          </button>
+
+          <select
+            name="language"
+            id="language-select"
+            onchange="changeLanguage(this.value)"
+            style="
+              padding: 12px;
+              width: 25%;
+              border-radius: 8px;
+              background: #222;
+              color: gainsboro;
+              border: 1px solid #444;
+              cursor: pointer;
+              text-align: center;
+            "
+          >
+            <option value="en">English</option>
+            <option value="es">Español</option>
+          </select>
+        </div>
       </form>
       {% if error %}
       <p class="error">{{ error }}</p>
       {% endif %}
     </div>
+    <script>
+      // Simple dictionary for the login screen
+      const loginTranslations = {
+        en: {
+          title: "Join Werewolves Game",
+          enter_name: "Enter Your Name",
+          enter_code: "Enter Game Code",
+          join_btn: "Join Lobby",
+        },
+        es: {
+          title: "Juguemos Hombres Lobos",
+          enter_name: "Ingresa Tu Nombre",
+          enter_code: "Código del Juego",
+          join_btn: "Unirse",
+        },
+      };
+
+      function changeLanguage(lang) {
+        const t = loginTranslations[lang] || loginTranslations["en"];
+
+        // Update Text (Headings, Buttons)
+        document.querySelectorAll("[data-i18n]").forEach((el) => {
+          const key = el.getAttribute("data-i18n");
+          if (t[key]) el.innerText = t[key];
+        });
+
+        // Update Placeholders (Inputs)
+        document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+          const key = el.getAttribute("data-i18n-placeholder");
+          if (t[key]) el.placeholder = t[key];
+        });
+      }
+    </script>
   </body>
 </html>

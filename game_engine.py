@@ -1,6 +1,6 @@
 """
 game_engine.py
-Version: 4.9.0
+Version: 4.9.5
 Manages the game flow, player states, complex role interactions, and phase transitions.
 """
 import random
@@ -60,7 +60,7 @@ class Game:
         self.phase_start_time = None
         self.phase_end_time = 0
 
-        self.prompt_order = list(range(len(Role.VILLAGER_PROMPTS)))
+        self.prompt_order = list(range(Role.VILLAGER_PROMPT_COUNT))
         random.shuffle(self.prompt_order)
         self.night_count = -1
 
@@ -263,11 +263,12 @@ class Game:
             self.set_phase(PHASE_NIGHT)
 
     def get_current_prompt_index(self):
-        """Returns the specific index for this night from the shuffled list."""
         if not self.prompt_order:
             return 0
-        # Cycle through the shuffled list
-        return self.prompt_order[self.night_count % len(self.prompt_order)]
+        # Use night_count to rotate through the shuffled list
+        # We use absolute value or max(0) to ensure positive index if night_count is -1
+        safe_night = max(0, self.night_count)
+        return self.prompt_order[safe_night % len(self.prompt_order)]
 
     def receive_night_action(self, player_id, target_id):
         """
@@ -415,8 +416,14 @@ class Game:
             if player.linked_partner_id:
                 partner = self.players.get(player.linked_partner_id)
                 if partner and partner.is_alive and partner.id not in processed_ids:
-                    msg = f"💘 <span style='color:#f06292'>Lovers Pact:</span> <strong>{partner.name}</strong> dies of broken heart 💔 They were a <strong>{partner.role.name_key}</strong>"
-                    print(msg)
+                    msg = {
+                        "key": "events.lovers_pact",
+                        "variables": {
+                            "name": partner.name,
+                            "role": partner.role.name_key,
+                        },
+                    }
+                    print(f"Lovers Pact death: {partner.name}")
                     queue.append((partner.id, msg))
 
             # 6. Prostitute Collateral Damage
@@ -429,8 +436,14 @@ class Game:
                     and other_node.is_alive
                     and other_node.id not in processed_ids
                 ):
-                    msg = f"👠 <span style='color:#e91e63'>Date Damage:</span> <strong>{other_node.name}</strong> dies too 🔞 They were a <strong>{other_node.role.name_key}</strong>"
-                    print(msg)
+                    msg = {
+                        "key": "events.prostitute_collat",
+                        "variables": {
+                            "name": other_node.name,
+                            "role": other_node.role.name_key,
+                        },
+                    }
+                    print(f"Prostitute damage: {other_node.name}")
                     queue.append((other_node.id, msg))
 
         return events
@@ -483,7 +496,8 @@ class Game:
                     {
                         "id": player_obj.id,
                         "type": "blocked",
-                        "message": "💋 You were visited by the Prostitute and were too distracted to perform your night action!💦",
+                        # "message": "💋 You were visited by the Prostitute and were too distracted to perform your night action!💦",
+                        "message": {"key": "events.prostitute_block", "variables": {}},
                     }
                 )
                 continue
@@ -514,7 +528,11 @@ class Game:
                 if player_obj.role.check_win_condition(player_obj, game_context):
                     if "solo_win" not in player_obj.status_effects:
                         player_obj.status_effects.append("solo_win")
-                        msg = f'🥰 The <span style="color: #ff66aa">Prostitute</span> made many friends and achieved a Solo Win🥇'
+                        # msg = f'🥰 The <span style="color: #ff66aa">Prostitute</span> made many friends and achieved a Solo Win🥇'
+                        msg = {
+                            "key": "events.prostitute_win",
+                            "variables": {"name": player_obj.name},
+                        }
                         final_events.append({"type": "announcement", "message": msg})
 
             # 4. Handle Results
@@ -563,13 +581,24 @@ class Game:
             # Find most common
             vote_counts = Counter(villager_votes)
             top_target_id, count = vote_counts.most_common(1)[0]
+
             if top_target_id in self.players:
                 idx = self.get_current_prompt_index()
-                prompt_text = Role.VILLAGER_PROMPTS[idx]
+
+                # [CHANGED] Generate key instead of accessing list
+                safe_idx = idx % Role.VILLAGER_PROMPT_COUNT
+                prompt_key = f"prompts.villager_{safe_idx}"
+
                 final_events.append(
                     {
                         "type": "announcement",
-                        "message": f"📊 <strong>Village Poll:</strong> <em>{prompt_text} </em><span style='color: #ff5252'><strong>{self.players[top_target_id].name}</strong></span>",
+                        "message": {
+                            "key": "events.village_poll",
+                            "variables": {
+                                "prompt": prompt_key,  # Frontend will translate this key recursively
+                                "target": self.players[top_target_id].name,
+                            },
+                        },
                     }
                 )
 
@@ -676,7 +705,11 @@ class Game:
                 if mayor_vote == tied_candidate_1 or mayor_vote == tied_candidate_2:
                     self.lynch_target_id = mayor_vote
 
-                    tie_msg = f"⚖️ <strong>Tie Vote!</strong> The Mayor broke the tie against <strong>{self.players[mayor_vote].name}!</strong>"
+                    # tie_msg = f"⚖️ <strong>Tie Vote!</strong> The Mayor broke the tie against <strong>{self.players[mayor_vote].name}!</strong>"
+                    tie_msg = {
+                        "key": "events.mayor_tie",
+                        "variables": {"target": self.players[mayor_vote].name},
+                    }
                     self.message_history.append(tie_msg)
 
                     self.set_phase(PHASE_LYNCH)
@@ -690,10 +723,18 @@ class Game:
             if self.accusation_restarts == 0:
                 self.accusation_restarts += 1
                 self.pending_actions = {}
-                return {"result": "restart", "message": "⚖️ Tie vote! Re-discuss."}
+                # return {"result": "restart", "message": "⚖️ Tie vote! Re-discuss."}
+                return {
+                    "result": "restart",
+                    "message": {"key": "events.tie_restart", "variables": {}},
+                }
             else:
                 self.set_phase(PHASE_NIGHT)
-                return {"result": "night", "message": "Deadlock tie. No one lynched."}
+                # return {"result": "night", "message": "Deadlock tie. No one lynched."}
+                return {
+                    "result": "night",
+                    "message": {"key": "events.tie_deadlock", "variables": {}},
+                }
 
         # 4. Lynch Trial
         self.lynch_target_id = most_common[0][0]
@@ -774,7 +815,10 @@ class Game:
             if "no_lynch" in target_obj.status_effects:
                 # Cancel the death
                 result_data["killed_id"] = None
-                msg = f"⚖️ <strong>{target_obj.name}</strong> was voted out, but their <strong>Lawyer</strong> found a loophole! The lynch is cancelled!"
+                msg = {
+                    "key": "events.lawyer_save",
+                    "variables": {"name": target_obj.name},
+                }
                 result_data["announcements"].append(msg)
                 return result_data
 
@@ -806,7 +850,11 @@ class Game:
                 killed_obj = self.players[result_data["killed_id"]]
                 if killed_obj.role.name_key == ROLE_FOOL:
                     solo_win_continues = self.settings.get("solo_win_continues", False)
-                    msg = f"🤡 The Fool {killed_obj.name} tricked you all and got lynched for a Solo Win! 🥇"
+                    # msg = f"🤡 The Fool {killed_obj.name} tricked you all and got lynched for a Solo Win! 🥇"
+                    msg = {
+                        "key": "events.fool_win",
+                        "variables": {"name": killed_obj.name},
+                    }
 
                     if "solo_win" not in killed_obj.status_effects:
                         killed_obj.status_effects.append("solo_win")
@@ -858,13 +906,27 @@ class Game:
                 ):  # and not last_man:
                     if "solo_win" not in player_obj.status_effects:
                         player_obj.status_effects.append("solo_win")
-                        msg = f"🥇 <span style='color: #fdd835'>{player_obj.role.name_key}</span> has achieved a Solo Win!"
-                        print(msg)
+                        # msg = f"🥇 <span style='color: #fdd835'>{player_obj.role.name_key}</span> has achieved a Solo Win!"
+                        msg = {
+                            "key": "events.solo_win_continue",
+                            "variables": {
+                                "role": player_obj.role.name_key,
+                                "name": player_obj.name,
+                            },
+                        }
+                        print(f"Solo win recorded for {player_obj.name}")
                         # todo fix message only sent after refresh
                         self.message_history.append(msg)
                 else:
                     self.winner = player_obj.name
-                    reason = f"Solo Winner <span style='color: #fdd835'>{player_obj.role.name_key} {self.winner}</span> has met their goals!"
+                    # reason = f"Solo Winner <span style='color: #fdd835'>{player_obj.role.name_key} {self.winner}</span> has met their goals!"
+                    reason = {
+                        "key": "events.win_solo",
+                        "variables": {
+                            "role": player_obj.role.name_key,
+                            "name": self.winner,
+                        },
+                    }
 
         # 2. Check Team Win Conditions
         if not self.winner:
@@ -874,12 +936,14 @@ class Game:
             # Villagers win if no wolves left
             if len(wolves) == 0:
                 self.winner = "Villagers"
-                reason = "All of the <span style='color: #880808'>Werewolves</span> have been eradicated."
+                # reason = "All of the <span style='color: #880808'>Werewolves</span> have been eradicated."
+                reason = {"key": "events.win_villagers", "variables": {}}
 
             # Wolves win if they outnumber villagers (or equal)
             elif len(wolves) >= non_wolves_count:
                 self.winner = "Werewolves"
-                reason = "The <span style='color: #880808'>Werewolves</span> have taken over the village."
+                # reason = "The <span style='color: #880808'>Werewolves</span> have taken over the village."
+                reason = {"key": "events.win_werewolves", "variables": {}}
 
         if self.winner:
             self.phase = PHASE_GAME_OVER

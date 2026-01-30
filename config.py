@@ -1,6 +1,6 @@
 """
 config.py
-Version: 4.8.6a
+Version: 4.9.5
 Central location for all game defaults and timer settings.
 """
 
@@ -16,14 +16,3 @@ GAME_DEFAULTS = {
     "WOLF_RATIO": 0.25,
     "PAUSE_DURATION": 4,
 }
-
-VILLAGER_PROMPTS = [
-    "Who is most likely to have an only fans channel?",
-    "Who would die first in a zombie apocalypse?",
-    "Who looks the most suspicious right now?",
-    "Who is the most lightweight drinker?",
-    "Who has the highest body count?",
-    "Who has the cutest smile?",
-    "Who is a finger licker?",
-    "Dim didi dum :)",
-]
