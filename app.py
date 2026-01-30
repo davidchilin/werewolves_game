@@ -1,6 +1,6 @@
 """
 app.py
-Version: 4.9.0
+Version: 4.9.5
 """
 import logging
 import os
@@ -110,6 +110,7 @@ def broadcast_player_list():
         to=game["game_code"],
     )
 
+
 def get_public_game_state():
     """
     Generates the game state data common to ALL players.
@@ -175,6 +176,7 @@ def get_public_game_state():
         print(f"DEBUG ERROR in Public Data: {e}")
         return None
 
+
 def generate_player_payload(player_id, player_wrapper=None, public_data=None):
     """
     Generates the specific game state payload for a given player ID.
@@ -202,7 +204,7 @@ def generate_player_payload(player_id, player_wrapper=None, public_data=None):
     ):
         ctx = {
             "players": list(game_instance.players.values()),
-            "villager_promt_index": game_instance.get_current_prompt_index(),
+            "villager_prompt_index": game_instance.get_current_prompt_index(),
         }
         night_ui = engine_player_obj.role.get_night_ui_schema(engine_player_obj, ctx)
 
@@ -238,22 +240,25 @@ def generate_player_payload(player_id, player_wrapper=None, public_data=None):
     # We copy public_data to avoid modifying the cached dictionary
     payload = public_data.copy()
 
-    payload.update({
-        "is_admin": is_admin,
-        "is_alive": is_alive,
-        "my_lynch_vote": my_phase_target_id,
-        "my_phase_target_id": my_phase_target_id,
-        "my_phase_metadata": my_phase_metadata,
-        "my_phase_target_name": my_phase_target_name,
-        "my_rematch_vote": player_id in game_instance.rematch_votes,
-        "my_sleep_vote": my_sleep_vote,
-        "night_ui": night_ui,
-        "this_player_id": player_id,
-        "valid_targets": valid_targets_data,
-        "your_role": role_str,
-    })
+    payload.update(
+        {
+            "is_admin": is_admin,
+            "is_alive": is_alive,
+            "my_lynch_vote": my_phase_target_id,
+            "my_phase_target_id": my_phase_target_id,
+            "my_phase_metadata": my_phase_metadata,
+            "my_phase_target_name": my_phase_target_name,
+            "my_rematch_vote": player_id in game_instance.rematch_votes,
+            "my_sleep_vote": my_sleep_vote,
+            "night_ui": night_ui,
+            "this_player_id": player_id,
+            "valid_targets": valid_targets_data,
+            "your_role": role_str,
+        }
+    )
 
     return payload
+
 
 def broadcast_game_state():
     """Syncs the FULL Engine state to all clients efficiently."""
@@ -267,9 +272,12 @@ def broadcast_game_state():
             continue
 
         # 2. Generate private payload using cached public data
-        payload = generate_player_payload(player_id, player_wrapper, public_data=public_data)
+        payload = generate_player_payload(
+            player_id, player_wrapper, public_data=public_data
+        )
         if payload:
             socketio.emit("game_state_sync", payload, to=player_wrapper.sid)
+
 
 # --- Timer System ---
 game_loop_running = False
@@ -301,7 +309,10 @@ def perform_tally_accusations():
             print(f"perform_tally_accusations message: {outcome.get('message')}")
             socketio.emit("message", {"text": outcome["message"]}, to=game["game_code"])
 
-        trial_msg = f"⛓️ <strong>{outcome['target_name']}</strong> is on trial!"
+        trial_msg = {
+            "key": "events.trial_started",
+            "variables": {"target": outcome["target_name"]},
+        }
         game_instance.message_history.append(trial_msg)
 
         socketio.emit(
@@ -372,6 +383,8 @@ def index():
         for p in game["players"].values():
             if p.name.lower() == name.lower():
                 return render_template("index.html", error="Name is already taken.")
+
+        session["language"] = request.form.get("language", "en")
         session["player_id"], session["name"] = str(uuid.uuid4()), name
         return redirect(url_for("lobby"))
     return render_template("index.html")
@@ -757,13 +770,16 @@ def resolve_lynch():
             game_instance.message_history.append(ann)
             print(f"resolve_lynch announcement: {ann}")
             socketio.emit("message", {"text": ann}, to=game["game_code"])
-    msg = "No one was lynched 🕊️"
+    msg = {"key": "events.lynch_fail", "variables": {}}
     if result.get("armor_save"):
-        msg = "⚖️ The village voted to lynch, but... <strong>strangely, nobody dies.</strong>"
+        msg = {"key": "events.lynch_armor", "variables": {}}
     elif result["killed_id"]:
         name = game_instance.players[result["killed_id"]].name
         role = game_instance.players[result["killed_id"]].role.name_key
-        msg = f"⚖️ <strong>{name}</strong> was lynched! They were a <strong>{role}</strong> ⚰️"
+        msg = {
+            "key": "events.lynch_success",
+            "variables": {"name": name, "role": role}
+        }
     game_instance.message_history.append(msg)
     socketio.emit(
         "lynch_vote_result",
@@ -952,6 +968,7 @@ def handle_client_ready_for_game():
     if payload:
         emit("game_state_sync", payload, to=player_wrapper.sid)
 
+
 @socketio.on("hero_choice")
 def handle_hero_choice(data):
     player_id = session.get("player_id")
@@ -992,6 +1009,7 @@ def handle_hero_choice(data):
             )
     if game_instance.mode == "pass_and_play":
         emit("pnp_action_confirmed", {})
+        socketio.emit("pnp_player_done", {"player_id": player_id}, to=game["game_code"])
     else:
         broadcast_game_state()
 
@@ -1019,9 +1037,10 @@ def handle_accuse_player(data):
         else:
             target_name = "Nobody"
 
-        hist_msg = (
-            f"🫵 <strong>{accuser_name}</strong> accuses <strong>{target_name}</strong>!"
-        )
+        hist_msg = {
+            "key": "events.accusation_made",
+            "variables": {"accuser": accuser_name, "target": target_name},
+        }
         game_instance.message_history.append(hist_msg)
         emit(
             "accusation_made",
@@ -1039,6 +1058,7 @@ def handle_accuse_player(data):
         perform_tally_accusations()
     elif game_instance.mode == "pass_and_play":
         emit("pnp_action_confirmed", {})
+        socketio.emit("pnp_player_done", {"player_id": pid}, to=game["game_code"])
 
 
 @socketio.on("cast_lynch_vote")
@@ -1051,6 +1071,7 @@ def handle_cast_lynch_vote(data):
         resolve_lynch()
     elif game_instance.mode == "pass_and_play":
         emit("pnp_action_confirmed", {})
+        socketio.emit("pnp_player_done", {"player_id": pid}, to=game["game_code"])
 
 
 # --- Resolution ---
@@ -1070,7 +1091,7 @@ def resolve_night():
             event_type = event.get("type", "death")
 
             if event_type == "armor_save":
-                msg = "<strong>Strangely, nobody dies...</strong>"
+                msg = {"key": "events.strangely", "variables": {}}
                 game_instance.message_history.append(msg)
                 socketio.emit("message", {"text": msg}, to=game["game_code"])
 
@@ -1095,26 +1116,24 @@ def resolve_night():
                 reason = event.get("reason", "Unknown")
                 name = event.get("name", "Unknown")
                 role = event.get("role", "Unknown")
-                hist_msg = reason
+                hist_msg = {"key": "events.death_wolf", "variables": {"name": name, "role": role}}
                 if reason == "Werewolf meat":
-                    hist_msg = f"🐾 <span style='color:#e57373'>Remnants of a body were found!</span> <strong>{name}</strong> was killed 🫀 They were a <strong>{role}</strong> ⚰️"
+                    hist_msg["key"] = "events.death_wolf"
                 if reason == "Witch Poison":
-                    hist_msg = f"⚗️ <span style='color:#ba68c8'>A bubbling sound was heard..</span> ☠ <strong>{name}</strong> dissolved into muck. They were a <strong>{role}</strong> ⚰️"
+                    hist_msg["key"] = "events.death_witch"
                 elif reason == "Love Pact":
-                    hist_msg = f"💕 <span style='color:#f06292'><strong>{name}</strong> died of a broken heart!</span> 😈 They were a <strong>{role}</strong> ⚰️"
+                    hist_msg["key"] = "events.death_love"
                 elif reason == "Retaliation":
-                    hist_msg = f"⚔️ <span style='color:#ffb74d'><strong>{name}</strong> fucked with the wrong person!</span> They were a <strong>{role}</strong> ⚰️"
+                    hist_msg["key"] = "events.death_retaliation"
                 elif reason == "revealed_werewolf":
-                    hist_msg = f"🔦 <span style='color:#fff176'><strong>{name}</strong> was revealed to be a <strong>{role}</strong> and strung up!</span> ⚰️"
+                    hist_msg["key"] = "events.death_reveal_wolf"
                 elif reason == "revealed_wrongly":
-                    hist_msg = f"🤦 <span style='color:#90a4ae'><strong>{name}</strong> revealed a <strong>Villager</strong> and died of shame!</span> ⚰️"
+                    hist_msg["key"] = "events.death_reveal_human"
                 elif reason == "Serial Killer":
-                    hist_msg = f"🔪 <span style='color:#b71c1c'>A mutilated body was found!</span> <strong>{name}</strong> was the victim of a <strong>Serial Killer</strong>! 🩸 They were a <strong>{role}</strong> ⚰️"
+                    hist_msg["key"] = "events.death_serial"
                 elif "Honeypot" in reason:
-                    # Clean up prefix for display if needed
-                    clean_reason = reason.replace("Honeypot retaliation: ", "")
-                    hist_msg = f"🍯 <span style='color:#ffb74d'><strong>{role} {name}</strong> fell into a trap!</span> {clean_reason} 🐝"
-
+                    hist_msg["key"] = "events.death_honey"
+                    hist_msg["variables"]["reason"] = reason.replace("Honeypot retaliation: ", "")
                 game_instance.message_history.append(hist_msg)
 
                 socketio.emit(
@@ -1133,7 +1152,7 @@ def resolve_night():
                     send_werewolf_info(werewolf.id)
 
     if not actual_death:
-        msg = "🌞 The sun rises, and no one was killed."
+        msg = {"key": "events.sun_rise_safe", "variables": {}}
         game_instance.message_history.append(msg)
         socketio.emit("message", {"text": msg}, to=game["game_code"])
 

@@ -3,7 +3,7 @@
 A feature-rich, self-hosted real-time multiplayer social deduction game. Built
 with Python (Flask) and WebSockets, this project has evolved from a simple
 experiment into a fully playable party game supporting 24 unique roles, mobile
-"Pass-and-Play" support, and complex win conditions.
+"Pass-and-Play" support, multiple languages, and complex win conditions.
 [Install Instructions](#setup-and-running-the-project)
 
 ## **Description**
@@ -19,8 +19,8 @@ linked by Cupid, chain-reaction deaths (Honeypot/Hunter), solo-winning roles
 the outcome.
 
 The game is designed to be played alongside a separate video or voice chat (like
-Jitsi Meet or Zoom), where the real-time discussion and deception take place OR
-in person using one to several phones in **Pass-and-Play** mode.
+_Jitsi Meet_ or Zoom), where the real-time discussion and deception take place
+OR in person using one to several phones in **Pass-and-Play** mode.
 
 ## **Core Features**
 
@@ -33,6 +33,8 @@ in person using one to several phones in **Pass-and-Play** mode.
   have a small chance to participate during accusation and lynch vote phase.
 - **🎭 24 Unique Roles:** Including complex roles like the **Alpha Werewolf**,
   **Prostitute**, **Lawyer**, and **Serial Killer**.
+- シ **Multiple Language** - Play a single game in multiple languages
+  simultaneously.
 - **🏆 Solo Win Conditions:** Neutral roles like the **Monster**, **Fool**, or
   **Demented Villager** can win alone, ignoring team allegiances.
 

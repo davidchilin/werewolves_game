@@ -1,4 +1,73 @@
-// Version 4.9.2
+// Version 4.9.4
+let translations = {};
+const currentLang = window.userLang || "en";
+
+// 1. Load the appropriate JSON file
+async function loadTranslations() {
+  try {
+    const response = await fetch(`/static/${currentLang}.json`);
+    translations = await response.json();
+    console.log(`Loaded translations for ${currentLang}`);
+    updateStaticUIText(); // Update buttons immediately
+    // If roles are already loaded, re-render them with new language
+    if (document.getElementById("roles-grid").children.length > 1) {
+      loadRoles();
+    }
+  } catch (err) {
+    console.error("Failed to load translations:", err);
+  }
+}
+loadTranslations();
+
+// 2. Translator Helper
+function t(key, defaultText) {
+  // Handle object input {key: "...", variables: {...}}
+  if (typeof key === "object" && key.key) {
+    // Reuse string logic
+    let text = t(key.key, defaultText);
+    if (key.variables) {
+      for (const [k, v] of Object.entries(key.variables)) {
+        text = text.replace(`{${k}}`, v);
+      }
+    }
+    return text;
+  }
+
+  if (!key) return defaultText || "";
+  const keys = key.split(".");
+  let text = translations;
+  for (let k of keys) {
+    text = text ? text[k] : null;
+  }
+  return text || defaultText || key;
+}
+
+// 3. Update Static HTML
+function updateStaticUIText() {
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const key = el.getAttribute("data-i18n");
+    const text = t(key);
+    if (text && text !== key) {
+      el.innerText = text;
+    }
+  });
+
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-placeholder");
+    const text = t(key);
+    if (text && text !== key) {
+      el.placeholder = text;
+    }
+  });
+
+  // Update Placeholders
+  if (translations.ui && translations.ui.lobby) {
+    const chatInput = document.getElementById("chat-input");
+    if (chatInput)
+      chatInput.placeholder = translations.ui.lobby.chat_placeholder;
+  }
+}
+
 const PHASE_LOBBY = "Lobby";
 const PHASE_NIGHT = "Night";
 const PHASE_ACCUSATION = "Accusation";
@@ -68,16 +137,27 @@ async function loadRoles() {
     container.innerHTML = ""; // Clear "Loading roles..." text
 
     roles.forEach((role) => {
-      // [CHANGED] Populate Global ROLE_DATA from Server Object
       // The server now sends: short, long, rating, color
       const key = role.name_key.replace(/_/g, " ");
 
+      let roleName = key;
+      let roleShort = role.short;
+      let roleLong = role.long;
+
+      if (translations.roles && translations.roles[role.name_key]) {
+        const rTrans = translations.roles[role.name_key];
+        roleName = rTrans.name || roleName;
+        roleShort = rTrans.short || roleShort;
+        roleLong = rTrans.long || roleLong;
+      }
+
       ROLE_DATA[key] = {
-        short: role.short,
-        long: role.long,
+        short: roleShort,
+        long: roleLong,
         rating: role.rating,
         color: role.color,
         team: role.team,
+        displayName: roleName,
       };
 
       // 2. Create the Tile
@@ -128,21 +208,24 @@ async function loadRoles() {
 
       // 4. Build Tile Content
       const title = document.createElement("h3");
-      title.innerText = key + ":";
+      title.innerText = roleName;
 
       // Short Desc
       const shortDesc = document.createElement("p");
       shortDesc.className = "role-short-desc";
-      shortDesc.innerText = role.short; // [CHANGED] Use server prop
+      shortDesc.innerText = roleShort;
 
       // Tooltip
       const tooltip = document.createElement("div");
       tooltip.className = "role-tooltip";
+      const teamKey = role.team;
+      const translatedTeam = t(`teams.${teamKey}`, teamKey.replace(/_/g, " "));
+
       tooltip.innerHTML = `
-                ${role.long}
+                ${roleLong}
                 <span class="tooltip-rating" style="color: ${role.color}">
                     <span style="float: left; font-weight: normal; ">
-                        ${role.team.replace(/_/g, " ")}
+                        ${translatedTeam}
                     </span>
                     ${role.rating}
                 </span>
@@ -279,13 +362,13 @@ socket.on("update_player_list", (data) => {
     li.textContent = player.name;
     if (player.id === currentPlayerId) {
       li.classList.add("you");
-      li.textContent += " (You)";
+      li.textContent += " " + t("ui.lobby.you_suffix", "(You)");
     }
     if (player.is_admin) li.textContent += " 👑";
 
     if (isPlayerAdmin && player.id !== currentPlayerId) {
       const excludeBtn = document.createElement("span");
-      excludeBtn.textContent = "Exclude";
+      excludeBtn.textContent = t("ui.lobby.exclude_btn", "Exclude");
       excludeBtn.className = "exclude-btn";
       excludeBtn.dataset.playerId = player.id;
       li.appendChild(excludeBtn);
@@ -591,10 +674,10 @@ function excludePlayer(playerId) {
 function setChatMode(isAdminOnly) {
   if (isAdminOnly && !isPlayerAdmin) {
     chatSendBtn.disabled = true;
-    chatInput.placeholder = "Chat is admin-only";
+    chatInput.placeholder = t("ui.lobby.chat_restricted", "Chat is admin-only");
   } else {
     chatSendBtn.disabled = false;
-    chatInput.placeholder = "Type a message...";
+    chatInput.placeholder = t("ui.lobby.chat_placeholder", "Type a message...");
   }
 }
 
@@ -606,7 +689,10 @@ function updateRoleSummary() {
 
   // 1. Basic Check
   if (numPlayers < 1) {
-    summaryElement.textContent = "Waiting for players...";
+    summaryElement.textContent = t(
+      "ui.lobby.waiting_text",
+      "Waiting for players...",
+    );
     summaryElement.style.color = "darkgray";
     return;
   }
@@ -638,7 +724,14 @@ function updateRoleSummary() {
   // Validation
   if (totalSlotsNeeded > numPlayers) {
     const diff = totalSlotsNeeded - numPlayers;
-    summaryElement.innerHTML = `<strong>⚠️ Too many roles selected!</strong> Deselect ${diff} role(s).`;
+
+    let warningMsg = t(
+      "ui.lobby.roles_warning",
+      "⚠️ Too many roles selected! Deselect {count} role(s).",
+    );
+    warningMsg = warningMsg.replace("{count}", diff);
+
+    summaryElement.innerHTML = `<strong>${warningMsg}</strong>`;
     summaryElement.style.color = "salmon"; // Red Warning
     startGameBtn.disabled = true; // Prevent starting
     return;
@@ -674,7 +767,8 @@ function updateRoleSummary() {
   // D. Format Text
   let outputParts = [];
   for (const [role, count] of Object.entries(finalRoleCounts)) {
-    let displayRole = role.replace(/_/g, " ");
+    const key = role.replace(/_/g, " ");
+    let displayRole = ROLE_DATA[key] ? ROLE_DATA[key].displayName : key;
     if (count > 1) displayRole += "s";
     if (count > 0)
       outputParts.push(count === 1 ? displayRole : `${count} ${displayRole}`);

@@ -1,0 +1,422 @@
+{
+  "_comment": "version 4.9.5; update language in index.html",
+  "prompts": {
+    "villager_0": "¿Quién es más probable que tenga un OnlyFans?",
+    "villager_1": "¿Quién moriría primero en un apocalipsis de zombies?",
+    "villager_2": "¿Quién parece más sospechoso ahora mismo?",
+    "villager_3": "¿Quién se emborracha más rápido?",
+    "villager_4": "¿Quién tiene el 'body count' más alto?",
+    "villager_5": "¿Quién tiene la sonrisa más linda?",
+    "villager_6": "¿Quién se chupa los dedos al comer?",
+    "villager_7": "Dim didi dum :)"
+  },
+  "teams": {
+    "Villagers": "Cuidadanos",
+    "Werewolves": "Hombres Lobo",
+    "Neutral": "Neutral",
+    "Monster": "Monstruo",
+    "Serial_Killer": "Asesino"
+  },
+  "ui": {
+    "lobby": {
+      "add_player_btn": "Agregar Jugador",
+      "admin_header": "Controles de Admin",
+      "chat_header": "Chat",
+      "chat_placeholder": "Escribe un mensaje...",
+      "chat_restricted": "Chat solo para admin",
+      "disable_timers": "Desactivar Reloj",
+      "exclude_btn": "Excluir",
+      "game_code": "Código del Juego:",
+      "game_mode_header": "Modo de Juego",
+      "ghost_desc": "Los muertos pueden votar... a veces.",
+      "ghost_mode": "Activar Modo Fantasma",
+      "min_players_warning": "Se necesitan al menos 4 jugadores para iniciar.",
+      "new_code_placeholder": "Nuevo Código",
+      "players_header": "Jugadores:",
+      "pnp_desc": "Un solo dispositivo. Pausa entre turnos.",
+      "pnp_mode": "Modo Pasar-y-Jugar",
+      "random_roles_btn": "🎲 Roles al Azar",
+      "rating_guide": "💡 Guía de Balance",
+      "rating_neg": "- Negativo: Equipo Lobo",
+      "rating_neu": "~ Cero: Neutral / Desconocido",
+      "rating_note": "\"Al Azar\" selecciona roles balanceados con valor cercano a 0.",
+      "rating_pos": "+ Positivo: Equipo Cuidadano",
+      "rating_title": "Rating de Balance:",
+      "role_count_label": "CONTEO DE ROLES:",
+      "roles_header": "Roles",
+      "roles_warning": "⚠️ ¡Demasiados roles! Deselecciona {count} rol(es).",
+      "send_btn": "Enviar",
+      "set_code_btn": "Fijar Código",
+      "set_code_label": "Nuevo Código de Juego:",
+      "set_timers_btn": "Fijar Tiempos",
+      "solo_win_desc": "No esperar victorias de equipo.",
+      "solo_win_mode": "Victoria solitaria termina juego",
+      "start_game_btn": "Iniciar Juego",
+      "timer_accusation": "Acusación (seg):",
+      "timer_lynch": "Voto Linchamiento (seg):",
+      "timer_night": "Noche (seg):",
+      "timers_header": "Configuración de Tiempos (+30s)",
+      "title": "Sala - Esperando Jugadores",
+      "toggle_chat_btn": "Alternar Chat Admin",
+      "waiting_text": "Esperando jugadores...",
+      "you_suffix": "(Vos)"
+    },
+    "game": {
+      "accusation_prompt": "¿Quién es el Lobo? ¡Hora de discutir!",
+      "alert_error": "Error: {msg}",
+      "alert_relogin": "Nuevo código de juego.\nVolverás a la pantalla de inicio.",
+      "cannot_select_same": "¡No puedes seleccionar a la misma persona dos veces!",
+      "dead_message": "<h3>Estás muerto 💀 Puedes observar el juego en silencio.</h3>",
+      "done_back_btn": "Listo / Volver",
+      "final_role_item": "<strong>{name}</strong>{badges} era un {role}",
+      "final_roles": "Roles Finales:",
+      "force_phase_btn": "Forzar Siguiente Fase",
+      "game_history": "Historial del Juego",
+      "game_loading": "Durmiendo...",
+      "game_log_title": "Registro del Juego",
+      "game_over_title": "Fin del Juego",
+      "ghost_active": "👻 Modo Fantasma Activo: ...",
+      "ghost_chat_title": "Chat de Fantasmas 👻",
+      "ghost_fail": "👻 Tus lamentos fantasmales no se escucharon...",
+      "identity_check_title": "Verificación de Identidad",
+      "living_chat_title": "Vivos Chat",
+      "loading": "Cargando...",
+      "lynch_prompt": "¿Linchamos a <span style='color:#bb86fc'>{name}</span>?",
+      "next_phase_btn": "Siguiente Fase",
+      "night_phase_title": "Fase Nocturna 🌙",
+      "nobody": "Nadie",
+      "pause_timers_btn": "Pausar Reloj ⏸️",
+      "players_header": "Jugadores",
+      "pnp_instruction": "Selecciona tu nombre para actuar.",
+      "post_game_chat": "Chat del Fin 🐬",
+      "rematch_status": "{count} / {total} han votado para volver.",
+      "resume_timers_btn": "Reanudar Reloj ▶️",
+      "return_lobby_btn": "Votar para Volver al la Sala",
+      "timer_disabled": "Tiempo ♾️",
+      "timer_left": "Tiempo: ",
+      "time_up": "¡Tiempo agotado!",
+      "voted_btn": "¡Votado!",
+      "vote_failed": "Voto fallo.",
+      "waiting_others": "Esperando a los demás...",
+      "win_generic": "¡{team} Gana!",
+      "win_villagers": "¡Los Cuidadanos Ganan!",
+      "win_werewolves": "¡Los Hombres Lobo Ganan!",
+      "you_accused": "Has acusado a <span style='color:#ff5252'>{name}</span>.",
+      "your_role_label": "Tu Rol:"
+    },
+    "pnp": {
+      "btn_cancel": "Cancelar",
+      "btn_no": "No, volver",
+      "btn_ready": "Estoy Listo",
+      "btn_yes": "Sí, soy {name}",
+      "confirm_msg": "Asegúrate de que <strong>{name}</strong> tenga el dispositivo.<br>No muestres la pantalla a nadie más.",
+      "confirm_title": "Confirmar Identidad",
+      "done_msg": "Acción Registrada.",
+      "done_title": "Listo",
+      "force_msg": "⚠️ <strong>Advertencia:</strong><br>Esto saltará los turnos restantes de esta fase.<br>¿Estás seguro?",
+      "force_title": "Forzar Siguiente Fase",
+      "force_yes": "Sí, Forzar Fase",
+      "hub_day": "Acusación 🫵",
+      "hub_night": "Fase Nocturna 🌙",
+      "hub_vote": "Votación de Linchamiento 🔥",
+      "identity_ask": "¿Eres <strong>{name}</strong>?",
+      "identity_title": "Verificación de Identidad",
+      "pass_device": "Por favor pasa el dispositivo..."
+    }
+  },
+
+  "roles": {
+    "Villager": {
+      "name": "Cuidadano",
+      "short": "Encuentra a los Hombres Lobo y vota para eliminarlos.",
+      "long": "No tienes habilidades nocturnas especiales. Tu fuerza esta en tu voto y tus habilidades de deducción. Escucha a los demás, encuentra inconsistencias y lincha a las bestias.",
+      "night": {
+        "prompt": "{prompt}",
+        "button": "Seleccionar",
+        "feedback": "Hiciste una elección interesante: {target}."
+      }
+    },
+    "Werewolf": {
+      "name": "Hombre Lobo",
+      "short": "Mata Cuidadanos por la noche. Que no te atrapen.",
+      "long": "Eres parte de la manada. Cada noche, despiertas con los otros Hombres Lobo y deben acordar una víctima unánimemente para matar. Durante el día, debes colaborar con los otros Lobos mientras actúas como un inocente cuidadano.",
+      "night": {
+        "prompt": "Hombre Lobo, ¿a quién comerás?",
+        "button": "Matar",
+        "feedback": "Tienes hambre por {target}."
+      }
+    },
+    "Seer": {
+      "name": "Vidente",
+      "short": "¡Ve el rol de un jugador en la noche! (¿Es Lobo?)",
+      "long": "Eres el investigador más poderoso de la villa. Cada noche, seleccionas a un jugador para revelar su equipo: hombres lobo o cuidadano. Nota que el Monstruo se ve como un Hombre Lobo.",
+      "night": {
+        "prompt": "Vidente, ¿el rol de quién verás?",
+        "button": "Investigar",
+        "feedback": "Viste el rol de {target}."
+      }
+    },
+    "Alpha_Werewolf": {
+      "name": "Hombre Lobo Alfa",
+      "short": "Gana solo si es el último en pie.",
+      "long": "Eres el líder de los Hombres Lobo. Votas con la manada para matar de noche. Sin embargo, tu objetivo es quedarte solo en la cima. Ganas en solitario si eres el único lobo vivo con un máximo de un no-Monstruo vivo.",
+      "night": {
+        "prompt": "Hombre Lobo, ¿a quién comerás?",
+        "button": "Matar",
+        "feedback": "Tienes hambre de {target}."
+      }
+    },
+    "Bodyguard": {
+      "name": "Guardaespaldas",
+      "short": "Elige un jugador para proteger de los Lobos.",
+      "long": "Cada noche, puedes elegir un jugador para proteger. Si los Lobos atacan a ese jugador, tu protección los salva y nadie muere. No puedes proteger a la misma persona dos noches seguidas.",
+      "night": {
+        "prompt": "Guardaespaldas, ¿a quién protegerás?",
+        "button": "Proteger",
+        "feedback": "Enviando órdenes de protección para {target}."
+      }
+    },
+    "Cupid": {
+      "name": "Cupido",
+      "short": "Une a dos jugadores en un amor fatal.",
+      "long": "En tu primera noche, elige a dos 'Amantes'. Aprenden el nombre de su pareja. Sus destinos están unidos: si uno muere (de noche o linchado), el otro muere inmediatamente de un corazón roto.",
+      "night": {
+        "prompt": "Selecciona a los amantes:",
+        "description": "Los jugadores seleccionados están fatalmente enamorados. Si uno muere, el otro muere de angustia.",
+        "button": "Disparar Flecha",
+        "feedback": "El amor está en el aire... {target} y {target2}."
+      }
+    },
+    "Demented_Villager": {
+      "name": "Cuidadano Demente",
+      "short": "Gana solo si es el último en pie.",
+      "long": "No tienes poderes especiales y apareces como Cuidadano ante el Vidente. Sin embargo, ChatGPT te convenció de matar a todos para GANAR. Nota que no serás el último si quedas con un Monstruo, Mielera, Cazador, Asesino o Niño Salvaje.",
+      "night": {
+        "prompt": "{prompt}",
+        "button": "Seleccionar",
+        "feedback": "Hiciste una elección interesante: {target}."
+      }
+    },
+    "Fool": {
+      "name": "Pendejo",
+      "short": "Intenta ser linchado por el pueblo.",
+      "long": "Eres un agente del caos neutral. No eres parte de los cuidadanos ni de los lobos. Tu victoria final es exitosa si convences al pueblo de lincharte.",
+      "night": {
+        "prompt": "{prompt}",
+        "button": "Seleccionar",
+        "feedback": "Hiciste una elección interesante: {target}."
+      }
+    },
+    "Honeypot": {
+      "name": "Mielera",
+      "short": "Un rol trampa. Si muere, su asesino muere también.",
+      "long": "Eres un Cuidadano, pero peligroso de tocar. Si eres asesinado, ya sea por Hombres Lobo o una turba de linchamiento, ellos pagarán con su vida.",
+      "night": {
+        "prompt": "{prompt}",
+        "button": "Seleccionar",
+        "feedback": "Hiciste una elección interesante: {target}."
+      }
+    },
+    "Hunter": {
+      "name": "Cazador",
+      "short": "Puede atacar a otro jugador con su último aliento.",
+      "long": "Durante la noche puedes seleccionar a alguien para matar en caso de que mueras.",
+      "night": {
+        "prompt": "Cazador: ¿A quién dispararás SI mueres?",
+        "button": "Apuntar",
+        "feedback": "Apuntas a {target} (solo dispara si mueres)."
+      }
+    },
+    "Backlash_Werewolf": {
+      "name": "Lobo Vengativo",
+      "short": "Puede atacar a otro jugador con su último aliento.",
+      "long": "Eres un Hombre Lobo con reflejos mortales. Puedes elegir a un jugador en la Noche para vengarte en caso de tu muerte.",
+      "night": {
+        "prompt": "Acciones de Lobo Vengativo",
+        "description": "1. Vota por la Muerte Nocturna (Acción de Manada)<br>2. Elige un Objetivo de Rencor (Muere si tú mueres)",
+        "button": "Enviar Elecciones",
+        "feedback": "Votaste matar a {target} y marcaste a {target2} para venganza."
+      }
+    },
+    "Lawyer": {
+      "name": "Abogado",
+      "short": "Elige un cliente para que sea inlinchable al día siguiente.",
+      "long": "Trabajas para defender al acusado. En la noche, seleccionas a un jugador como tu cliente. Si ese jugador va a juicio de linchamiento, el linchamiento fallará y sobrevivirá.",
+      "night": {
+        "prompt": "Abogado, ¿a quién defenderás en esta corte de monos?",
+        "button": "Defender",
+        "feedback": "Preparando defensa para {target}."
+      }
+    },
+    "Martyr": {
+      "name": "Mártir",
+      "short": "Regala una segunda vida a un jugador al morir.",
+      "long": "En la noche puedes seleccionar a un jugador para que absorba tu fuerza vital tras tu muerte.",
+      "night": {
+        "prompt": "Mártir, ¿a quién darás una 2ª Vida al morir?",
+        "button": "Bendecir",
+        "feedback": "Estás velando por {target}."
+      }
+    },
+    "Mayor": {
+      "name": "Alcalde",
+      "short": "Su voto rompe empates durante las acusaciones.",
+      "long": "Eres el líder de la villa. Debido a tu influencia política, tu voto tiene peso para romper empates durante la acusación diaria. Puedes anunciar secretamente a tu sucesor. Tu sucesor solo puede nombrar a otro si su rol no tiene acciones nocturnas, como el Cuidadano o el Monstruo.",
+      "night": {
+        "prompt": "Alcalde, ¿quién será el próximo alcalde?",
+        "button": "Elegir",
+        "feedback": "La política es genial, ¿verdad {target}? ;)"
+      }
+    },
+    "Monster": {
+      "name": "Monstruo",
+      "short": "Gana solo si es el último en pie. Sin equipo.",
+      "long": "Eres una bestia supernatural. No estás en el equipo Cuidadano ni de Lobo; estás por tu cuenta. Eres inmune a los ataques de Lobo y eres visto como Lobo. Ganas solo si sobrevives con máximo de un Lobo vivo.",
+      "night": {
+        "prompt": "{prompt}",
+        "button": "Seleccionar",
+        "feedback": "Hiciste una elección interesante: {target}."
+      }
+    },
+    "Prostitute": {
+      "name": "Prostituta",
+      "short": "Visita a un jugador en la noche y bloquea sus acciones.",
+      "long": "Cada noche, puedes visitar a otro jugador. La selección nocturna de ese jugador se cancela en secreto. Si tú o el jugador visitado mueren, ambos mueren. ¡Visita a la mayoría de jugadores para una victoria solitaria!",
+      "night": {
+        "prompt": "Prostituta, ¿a quién visitar esta noche?",
+        "button": "Visitar",
+        "feedback": "Visitando a {target}."
+      }
+    },
+    "Random_Seer": {
+      "name": "Vidente Raro",
+      "short": "Tiene atributo secreto: cuerdo, paranoico, ingenuo, loco",
+      "long": "25% cuerdo normal, 25% paranoico (ve lobos en todos lados), 25% ingenuo (ve solo cuidadanos), 25% loco (ve el rol opuesto). Debería jugarse con el Vidente normal. El estado mental es secreto.",
+      "night": {
+        "prompt": "Vidente, ¿el rol de quién verás?",
+        "button": "Investigar",
+        "feedback": "Viste el rol de {target}."
+      }
+    },
+    "Revealer": {
+      "name": "Revelador",
+      "short": "¿Revelar el rol de un jugador? Lobo: Muere; Cuidadano: Tú mueres.",
+      "long": "Tienes un poder de alto riesgo. Eliges un jugador para 'Revelar'. Si es un Hombre Lobo, es expuesto y muere inmediatamente. Si es un Cuidadano, mueres de vergüenza por acusar a un inocente.",
+      "night": {
+        "prompt": "Revelador: Expón un lobo. Si fallas, mueres💀",
+        "button": "Revelar",
+        "feedback": "Revelaste a {target}."
+      }
+    },
+    "Serial_Killer": {
+      "name": "Asesino",
+      "short": "Mata una persona cada noche. Gana si queda solo.",
+      "long": "Eres un tercero. No ganas con los Cuidadanos ni los Lobos. Cada noche, eliges una víctima para mutilar. Tus asesinatos no pueden ser detenidos por el Guardaespaldas. Solo ganas en solitario con máximo de un otro humano vivo.",
+      "night": {
+        "prompt": "Asesino, ¿quién sera tu próxima víctima?",
+        "button": "Asesinar",
+        "feedback": "🪚Preparaste tus herramientas para {target}."
+      }
+    },
+    "Sorcerer": {
+      "name": "Hechicero",
+      "short": "Equipo Hombre Lobo. Busca otros roles mágicos.",
+      "long": "Estás en el equipo de los Hombres Lobo pero no despiertas con ellos para matar. En su lugar, investigas jugadores para identificar quién es el Vidente y otros usuarios de magia como la Bruja y el Revelador.",
+      "night": {
+        "prompt": "Hechicero, ¡encuentra al Vidente o Bruja!",
+        "button": "Escanear",
+        "feedback": "Miraste al vacío y viste el rol de {target}."
+      }
+    },
+    "Tough_Villager": {
+      "name": "Cuidadano Resistente",
+      "short": "Cuidadano que puede sobrevivir una muerte.",
+      "long": "No tienes poderes activos, pero llevas armadura. La primera vez que mueras, sobrevivirás misteriosamente. Solo mueres realmente tras tu segunda muerte.",
+      "night": {
+        "prompt": "{prompt}",
+        "button": "Seleccionar",
+        "feedback": "Hiciste una elección interesante: {target}."
+      }
+    },
+    "Tough_Werewolf": {
+      "name": "Lobo Resistente",
+      "short": "Sobrevivirá al primer intento de asesinato.",
+      "long": "Cazas con la manada. Si un Cazador te dispara, una Bruja te envenena, una turba te lincha o el Asesino te ataca, sobrevives ese primer golpe.",
+      "night": {
+        "prompt": "Hombre Lobo, ¿a quién comerás?",
+        "button": "Matar",
+        "feedback": "Tienes hambre de {target}."
+      }
+    },
+    "Wild_Child": {
+      "name": "Niño Salvaje",
+      "short": "Elige un modelo de seguir. Si muere, se vuelve Lobo.",
+      "long": "En la primera noche, eliges a otro jugador como tu 'Modelo de Seguir'. Mientras viva y te cuide, sigues siendo humano. Si muere, te conviertes en Hombre Lobo y te unes a la manada.",
+      "night": {
+        "prompt": "Niño Salvaje, Elige tu Modelo:",
+        "button": "Elegir",
+        "feedback": "Admiras a {target}."
+      }
+    },
+    "Witch": {
+      "name": "Bruja",
+      "short": "Tiene dos pociones: una para matar, otra para curar.",
+      "long": "Despiertas antes que los Hombres Lobo. Puedes usar tu Poción Curativa para salvar posiblemente a la víctima si adivinas bien, o tu Veneno para matar a otro jugador. Solo puedes usar cada poción una vez por juego.",
+      "night": {
+        "prompt": "Bruja, ¿quién consumirá una poción?",
+        "button": "Dar Poción",
+        "feedback": "{target} consumió {potion}.",
+        "potion_heal": "Poción Curativa",
+        "potion_poison": "Veneno",
+        "potion_none": "Nada"
+      }
+    }
+  },
+  "actions": {
+    "accuse": "Acusar",
+    "vote_sleep": "Votar para Dormir",
+    "vote_sleep_timer": "Votar para Dormir ({time}s)",
+    "voted_sleep": "Votó para Dormir 💤",
+    "lynch_yes": "SÍ",
+    "lynch_no": "NO",
+    "kill": "Matar",
+    "protect": "Proteger",
+    "heal": "Curar",
+    "poison": "Envenenar"
+  },
+  "events": {
+    "accusation_made": "🫵 <strong>{accuser}</strong> acusa a <strong>{target}</strong>!",
+    "death_honey": "🍯 <strong>{role} {name}</strong> cayó en una trampa. {reason} 🐝",
+    "death_love": "💕 ¡<strong>{name}</strong> murió de corazón roto! 😈 Era <strong>{role}</strong> ⚰️",
+    "death_retaliation": "⚔️ ¡<strong>{name}</strong> se metió con la persona equivocada! Era <strong>{role}</strong> ⚰️",
+    "death_reveal_human": "🤦 ¡<strong>{name}</strong> reveló a un inocente y murió de vergüenza! ⚰️",
+    "death_reveal_wolf": "🔦 ¡<strong>{name}</strong> fue revelado como <strong>{role}</strong> y ejecutado! ⚰️",
+    "death_serial": "🔪 ¡Cuerpo mutilado! <strong>{name}</strong> fue víctima del Asesino. 🩸 Era <strong>{role}</strong> ⚰️",
+    "death_witch": "⚗️ Se escuchó un burbujeo... ☠ <strong>{name}</strong> se disolvió. Era <strong>{role}</strong> ⚰️",
+    "death_wolf": "🐾 ¡Se encontraron restos! <strong>{name}</strong> fue asesinado 🫀 Era <strong>{role}</strong> ⚰️",
+    "fool_win": "🤡 El Pendejo {name} los engañó a todos y ganó! 🥇",
+    "lawyer_save": "⚖️ <strong>{name}</strong> fue votado, pero su Abogado lo salvó.",
+    "lovers_pact": "💘 <strong>Pacto de Amor:</strong> {name} muere de corazón roto 💔 Era {role}.",
+    "lynch_armor": "⚖️ El pueblo votó linchar, pero... <strong>extrañamente, nadie muere.</strong>",
+    "lynch_fail": "Nadie fue linchado 🕊️",
+    "lynch_result": "⚖️ ¡{name} fue linchado! Era un {role} ⚰️",
+    "lynch_success": "⚖️ ¡<strong>{name}</strong> fue linchado! Era <strong>{role}</strong> ⚰️",
+    "mayor_tie": "⚖️ <strong>¡Empate!</strong> El Alcalde rompió el empate contra {target}.",
+    "night_kill": "🐾 ¡Se encontraron restos! {name} fue asesinado. Era un {role}.",
+    "prostitute_block": "💋 Fuiste visitado por la Prostituta y te distrajiste demasiado. 💦",
+    "prostitute_collat": "👠 <strong>Daño Colateral:</strong> {name} muere también 🔞 Era {role}.",
+    "prostitute_win": "🥰 La Prostituta hizo muchos amigos y ganó sola 🥇",
+    "seer_result": "🔮 ¡Tu visión revela que <strong>{name}</strong> es <strong>{role}</strong>!",
+    "strangely": "Curiosamente, nadie muere...",
+    "sun_rise_safe": "🌞 Sale el sol y nadie ha muerto.",
+    "tie_deadlock": "Otro Empate. Nadie sera linchado.",
+    "tie_restart": "⚖️ ¡Voto empatado! A discutir de nuevo.",
+    "trial_started": "⛓️ <strong>{target}</strong> está en juicio!",
+    "village_poll": "📊 <strong>Encuesta Cuidadana:</strong> <em>{prompt}</em> <span style='color: #ff5252'><strong>{target}</strong></span>",
+    "win_solo": "¡Ganador Solitario {role} {name} ha cumplido sus metas!",
+    "win_villagers": "Todos los Hombres Lobo han sido erradicados.",
+    "win_werewolves": "Los Hombres Lobo se han apoderado del pueblo.",
+    "wolf_lone": "Eres un Lobo Solitario 🐺",
+    "wolf_team": "Eres un Hombre Lobo 🐺 Tus compañeros son: <strong>{mates}</strong>."
+  }
+}
