@@ -1,6 +1,6 @@
 """
 app.py
-Version: 4.9.5
+Version: 4.9.6
 """
 import logging
 import os
@@ -66,10 +66,11 @@ lobby_state = {
 
 
 class PlayerWrapper:
-    def __init__(self, name, sid):
+    def __init__(self, name, sid, language="en"):
         self.name = name
         self.sid = sid
         self.is_admin = False
+        self.language = language
 
 
 # --- Helper Functions ---
@@ -117,10 +118,19 @@ def get_public_game_state():
     Optimization: Calculated once per tick/broadcast.
     """
     try:
-        all_players_data = [
-            {"id": p.id, "name": p.name, "is_alive": p.is_alive}
-            for p in game_instance.players.values()
-        ]
+        all_players_data = []
+        for p in game_instance.players.values():
+            lang = "en"
+            if p.id in game["players"]:
+                lang = game["players"][p.id].language
+
+            all_players_data.append({
+                "id": p.id,
+                "name": p.name,
+                "is_alive": p.is_alive,
+                "language": lang
+            })
+
         accusation_counts = {}
         if game_instance.phase == PHASE_ACCUSATION:
             accusation_counts = dict(Counter(game_instance.pending_actions.values()))
@@ -236,6 +246,14 @@ def generate_player_payload(player_id, player_wrapper=None, public_data=None):
         if wrapper:
             is_admin = wrapper.is_admin
 
+    target_wrapper = player_wrapper
+    if not target_wrapper:
+        target_wrapper = game["players"].get(player_id)
+
+    # Default to 'en' if missing
+    player_lang = "en"
+    if target_wrapper and hasattr(target_wrapper, "language"):
+        player_lang = target_wrapper.language
     # 4. Merge Private Data with Public Data
     # We copy public_data to avoid modifying the cached dictionary
     payload = public_data.copy()
@@ -253,6 +271,7 @@ def generate_player_payload(player_id, player_wrapper=None, public_data=None):
             "night_ui": night_ui,
             "this_player_id": player_id,
             "valid_targets": valid_targets_data,
+            "language": player_lang,
             "your_role": role_str,
         }
     )
@@ -486,7 +505,8 @@ def handle_connect(auth=None):
     if player_id not in game["players"]:
         if game["game_state"] != PHASE_LOBBY:
             return emit("error", {"message": "Game in progress."})
-        new_player = PlayerWrapper(session.get("name"), request.sid)
+        lang = session.get("language", "en")
+        new_player = PlayerWrapper(session.get("name"), request.sid, language=lang)
         # set first player in room to be admin, if no admin from previous match
         # OR if we are in Pass-and-Play mode, grant admin to the newly added player
         # so they can control the lobby from the single device

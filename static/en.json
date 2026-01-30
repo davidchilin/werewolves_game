@@ -89,6 +89,7 @@
       "players_header": "Players",
       "pnp_instruction": "Select your name to perform player actions.",
       "post_game_chat": "Post-Game Chat",
+      "ready_for_night": "Ready for Night?",
       "rematch_status": "{count} / {total} players have voted to return.",
       "resume_timers_btn": "Resume Timers ▶️",
       "return_lobby_btn": "Vote to Return to Lobby",
