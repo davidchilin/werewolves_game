@@ -1,4 +1,4 @@
-// Version 4.9.5
+// Version 4.9.6
 const PHASE_LOBBY = "Lobby";
 const PHASE_NIGHT = "Night";
 const PHASE_ACCUSATION = "Accusation";
@@ -8,7 +8,7 @@ const PHASE_GAME_OVER = "Game_Over";
 const socket = io();
 
 let translations = {};
-const currentLang = window.userLang || "en";
+let currentLang = window.userLang || "en";
 
 // 1. Load the appropriate JSON file
 async function loadTranslations() {
@@ -348,7 +348,7 @@ function renderHub(allPlayers, phase) {
 
       const safeName = p.name.replace(/'/g, "\\'");
       const clickAction = isInteractive
-        ? `startConfirmFlow('${p.id}', '${safeName}')`
+        ? `startConfirmFlow('${p.id}', '${safeName}', '${p.language || "en"}')`
         : "";
 
       let label = p.name;
@@ -368,7 +368,17 @@ function closeOverlay() {
   els.pnpOverlay.style.display = "none";
 }
 
-function startConfirmFlow(pid, name) {
+function startConfirmFlow(pid, name, targetLang) {
+  if (targetLang && targetLang !== currentLang) {
+    console.log(`[PnP] Switching language to ${targetLang} for ${name}`);
+    currentLang = targetLang;
+
+    // Reload translations, THEN show the popup
+    loadTranslations().then(() => {
+      startConfirmFlow(pid, name, targetLang);
+    });
+    return;
+  }
   const overlay = els.pnpOverlay;
   const title = document.getElementById("overlay-title");
   const msg = document.getElementById("overlay-msg");
@@ -431,6 +441,20 @@ function confirmLevel2(pid, name) {
 
 socket.on("pnp_state_sync", (data) => {
   // 1. Hide Hub & Overlay
+  if (data.language && data.language !== currentLang) {
+    console.log(
+      `[PnP] Switching language from ${currentLang} to ${data.language}`,
+    );
+    currentLang = data.language; // Update global variable
+
+    // Reload translations and RE-RUN this sync handler once loaded
+    loadTranslations().then(() => {
+      // Recursively call this handler to render UI with new text
+      socket.emit("pnp_request_state", { player_id: data.this_player_id });
+    });
+    return; // Stop execution here; wait for reload
+  }
+
   const btnMain = document.getElementById("overlay-btn-main");
   if (btnMain) {
     btnMain.disabled = false;
@@ -830,14 +854,24 @@ function renderAccusationUI(currentDuration) {
     (currentDuration || totalAccusationDuration) -
     (totalAccusationDuration - 30);
   let btnState = mySleepVote ? "disabled" : timeToEnable <= 0 ? "" : "disabled";
-  let btnText = mySleepVote
-    ? "Voted to Sleep 💤"
-    : timeToEnable <= 0
-      ? "💤 Vote to Sleep"
-      : `Vote to Sleep (${timeToEnable.toFixed(1)}s)`;
+
+  let btnText = "";
+  if (mySleepVote) {
+    btnText = t({ key: "actions.voted_sleep" });
+  } else if (timeToEnable <= 0) {
+    btnText = `💤 ${t({ key: "actions.vote_sleep" })}`;
+  } else {
+    btnText = t({
+      key: "actions.vote_sleep_timer",
+      variables: { time: timeToEnable.toFixed(1) },
+    });
+  }
+
+  // [CHANGED] Header Translation
+  const readyHeader = t({ key: "ui.game.ready_for_night" });
 
   html += `<hr style="border-color: #444; margin: 15px 0;">
-             <div id="sleep-section"><h4>Ready for Night?</h4><button id="vote-end-day-btn" ${btnState}>${btnText}</button><span id="end-day-vote-counter" style="margin-left:10px; font-size:0.9em; color:#aaa"></span></div>`;
+             <div id="sleep-section"><h4>${readyHeader}</h4><button id="vote-end-day-btn" ${btnState}>${btnText}</button><span id="end-day-vote-counter" style="margin-left:10px; font-size:0.9em; color:#aaa"></span></div>`;
 
   els.action.innerHTML = html;
 
@@ -1271,10 +1305,18 @@ socket.on("night_result_kill", (data) => {
 });
 
 socket.on("seer_result", (data) => {
-  const msg = `🔮 Your vision reveals that <strong>${data.name}</strong> is a <strong>${data.role}</strong>.`;
+  // [CHANGED] Translate the role name (e.g., "Werewolf" -> "Hombre Lobo")
+  const roleKey = `roles.${data.role}.name`;
+  const translatedRole = t({ key: roleKey }) || data.role;
+
+  // [CHANGED] Use translation key with variables
+  const msg = t({
+    key: "events.seer_result",
+    variables: { name: data.name, role: translatedRole },
+  });
+
   logMessage(msg, true);
   lastSeerResult = msg;
-  // In Standard UI, renderActionUI handles displaying this if active.
   els.action.innerHTML = `<p>${msg}</p>`;
 });
 

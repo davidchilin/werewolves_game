@@ -89,6 +89,7 @@
       "players_header": "Jugadores",
       "pnp_instruction": "Selecciona tu nombre para actuar.",
       "post_game_chat": "Chat del Fin 🐬",
+      "ready_for_night": "¿Listo para la noche?",
       "rematch_status": "{count} / {total} han votado para volver.",
       "resume_timers_btn": "Reanudar Reloj ▶️",
       "return_lobby_btn": "Votar para Volver al la Sala",
