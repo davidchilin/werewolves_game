@@ -1,4 +1,4 @@
-// Version 4.9.6
+// Version 4.9.9
 const PHASE_LOBBY = "Lobby";
 const PHASE_NIGHT = "Night";
 const PHASE_ACCUSATION = "Accusation";
@@ -64,19 +64,39 @@ function t(data) {
         insertVal = translations.roles[varValue].name;
       }
 
-      // 2. [ADDED] Recursive Translation Check
-      // If the variable looks like a key (e.g. "prompts.villager_0"), try to translate it
+      // 2. Recursive Translation Check
       else if (typeof insertVal === "string" && insertVal.includes(".")) {
         const translated = t({ key: insertVal });
-        // If translation found (result != key), use it
         if (translated !== insertVal) {
           insertVal = translated;
         }
       }
 
+      // [FIX] REMOVED summary logic from here (it was inside the loop!)
+
       text = text.replace(`{${varName}}`, insertVal);
     }
   }
+
+  // [FIX] MOVED summary logic here (Outside the variables loop)
+  // This ensures it runs even if there are no variables, and only runs once.
+  if (data.summary) {
+    const lblYes = t({ key: "ui.game.voted_yes" }) || "Voted Yes:";
+    const lblNo = t({ key: "ui.game.voted_no" }) || "Voted No:";
+
+    const nobodyTxt = t({ key: "ui.game.nobody" }) || "Nobody";
+    const yesList =
+      data.summary.yes && data.summary.yes.length
+        ? data.summary.yes.join(", ")
+        : nobodyTxt;
+    const noList =
+      data.summary.no && data.summary.no.length
+        ? data.summary.no.join(", ")
+        : nobodyTxt;
+
+    text += `<div class="vote-summary">${lblYes} ${yesList}<br>${lblNo} ${noList}</div>`;
+  }
+
   return text;
 }
 
@@ -231,16 +251,22 @@ function setChatMode(isAdminOnly, phase) {
   }
 
   let isChatDisabled = isAdminOnly && !isAdmin;
-  let placeholder = "Chat is restricted.";
+  let placeholder =
+    t({ key: "ui.game.chat_restricted_placeholder" }) || "Chat is restricted.";
 
   if (phase === PHASE_NIGHT && !isAdmin) {
-    placeholder = "sleepy quiet time...zzz";
+    placeholder =
+      t({ key: "ui.game.chat_night_placeholder" }) || "sleepy quiet time...zzz";
     isChatDisabled = true;
   } else if (!isChatDisabled) {
-    els.gameChatTitle.textContent = !isAlive ? "Ghost Chat 👻" : "Living Chat";
+    els.gameChatTitle.textContent = !isAlive
+      ? t({ key: "ui.game.ghost_chat_title" }) || "Ghost Chat 👻"
+      : t({ key: "ui.game.living_chat_title" }) || "Living Chat";
     placeholder = !isAlive
-      ? "Whisper to the other side..."
-      : "Type a message...";
+      ? t({ key: "ui.game.chat_whisper_placeholder" }) || "Whisper..."
+      : translations.ui && translations.ui.lobby
+        ? translations.ui.lobby.chat_placeholder
+        : "Type a message...";
   }
 
   [els.gameChatSendBtn, els.gameOverChatSendBtn].forEach(
@@ -657,7 +683,8 @@ function submitNightAction(uiData) {
       );
     els.action.innerHTML = `<p>${rawText}</p>`;
   } else {
-    els.action.innerHTML = "<p>Action Submitted.</p>";
+    const submittedTxt = t({ key: "ui.game.action_submitted" });
+    els.action.innerHTML = `<p>${submittedTxt}</p>`;
   }
 }
 
@@ -833,7 +860,6 @@ function renderAccusationUI(currentDuration) {
     } else {
       const target = allPlayers.find((p) => p.id === myPhaseTargetId);
       const tName = target ? target.name : "Nobody";
-      // [CHANGED]
       const accusedMsg = t({
         key: "ui.game.you_accused",
         variables: { name: tName },
@@ -867,7 +893,6 @@ function renderAccusationUI(currentDuration) {
     });
   }
 
-  // [CHANGED] Header Translation
   const readyHeader = t({ key: "ui.game.ready_for_night" });
 
   html += `<hr style="border-color: #444; margin: 15px 0;">
@@ -896,7 +921,7 @@ function renderAccusationUI(currentDuration) {
       const b = document.getElementById("vote-end-day-btn");
       if (b) {
         b.disabled = false;
-        b.textContent = "💤 Vote to Sleep";
+        b.textContent = `💤 ${btnBase}`;
       }
     }, timeToEnable * 1000);
   }
@@ -907,7 +932,7 @@ function renderAccusationUI(currentDuration) {
       socket.emit("vote_to_end_day", payload);
 
       this.disabled = true;
-      this.textContent = "Voted to Sleep 💤";
+      this.textContent = t({ key: "actions.voted_sleep" });
       mySleepVote = true;
     };
 }
@@ -922,7 +947,18 @@ function renderLynchVoteUI() {
     els.action.innerHTML = html;
   } else if (myLynchVote === "yes" || myLynchVote === "no") {
     const votedTxt = translations.ui.game.voted_btn || "Voted!";
-    els.action.innerHTML = `<h3>${votedTxt} <span style="color:${myLynchVote === "yes" ? "green" : "red"}">${myLynchVote.toUpperCase()}</span></h3><p>Waiting for result...</p>`;
+    const waitTxt =
+      t({ key: "ui.game.waiting_result" }) || "Waiting for result...";
+
+    // [FIX] Translate the vote choice
+    let voteDisplay = "";
+    if (myLynchVote === "yes") {
+      voteDisplay = t({ key: "actions.lynch_yes" }) || "YES";
+    } else {
+      voteDisplay = t({ key: "actions.lynch_no" }) || "NO";
+    }
+
+    els.action.innerHTML = `<h3>${votedTxt} <span style="color:${myLynchVote === "yes" ? "green" : "red"}">${voteDisplay}</span></h3><p>${waitTxt}</p>`;
   } else {
     // If not voted, SHOW BUTTONS
     const yesTxt = t({ key: "actions.lynch_yes" }) || "YES";
@@ -933,9 +969,9 @@ function renderLynchVoteUI() {
       variables: { name: currentLynchTargetName },
     });
     els.action.innerHTML = `
-             <h4>${prompt}</h4>
-             <button onclick="submitLynchVote('yes')" class="vote-btn-yes">${yesTxt}</button>
-             <button onclick="submitLynchVote('no')" class="vote-btn-no">${noTxt}</button>`;
+               <h4>${prompt}</h4>
+               <button onclick="submitLynchVote('yes')" class="vote-btn-yes">${yesTxt}</button>
+               <button onclick="submitLynchVote('no')" class="vote-btn-no">${noTxt}</button>`;
   }
 }
 
@@ -954,7 +990,9 @@ function renderActionUI(phase, currentDuration = 0) {
   if (phase === PHASE_NIGHT) renderNightUI(currentNightUI);
   else if (phase === PHASE_ACCUSATION) renderAccusationUI(currentDuration);
   else if (phase === PHASE_LYNCH) renderLynchVoteUI();
-  else els.action.innerHTML = "<p>Please wait...</p>";
+  else {
+    els.action.innerHTML = `<p>${t({ key: "ui.game.please_wait" })}</p>`;
+  }
 }
 
 function updatePhaseDisplay(phase) {
@@ -1217,7 +1255,10 @@ socket.on("game_state_sync", (data) => {
       (data.sleep_vote_count || 0);
     const counter = document.getElementById("end-day-vote-counter");
     if (counter && needed > 0)
-      counter.innerHTML = `<strong>${needed}</strong> more votes needed to sleep!`;
+      counter.innerHTML = t({
+        key: "ui.game.votes_needed",
+        variables: { count: needed },
+      });
   }
 
   updatePlayerListView(data.accusation_counts || {});
@@ -1226,10 +1267,21 @@ socket.on("game_state_sync", (data) => {
 });
 
 socket.on("phase_change", (data) => {
-  // RESTORED: UX Alert
-  const msg = `A new phase has begun: <strong>${data.phase.replace(/_/g, " ")}</strong>.`;
+  let phaseName = data.phase;
+  if (data.phase === "Lynch_Vote")
+    phaseName = t({ key: "ui.pnp.hub_vote" }) || "Lynch Vote";
+  else if (data.phase === "Accusation")
+    phaseName = t({ key: "ui.pnp.hub_day" }) || "Accusation";
+  else if (data.phase === "Night")
+    phaseName = t({ key: "ui.game.night_phase_title" }) || "Night";
+
+  const msg = t({
+    key: "events.phase_change_msg",
+    variables: { phase: phaseName },
+  });
   publicHistory.push(msg);
   logMessage(msg, false);
+
   setTimeout(() => {
     socket.emit("client_ready_for_game");
   }, 500);
@@ -1339,22 +1391,18 @@ socket.on("werewolf_team_info", (data) => {
 });
 
 socket.on("lynch_vote_result", (data) => {
-  let baseMsg = t(data.message);
-  let msg =
-    baseMsg +
-    (data.summary
-      ? `<div class="vote-summary">Voted Yes: ${
-          data.summary.yes.join(", ") || "None"
-        }<br>Voted No: ${data.summary.no.join(", ") || "None"}</div>`
-      : "");
-  // Use standard logging
+  let msg = t(data.message);
+
   publicHistory.push(msg);
   logMessage(msg, false);
   if (data.killed_id === myPlayerId) isAlive = false;
 });
 
 socket.on("accusation_made", (data) => {
-  msg = `🫵 <strong>${data.accuser_name}</strong> accuses <strong>${data.accused_name}</strong>!`;
+  const msg = t({
+    key: "events.accusation_made",
+    variables: { accuser: data.accuser_name, target: data.accused_name },
+  });
   publicHistory.push(msg);
   logMessage(msg, false);
 
@@ -1374,14 +1422,21 @@ socket.on("accusation_update", (data) => updatePlayerListView(data));
 
 socket.on("end_day_vote_update", (data) => {
   const c = document.getElementById("end-day-vote-counter");
-  if (c)
-    c.innerHTML = `<strong>${
-      1 + Math.floor(data.total / 2) - data.count
-    }</strong> more votes needed to sleep!`;
+  if (c) {
+    const needed = 1 + Math.floor(data.total / 2) - data.count;
+    // [FIX] Use translation
+    c.innerHTML = t({
+      key: "ui.game.votes_needed",
+      variables: { count: needed },
+    });
+  }
 });
 
 socket.on("lynch_vote_started", (data) => {
-  msg = `⛓️ <strong>${data.target_name}</strong> is on trial!`;
+  const msg = t({
+    key: "events.trial_started",
+    variables: { target: data.target_name },
+  });
   publicHistory.push(msg);
   logMessage(msg, false);
 

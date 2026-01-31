@@ -1,6 +1,6 @@
 """
 roles.py
-Version: 4.9.5
+Version: 4.9.9
 Defines the behavior of all roles using a generic base class and specific subclasses.
 """
 import random

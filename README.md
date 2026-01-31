@@ -1,3 +1,5 @@
+[Leer en Español](README.es.md)
+
 # **Werewolves Game**
 
 A feature-rich, self-hosted real-time multiplayer social deduction game. Built
@@ -9,18 +11,18 @@ experiment into a fully playable party game supporting 24 unique roles, mobile
 ## **Description**
 
 This project is a web-based implementation of the classic party game Werewolves.
-Players join a lobby using a unique game code, are secretly assigned roles
-(Villager, Wolf, or Seer), and then cycle through "night" and "day" phases.
-During the night, wolves secretly choose a player to eliminate, and the seer can
-investigate a player's role. During the day, players discuss and vote to lynch
-someone they suspect is a wolf. The game supports complex interactions: lovers
-linked by Cupid, chain-reaction deaths (Honeypot/Hunter), solo-winning roles
-(Serial Killer/Fool), and "Ghost Mode" where dead players can still influence
-the outcome.
+Players (minimum of 4, ideally +7) join a lobby using a unique game code, are
+secretly assigned roles (Villager, Wolf, or Seer), and then cycle through
+"night" and "day" phases. During the night, wolves secretly choose a player to
+eliminate, and the seer can investigate a player's role. During the day, players
+discuss and vote to lynch someone they suspect is a wolf. The game supports
+complex interactions: lovers linked by Cupid, chain-reaction deaths
+(Honeypot/Hunter), solo-winning roles (Serial Killer/Fool), and "Ghost Mode"
+where dead players can still influence the outcome.
 
 The game is designed to be played alongside a separate video or voice chat (like
 _Jitsi Meet_ or Zoom), where the real-time discussion and deception take place
-OR in person using one to several phones in **Pass-and-Play** mode.
+OR in person using one to several devices in **Pass-and-Play** mode.
 
 ## **Core Features**
 
@@ -110,9 +112,9 @@ OR in person using one to several phones in **Pass-and-Play** mode.
 
 ## **Roles**
 
-The game now supports **24 unique roles** divided into teams:
+The game now supports **24 unique roles**:
 
-### 🌻 The Village (Good)
+### 🌻 The Village
 
 - **Villager:** No powers. Must work together to find and eliminate all the
   Werewolves.
@@ -129,7 +131,7 @@ The game now supports **24 unique roles** divided into teams:
 - **Tough Villager:** Survives the first attempt on their life.
 - **Wild Child:** Picks a role model. If the model dies, becomes a Werewolf.
 
-### 🐺 The Pack (Evil)
+### 🐺 The Pack
 
 - **Werewolf:** Must work with other wolves to eliminate villagers until they
   have the majority.
@@ -161,13 +163,16 @@ To run this project locally, follow these steps:
 
     or download werewolves_game-master.zip and unzip to folder werewolves_game.
 
-2.  **EITHER** run via Dockerfile (steps 2A & 5) **OR** through docker-compose
-    (steps 2B & 5) **OR** install and run locally (steps 2C-5). **Edit**
-    `.env.werewolves` file: FLASK_SECRET_KEY to_something_long_random,
-    CORS_ALLOWED_ORIGINS to desired game web address
-    http://127.0.0.1:5000,http://your.ip.here:5000,https://your.site.here:5000.
+2.  **Edit** `.env.werewolves` file. Change FLASK_SECRET_KEY
+    to_something_long_random, CORS_ALLOWED_ORIGINS to desired game web address
+    like:
+    http://127.0.0.1:5000,http://your.ip.here:5000,https://your.site.here:5000
+    OR leave blank to disable CORS and use any site.
 
-    A. Build docker and run. Can change port used in browser to 8080 for
+3.  **EITHER** run via Dockerfile (steps 3A & 5) **OR** through docker-compose
+    (steps 3B & 5) **OR** install and run locally (steps 3C-5).
+
+    A. Build docker and run. You can change port used in browser to 8080 for
     example: -p 8080:5000.
 
     ```bash
@@ -182,47 +187,50 @@ To run this project locally, follow these steps:
     docker compose up
     ```
 
-        For nginx docker compose version: edit `.env.werewolves` file: NGINX_PORT to desired port (default 5000) and server_name in nginx.conf
+    For nginx docker compose version: edit `.env.werewolves` file: NGINX_PORT to
+    desired port (default 5000) and server_name in nginx.conf
 
     ```bash
     docker compose -f ./docker-compose-nginx.yml up --build
     ```
 
-    C. Create and activate a virtual environment: - Windows:
+    C. Create and activate a virtual environment:
 
-        ```bash
-        python -m venv venv
-        .\venv\Scripts\activate
-        ```
+    - Windows:
 
-        - macOS / Linux:
+      ```bash
+      python -m venv venv
+      .\venv\Scripts\activate
+      ```
 
-        ```bash
-        python3 -m venv venv
-        source venv/bin/activate
-        ```
+    - macOS / Linux:
 
-3.  **Install Dependencies:**
+      ```bash
+      python3 -m venv venv
+      source venv/bin/activate
+      ```
+
+4.  **Install Dependencies:**
 
     ```bash
     pip install Flask Flask-SocketIO python-dotenv
     ```
 
-4.  **Run the App:**
+5.  **Run the App:**
 
     ```bash
     FLASK_APP=app.py flask run -h 0.0.0.0
     ```
 
     OR alternatively for better performance and security run the Flask app
-    through your preferred port and gunicorn:
+    through your preferred port# and gunicorn:
 
     ```bash
     pip install gunicorn gevent
     gunicorn --worker-class gevent -w 1 -b 0.0.0.0:5000 app:app
     ```
 
-5.  **Access the game:** Open your web browser and go to game web address set in
+6.  **Access the game:** Open your web browser and go to game web address set in
     `.env.werewolves CORS_ALLOWED_ORIGINS`. Defaults: `http://127.0.0.1:5000`.
     Open multiple tabs or browsers to simulate different players joining the
     game. Initial Game Code is `W` and first player to join is **Admin**.

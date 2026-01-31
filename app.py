@@ -1,6 +1,6 @@
 """
 app.py
-Version: 4.9.6
+Version: 4.9.9
 """
 import logging
 import os
@@ -43,7 +43,7 @@ game_instance = Game("main_game")
 origins = os.environ.get("CORS_ALLOWED_ORIGINS")
 socketio = SocketIO(
     app,
-    cors_allowed_origins=origins.split(",") if origins else ["http://127.0.0.1:5000"],
+    cors_allowed_origins=origins.split(",") if origins else "*",
 )
 
 if origins:
@@ -124,12 +124,9 @@ def get_public_game_state():
             if p.id in game["players"]:
                 lang = game["players"][p.id].language
 
-            all_players_data.append({
-                "id": p.id,
-                "name": p.name,
-                "is_alive": p.is_alive,
-                "language": lang
-            })
+            all_players_data.append(
+                {"id": p.id, "name": p.name, "is_alive": p.is_alive, "language": lang}
+            )
 
         accusation_counts = {}
         if game_instance.phase == PHASE_ACCUSATION:
@@ -799,10 +796,10 @@ def resolve_lynch():
     elif result["killed_id"]:
         name = game_instance.players[result["killed_id"]].name
         role = game_instance.players[result["killed_id"]].role.name_key
-        msg = {
-            "key": "events.lynch_success",
-            "variables": {"name": name, "role": role}
-        }
+        msg = {"key": "events.lynch_success", "variables": {"name": name, "role": role}}
+
+    if result.get("summary"):
+        msg["summary"] = result["summary"]
     game_instance.message_history.append(msg)
     socketio.emit(
         "lynch_vote_result",
@@ -1139,7 +1136,10 @@ def resolve_night():
                 reason = event.get("reason", "Unknown")
                 name = event.get("name", "Unknown")
                 role = event.get("role", "Unknown")
-                hist_msg = {"key": "events.death_wolf", "variables": {"name": name, "role": role}}
+                hist_msg = {
+                    "key": "events.death_wolf",
+                    "variables": {"name": name, "role": role},
+                }
                 if reason == "Werewolf meat":
                     hist_msg["key"] = "events.death_wolf"
                 if reason == "Witch Poison":
@@ -1156,7 +1156,9 @@ def resolve_night():
                     hist_msg["key"] = "events.death_serial"
                 elif "Honeypot" in reason:
                     hist_msg["key"] = "events.death_honey"
-                    hist_msg["variables"]["reason"] = reason.replace("Honeypot retaliation: ", "")
+                    hist_msg["variables"]["reason"] = reason.replace(
+                        "Honeypot retaliation: ", ""
+                    )
                 game_instance.message_history.append(hist_msg)
 
                 socketio.emit(

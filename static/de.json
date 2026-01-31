@@ -1,0 +1,432 @@
+{
+  "_comment": "version 4.9.9; German translation",
+  "prompts": {
+    "villager_0": "Wer hat am wahrscheinlichsten einen OnlyFans-Account?",
+    "villager_1": "Wer würde in einer Zombie-Apokalypse zuerst sterben?",
+    "villager_2": "Wer sieht gerade am verdächtigsten aus?",
+    "villager_3": "Wer verträgt am wenigsten Alkohol?",
+    "villager_4": "Wer hat den höchsten Body-Count?",
+    "villager_5": "Wer hat das süßeste Lächeln?",
+    "villager_6": "Wer leckt sich beim Essen die Finger ab?",
+    "villager_7": "Dim didi dum :)"
+  },
+  "teams": {
+    "Villagers": "Dorfbewohner",
+    "Werewolves": "Werwölfe",
+    "Neutral": "Neutral",
+    "Monster": "Monster",
+    "Serial_Killer": "Serienmörder"
+  },
+  "ui": {
+    "lobby": {
+      "add_player_btn": "Spieler hinzufügen",
+      "admin_header": "Admin-Steuerung",
+      "chat_header": "Lobby-Chat",
+      "chat_placeholder": "Nachricht eingeben...",
+      "chat_restricted": "Chat nur für Admins",
+      "disable_timers": "Timer deaktivieren",
+      "exclude_btn": "Ausschließen",
+      "game_code": "Spielcode:",
+      "game_mode_header": "Spielmodus",
+      "ghost_desc": "Tote können abstimmen... manchmal.",
+      "ghost_mode": "Geistermodus aktivieren",
+      "min_players_warning": "Mindestens 4 Spieler erforderlich.",
+      "new_code_placeholder": "Neuer Code",
+      "players_header": "Spieler:",
+      "pnp_desc": "Ein Gerät. Pausiert Züge.",
+      "pnp_mode": "Pass-and-Play-Modus",
+      "random_roles_btn": "🎲 Zufällige Rollen",
+      "rating_guide": "💡 Balance-Guide",
+      "rating_neg": "- Negativ: Werwolf-Team",
+      "rating_neu": "~ Null: Neutral / Unbekannt",
+      "rating_note": "\"Zufall\" wählt Rollen mit einem Gesamtwert nahe 0.",
+      "rating_pos": "+ Positiv: Dorfbewohner-Team",
+      "rating_title": "Rollen-Balance:",
+      "role_count_label": "ROLLENANZAHL:",
+      "roles_header": "Rollen",
+      "roles_warning": "⚠️ Zu viele Rollen! Wähle {count} Rolle(n) ab.",
+      "send_btn": "Senden",
+      "set_code_btn": "Code setzen",
+      "set_code_label": "Neuen Spielcode setzen:",
+      "set_timers_btn": "Zeiten setzen",
+      "solo_win_desc": "Nicht auf Teamsiege warten.",
+      "solo_win_mode": "Solo-Sieg beendet Spiel",
+      "start_game_btn": "Spiel starten",
+      "timer_accusation": "Anklage (Sek):",
+      "timer_lynch": "Lynch-Wahl (Sek):",
+      "timer_night": "Nacht (Sek):",
+      "timers_header": "Timer-Einstellungen (+30sek)",
+      "title": "Lobby - Warte auf Spieler",
+      "toggle_chat_btn": "Admin-Chat umschalten",
+      "waiting_text": "Warte auf Spieler...",
+      "you_suffix": "(Du)"
+    },
+    "game": {
+      "accusation_prompt": "Wer ist der Werwolf? Zeit zur Diskussion!",
+      "action_submitted": "Aktion übermittelt.",
+      "alert_error": "Fehler: {msg}",
+      "alert_relogin": "Neuer Spielcode gesetzt.\nDu wirst zum Login zurückgeleitet.",
+      "cannot_select_same": "Du kannst dieselbe Person nicht zweimal wählen!",
+      "chat_night_placeholder": "Schlafenszeit... zzz",
+      "chat_restricted_placeholder": "Chat ist eingeschränkt.",
+      "chat_whisper_placeholder": "Flüstern...",
+      "dead_message": "<h3>Du bist tot 💀 Du kannst das Spiel schweigend beobachten.</h3>",
+      "done_back_btn": "Fertig / Zurück",
+      "final_role_item": "<strong>{name}</strong>{badges} war ein {role}",
+      "final_roles": "Finale Rollen:",
+      "force_phase_btn": "Nächste Phase erzwingen",
+      "game_history": "Spielverlauf",
+      "game_loading": "Schlafen...",
+      "game_log_title": "Spielprotokoll",
+      "game_over_title": "Spielende",
+      "ghost_active": "👻 Geistermodus aktiv: ...",
+      "ghost_chat_title": "Geister-Chat 👻",
+      "ghost_fail": "👻 Dein geisterhaftes Heulen wurde nicht gehört...",
+      "identity_check_title": "Identitätsprüfung",
+      "living_chat_title": "Lebenden-Chat",
+      "loading": "Laden...",
+      "lynch_prompt": "Willst du <span style='color:#bb86fc'>{name}</span> lynchen?",
+      "next_phase_btn": "Nächste Phase",
+      "night_phase_title": "Nachtphase 🌙",
+      "nobody": "Niemand",
+      "pause_timers_btn": "Timer pausieren ⏸️",
+      "players_header": "Spieler",
+      "please_wait": "Bitte warten...",
+      "pnp_instruction": "Wähle deinen Namen, um zu handeln.",
+      "post_game_chat": "Post-Game Chat",
+      "ready_for_night": "Bereit für die Nacht?",
+      "rematch_status": "{count} / {total} Spieler haben für Rückkehr gestimmt.",
+      "resume_timers_btn": "Timer fortsetzen ▶️",
+      "return_lobby_btn": "Abstimmung: Zurück zur Lobby",
+      "timer_disabled": "Timer ♾️",
+      "timer_left": "Zeit: ",
+      "time_up": "Zeit abgelaufen!",
+      "voted_btn": "Abgestimmt!",
+      "voted_no": "Stimmten Nein:",
+      "voted_yes": "Stimmten Ja:",
+      "vote_failed": "Abstimmung fehlgeschlagen.",
+      "votes_needed": "Noch <strong>{count}</strong> Stimmen bis zum Schlafen!",
+      "waiting_others": "Warte auf andere...",
+      "waiting_result": "Warte auf Ergebnis...",
+      "win_generic": "{team} hat gewonnen!",
+      "win_villagers": "Die Dorfbewohner gewinnen!",
+      "win_werewolves": "Die Werwölfe gewinnen!",
+      "you_accused": "Du hast <span style='color:#ff5252'>{name}</span> angeklagt.",
+      "your_role_label": "Deine Rolle:"
+    },
+    "pnp": {
+      "btn_cancel": "Abbrechen",
+      "btn_no": "Nein, zurück",
+      "btn_ready": "Ich bin bereit",
+      "btn_yes": "Ja, ich bin {name}",
+      "confirm_msg": "Stelle sicher, dass <strong>{name}</strong> das Gerät hat.<br>Zeige den Bildschirm niemandem sonst.",
+      "confirm_title": "Identität bestätigen",
+      "done_msg": "Aktion gespeichert.",
+      "done_title": "Fertig",
+      "force_msg": "⚠️ <strong>Warnung:</strong><br>Dies überspringt verbleibende Züge.<br>Bist du sicher?",
+      "force_title": "Nächste Phase erzwingen",
+      "force_yes": "Ja, Phase erzwingen",
+      "hub_day": "Anklage 🫵",
+      "hub_night": "Nachtphase 🌙",
+      "hub_vote": "Lynch-Wahl 🔥",
+      "identity_ask": "Bist du <strong>{name}</strong>?",
+      "identity_title": "Identitätsprüfung",
+      "pass_device": "Bitte gib das Gerät weiter..."
+    }
+  },
+  "actions": {
+    "accuse": "Anklagen",
+    "heal": "Heilen",
+    "kill": "Töten",
+    "lynch_no": "NEIN",
+    "lynch_yes": "JA",
+    "poison": "Vergiften",
+    "protect": "Schützen",
+    "voted_sleep": "Will Schlafen 💤",
+    "vote_sleep": "💤Schlafen wählen",
+    "vote_sleep_timer": "💤Schlafen wählen ({time}s)"
+  },
+  "events": {
+    "accusation_made": "🫵 <strong>{accuser}</strong> klagt <strong>{target}</strong> an!",
+    "death_honey": "🍯 <strong>{role} {name}</strong> fiel in eine Falle! {reason} 🐝",
+    "death_love": "💕 <strong>{name}</strong> starb an gebrochenem Herzen! 😈 War: <strong>{role}</strong> ⚰️",
+    "death_retaliation": "⚔️ <strong>{name}</strong> legte sich mit dem Falschen an! War: <strong>{role}</strong> ⚰️",
+    "death_reveal_human": "🤦 <strong>{name}</strong> enthüllte einen Bürger und starb vor Scham! ⚰️",
+    "death_reveal_wolf": "🔦 <strong>{name}</strong> wurde als <strong>{role}</strong> enthüllt und gehängt! ⚰️",
+    "death_serial": "🔪 Ein verstümmelter Körper! <strong>{name}</strong> war Opfer des Serienmörders! 🩸 War: <strong>{role}</strong> ⚰️",
+    "death_witch": "⚗️ Ein Blubbern war zu hören... ☠ <strong>{name}</strong> löste sich auf. War: <strong>{role}</strong> ⚰️",
+    "death_wolf": "🐾 Überreste gefunden! <strong>{name}</strong> wurde getötet 🫀 War: <strong>{role}</strong> ⚰️",
+    "fool_win": "🤡 Der Narr {name} hat euch ausgetrickst und wurde für den Solo-Sieg gelyncht! 🥇",
+    "lawyer_save": "⚖️ <strong>{name}</strong> wurde rausgewählt, aber der Anwalt fand eine Lücke!",
+    "lovers_pact": "💘 <strong>Liebespakt:</strong> {name} stirbt an Herzschmerz 💔 War: {role}.",
+    "lynch_armor": "⚖️ Das Dorf stimmte für den Tod, aber... <strong>seltsamerweise stirbt niemand.</strong>",
+    "lynch_fail": "Niemand wurde gelyncht 🕊️",
+    "lynch_result": "⚖️ {name} wurde gelyncht! War: {role} ⚰️",
+    "lynch_success": "⚖️ <strong>{name}</strong> wurde gelyncht! War: <strong>{role}</strong> ⚰️",
+    "mayor_tie": "⚖️ <strong>Gleichstand!</strong> Der Bürgermeister brach das Patt gegen {target}!",
+    "night_kill": "🐾 Überreste gefunden! {name} wurde getötet. War: {role}.",
+    "phase_change_msg": "Eine neue Phase hat begonnen: <strong>{phase}</strong>.",
+    "prostitute_block": "💋 Du wurdest von der Prostituierten besucht und warst zu abgelenkt! 💦",
+    "prostitute_collat": "👠 <strong>Kollateralschaden:</strong> {name} stirbt auch 🔞 War: {role}.",
+    "prostitute_win": "🥰 Die Prostituierte machte viele Freunde und holt den Solo-Sieg 🥇",
+    "seer_result": "🔮 Deine Vision enthüllt: <strong>{name}</strong> ist <strong>{role}</strong>.",
+    "strangely": "Seltsam, niemand stirbt...",
+    "sun_rise_safe": "🌞 Die Sonne geht auf, niemand wurde getötet.",
+    "tie_deadlock": "Patt. Niemand gelyncht.",
+    "tie_restart": "⚖️ Gleichstand! Erneut diskutieren.",
+    "trial_started": "⛓️ <strong>{target}</strong> steht vor Gericht!",
+    "village_poll": "📊 <strong>Dorf-Umfrage:</strong> <em>{prompt}</em> <span style='color: #ff5252'><strong>{target}</strong></span>",
+    "win_solo": "Solo-Sieger {role} {name} hat seine Ziele erreicht!",
+    "win_villagers": "Alle Werwölfe wurden ausgerottet.",
+    "win_werewolves": "Die Werwölfe haben das Dorf übernommen.",
+    "wolf_lone": "Du bist der einsame Werwolf 🐺",
+    "wolf_team": "Du bist Werwolf 🐺 Deine Mitwölfe sind: <strong>{mates}</strong>."
+  },
+  "roles": {
+    "Villager": {
+      "name": "Dorfbewohner",
+      "short": "Finde die Werwölfe und wähle sie raus.",
+      "long": "Du hast keine besonderen Nachtfähigkeiten. Deine Stärke liegt in deiner Stimme und deiner Kombinationsgabe. Höre zu, finde Widersprüche und lynche die Bestien.",
+      "night": {
+        "prompt": "{prompt}",
+        "button": "Wählen",
+        "feedback": "Interessante Wahl: {target}. Du träumst jetzt von leckerem Schnitzel..."
+      }
+    },
+    "Werewolf": {
+      "name": "Werwolf",
+      "short": "Töte Dorfbewohner bei Nacht. Lass dich nicht erwischen.",
+      "long": "Du bist Teil des Rudels. Jede Nacht wachst du mit den anderen Werwölfen auf und ihr müsst einstimmig ein Opfer wählen. Tagsüber musst du dich als unschuldiger Dorfbewohner tarnen.",
+      "night": {
+        "prompt": "Werwolf, wen wirst du fressen?",
+        "button": "Töten",
+        "feedback": "Du hast Hunger auf {target}."
+      }
+    },
+    "Seer": {
+      "name": "Seherin",
+      "short": "Sieh die Rolle eines Spielers! (Werwolf?)",
+      "long": "Du bist die mächtige Wahrsagerin. Jede Nacht wählst du einen Spieler, um dessen Team zu erfahren - Werwolf oder Dorfbewohner. Achtung: Das Monster wird als Werwolf gesehen.",
+      "night": {
+        "prompt": "Seherin, wessen Rolle willst du sehen?",
+        "button": "Untersuchen",
+        "feedback": "Du hast {target}s Rolle gesehen."
+      }
+    },
+    "Alpha_Werewolf": {
+      "name": "Alpha-Werwolf",
+      "short": "Gewinnt solo, wenn er als Letzter steht.",
+      "long": "Du bist der Anführer der Werwölfe. Du stimmst nachts mit dem Rudel ab. Dein Ziel ist es jedoch, allein zu herrschen. Solo-Sieg, wenn du der einzige lebende Wolf mit maximal einem Nicht-Monster bist.",
+      "night": {
+        "prompt": "Werwolf, wen wirst du fressen?",
+        "button": "Töten",
+        "feedback": "Du hast Hunger auf {target}."
+      }
+    },
+    "Bodyguard": {
+      "name": "Leibwächter",
+      "short": "Wählt einen Spieler zum Schutz vor Werwölfen.",
+      "long": "Jede Nacht kannst du einen Spieler beschützen. Wenn die Werwölfe diesen Spieler angreifen, rettet ihn dein Schutz. Du kannst nicht dieselbe Person zweimal in Folge schützen.",
+      "night": {
+        "prompt": "Leibwächter, wen beschützt du?",
+        "button": "Schützen",
+        "feedback": "Schutzbefehle für {target} gesendet."
+      }
+    },
+    "Cupid": {
+      "name": "Amor",
+      "short": "Verbindet zwei Spieler in fataler Liebe.",
+      "long": "In der ersten Nacht wählst du zwei 'Liebende'. Diese erfahren voneinander. Ihr Schicksal ist verknüpft: Wenn einer stirbt (Nacht oder Lynch), stirbt der andere sofort an gebrochenem Herzen.",
+      "night": {
+        "prompt": "Wähle die Liebenden:",
+        "description": "Die gewählten Spieler sind fatal verliebt. Stirbt einer, stirbt auch der andere.",
+        "button": "Pfeil schießen",
+        "feedback": "Liebe liegt in der Luft... {target} & {target2}."
+      }
+    },
+    "Demented_Villager": {
+      "name": "Verrückter DB",
+      "short": "Gewinnt solo, wenn er als Letzter steht.",
+      "long": "Du hast keine Kräfte und erscheinst als Dorfbewohner. Aber ChatGPT hat dich überzeugt, alle zu töten um zu GEWINNEN. Du bist nicht 'Letzter', wenn noch Monster, Mielera, Jäger, Serienmörder oder Wildes Kind leben.",
+      "night": {
+        "prompt": "{prompt}",
+        "button": "Wählen",
+        "feedback": "Interessante Wahl: {target}."
+      }
+    },
+    "Fool": {
+      "name": "Narr",
+      "short": "Versucht, gelyncht zu werden.",
+      "long": "Du bist ein neutraler Chaos-Agent. Weder Dorf noch Wolf. Dein ultimativer Sieg ist es, das Dorf davon zu überzeugen, dich zu lynchen.",
+      "night": {
+        "prompt": "{prompt}",
+        "button": "Wählen",
+        "feedback": "Interessante Wahl: {target}."
+      }
+    },
+    "Honeypot": {
+      "name": "Mielera",
+      "short": "Fallen-Rolle. Wer sie tötet, stirbt auch.",
+      "long": "Du bist Dorfbewohner, aber gefährlich. Wenn du getötet wirst – ob von Wölfen oder Lynchmob – zahlt der Mörder mit seinem Leben.",
+      "night": {
+        "prompt": "{prompt}",
+        "button": "Wählen",
+        "feedback": "Interessante Wahl: {target}."
+      }
+    },
+    "Hunter": {
+      "name": "Jäger",
+      "short": "Kann im Tod einen anderen Spieler mitreißen.",
+      "long": "Nachts wählst du jemanden aus, den du erschießt, FALLS du stirbst.",
+      "night": {
+        "prompt": "Jäger: Wen erschießt du, FALLS du stirbst?",
+        "button": "Zielen",
+        "feedback": "Du zielst auf {target} (schießt nur bei Tod)."
+      }
+    },
+    "Backlash_Werewolf": {
+      "name": "Rache-Werwolf",
+      "short": "Kann im Tod einen anderen Spieler mitreißen.",
+      "long": "Du bist ein Werwolf mit tödlichen Reflexen. Du wählst nachts jemanden, den du bei deinem Tod mitnimmst.",
+      "night": {
+        "prompt": "Rache-Wolf Aktionen",
+        "description": "1. Stimme für den Kill (Rudel-Aktion)<br>2. Wähle ein Rache-Ziel (Stirbt, wenn du stirbst)",
+        "button": "Absenden",
+        "feedback": "Du stimmst für {target} und markierst {target2} für Rache."
+      }
+    },
+    "Lawyer": {
+      "name": "Anwalt",
+      "short": "Macht einen Klienten am nächsten Tag unlynchbar.",
+      "long": "Du verteidigst die Angeklagten. Nachts wählst du einen Klienten. Wenn dieser vor Gericht kommt, scheitert die Lynchung und er überlebt.",
+      "night": {
+        "prompt": "Anwalt, wen verteidigst du vor diesem Affengericht?",
+        "button": "Verteidigen",
+        "feedback": "Verteidigung für {target} wird vorbereitet."
+      }
+    },
+    "Martyr": {
+      "name": "Märtyrer",
+      "short": "Schenkt einem Spieler ein 2. Leben bei Tod.",
+      "long": "Nachts kannst du jemanden wählen, der deine Lebenskraft absorbiert, wenn du stirbst.",
+      "night": {
+        "prompt": "Märtyrer, wem schenkst du ein 2. Leben?",
+        "button": "Segnen",
+        "feedback": "Du wachst über {target}."
+      }
+    },
+    "Mayor": {
+      "name": "Bürgermeister",
+      "short": "Stimme bricht Gleichstand bei Anklagen.",
+      "long": "Du bist der Anführer. Deine Stimme entscheidet bei Gleichstand. Du kannst heimlich deinen Nachfolger bestimmen (nur wenn dieser keine Nachtaktionen hat).",
+      "night": {
+        "prompt": "Bürgermeister, wer folgt dir nach?",
+        "button": "Wählen",
+        "feedback": "Politik ist toll, oder {target}? ;)"
+      }
+    },
+    "Monster": {
+      "name": "Monster",
+      "short": "Solo-Sieg als Letzter. Kein Team.",
+      "long": "Du bist eine Bestie. Weder Dorf noch Wolf. Immun gegen Wolfsangriffe, wirst aber als Wolf gesehen. Solo-Sieg, wenn du mit maximal einem Wolf überlebst.",
+      "night": {
+        "prompt": "{prompt}",
+        "button": "Wählen",
+        "feedback": "Interessante Wahl: {target}."
+      }
+    },
+    "Prostitute": {
+      "name": "Prostituierte",
+      "short": "Besucht Spieler und blockiert deren Aktionen.",
+      "long": "Jede Nacht besuchst du jemanden. Dessen Nachtaktion wird blockiert. Wenn du oder dein Ziel sterben, sterben beide. Besuche fast alle Spieler für einen Solo-Sieg!",
+      "night": {
+        "prompt": "Prostituierte, wen besuchst du?",
+        "button": "Besuchen",
+        "feedback": "Besuche {target}."
+      }
+    },
+    "Random_Seer": {
+      "name": "Zufalls-Seher",
+      "short": "Geheim: normal, paranoid, naiv, wahnsinnig",
+      "long": "25% normal, 25% paranoid (sieht überall Wölfe), 25% naiv (sieht nur Bürger), 25% wahnsinnig (sieht Gegenteil). Dein Geisteszustand ist geheim.",
+      "night": {
+        "prompt": "Seher, wessen Rolle willst du sehen?",
+        "button": "Untersuchen",
+        "feedback": "Du hast {target}s Rolle gesehen."
+      }
+    },
+    "Revealer": {
+      "name": "Enthüller",
+      "short": "Rolle aufdecken? Wolf: Wolf stirbt; Bürger: Du stirbst.",
+      "long": "Hohes Risiko. Du 'enthüllst' einen Spieler. Ist es ein Wolf, stirbt er sofort. Ist es ein Bürger, stirbst du vor Scham.",
+      "night": {
+        "prompt": "Enthüller: Enttame einen Wolf. Liegst du falsch, stirbst du💀",
+        "button": "Enthüllen",
+        "feedback": "Du hast {target} enthüllt."
+      }
+    },
+    "Serial_Killer": {
+      "name": "Serienmörder",
+      "short": "Tötet jede Nacht. Gewinnt als Letzter.",
+      "long": "Dritte Partei. Du gewinnst nicht mit Dorf oder Wölfen. Jede Nacht wählst du ein Opfer. Leibwächter können dich nicht stoppen. Solo-Sieg mit max. einem anderen Menschen.",
+      "night": {
+        "prompt": "Serienmörder, wer ist dein nächstes Opfer?",
+        "button": "Ermorden",
+        "feedback": "🪚Du hast deine Werkzeuge für {target} vorbereitet."
+      }
+    },
+    "Sorcerer": {
+      "name": "Hexenmeister",
+      "short": "Team Werwolf. Sucht magische Rollen.",
+      "long": "Du gehörst zu den Wölfen, tötest aber nicht mit ihnen. Du suchst nach der Seherin, Hexe oder dem Enthüller.",
+      "night": {
+        "prompt": "Hexenmeister, finde Seherin oder Hexe!",
+        "button": "Scannen",
+        "feedback": "Du blickst ins Leere und siehst {target}s Rolle."
+      }
+    },
+    "Tough_Villager": {
+      "name": "Harter Bursche",
+      "short": "Dorfbewohner, der einen Tod überlebt.",
+      "long": "Keine Kräfte, aber Rüstung. Das erste Mal, wenn du sterben würdest, überlebst du. Du stirbst erst beim zweiten Mal.",
+      "night": {
+        "prompt": "{prompt}",
+        "button": "Wählen",
+        "feedback": "Interessante Wahl: {target}."
+      }
+    },
+    "Tough_Werewolf": {
+      "name": "Harter Wolf",
+      "short": "Überlebt den ersten Mordversuch.",
+      "long": "Jags mit dem Rudel. Wenn Jäger, Hexe, Lynchmob oder Serienmörder dich treffen, überlebst du den ersten Schlag.",
+      "night": {
+        "prompt": "Werwolf, wen wirst du fressen?",
+        "button": "Töten",
+        "feedback": "Du hast Hunger auf {target}."
+      }
+    },
+    "Wild_Child": {
+      "name": "Wildes Kind",
+      "short": "Wählt Vorbild. Stirbt es, wirst du Werwolf.",
+      "long": "In der ersten Nacht wählst du ein 'Vorbild'. Solange es lebt, bist du Mensch. Stirbt es, wirst du Werwolf und trittst dem Rudel bei.",
+      "night": {
+        "prompt": "Wildes Kind, wähle dein Vorbild:",
+        "button": "Wählen",
+        "feedback": "Du blickst zu {target} auf."
+      }
+    },
+    "Witch": {
+      "name": "Hexe",
+      "short": "Hat zwei Tränke: Heilung und Gift.",
+      "long": "Du wachst vor den Wölfen auf. Du kannst einmal heilen (Opfer retten) und einmal vergiften (jemanden töten).",
+      "night": {
+        "prompt": "Hexe, wer bekommt einen Trank?",
+        "button": "Geben",
+        "feedback": "{target} hat {potion} getrunken.",
+        "potion_heal": "Heiltrank",
+        "potion_poison": "Gifttrank",
+        "potion_none": "Nichts"
+      }
+    }
+  }
+}
