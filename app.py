@@ -3,6 +3,7 @@ app.py
 Version: 4.9.9
 """
 import logging
+import html
 import os
 import time
 import uuid
@@ -28,15 +29,33 @@ from roles import *
 load_dotenv(find_dotenv(filename=".env.werewolves"))
 
 app = Flask(__name__)
-# IMPORTANT: In production, this MUST be set as an environment variable.
+# IMPORTANT: In production, this MUST be set as an environment variable in .env.werewolves
 app.config["SECRET_KEY"] = os.environ.get(
-    "FLASK_SECRET_KEY", "omiunhbybt7vr6c53wz3523c2r445ybF4y6jmo8o8p"
-)
+    "FLASK_SECRET_KEY")
+
+if not app.config["SECRET_KEY"]:
+    # For local dev, generate a random one (invalidates sessions on restart)
+    # For production, this ensures you don't use the hardcoded Github one.
+    print("WARNING: No FLASK_SECRET_KEY set. Generating temporary key.")
+    app.config["SECRET_KEY"] = str(uuid.uuid4())
+
+# 1. Block JavaScript from reading the cookie (Mitigates XSS)
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+
+# 2. Only send cookies over HTTPS (Requires SSL setup mentioned above)
+# Set this to True in production, False if testing locally without SSL
+app.config["SESSION_COOKIE_SECURE"] = os.environ.get("USE_HTTPS", "False").lower() == "true"
+
+# 3. Prevent Cross-Site Request Forgery (CSRF) on login
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
 log = logging.getLogger("werkzeug")
 log.setLevel(logging.ERROR)
 
 # --- Global State ---
 game_instance = Game("main_game")
+
+join_attempts = {} # for rate limiting
 
 # Configure CORS for Socket.IO from environment variables
 # This is crucial for security in a production environment.
@@ -47,9 +66,9 @@ socketio = SocketIO(
 )
 
 if origins:
-    print(f"+++> .env FILE FOUND")
+    print(f"+++> .env.werewolves FILE FOUND")
 else:
-    print(f"---> .env FILE NOT FOUND")
+    print(f"---> .env.werewolves FILE NOT FOUND")
 
 # Game Dictionary stores connection/wrapper info
 game = {
@@ -378,10 +397,22 @@ def index():
         )
     # login properly then redirect to lobby
     if request.method == "POST":
-        name = request.form.get("name", "").strip()
+        # join rate limiting
+        client_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+        current_time = time.time()
+        last_attempt_time = join_attempts.get(client_ip, 0)
+        if current_time - last_attempt_time < 2.0:
+            return render_template("index.html", error="Too many attempts. Please wait.")
+
+        # Update the timestamp for this IP
+        join_attempts[client_ip] = current_time
+
+        raw_name = request.form.get("name", "").strip()
+        name = html.escape(raw_name)
+
         code = request.form.get("game_code", "").strip().upper()
         if not name:
-            return render_template("index.html", error="name is required.")
+            return render_template("index.html", error="name is required (no special chars).")
         if len(name) > 20:
             return render_template(
                 "index.html", error="Name must be 20 characters or less."
@@ -396,6 +427,9 @@ def index():
             return render_template("index.html", error="Game code is too long.")
         if code != game["game_code"]:
             return render_template("index.html", error="Invalid game code.")
+        if len(game["players"]) >= 24: # Cap at 24 players (max roles supported)
+             return render_template("index.html", error="Lobby is full.")
+
         for p in game["players"].values():
             if p.name.lower() == name.lower():
                 return render_template("index.html", error="Name is already taken.")
@@ -579,7 +613,8 @@ def handle_send_message(data):
     pid, p = get_player_by_sid(request.sid)
     if not p:
         return
-    msg = data.get("message", "").strip()
+    raw_msg = data.get("message", "").strip()
+    msg = html.escape(raw_msg)
     if len(msg) > 500:
         return emit("error", {"message": "Message too long."})
     if not msg:
