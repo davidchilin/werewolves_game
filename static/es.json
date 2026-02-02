@@ -1,5 +1,5 @@
 {
-  "_comment": "version 4.9.9; update language in index.html",
+  "_comment": "version 5.0.0; update language in index.html",
   "prompts": {
     "villager_0": "¿Quién es más probable que tenga un OnlyFans?",
     "villager_1": "¿Quién moriría primero en un apocalipsis de zombies?",
@@ -153,6 +153,7 @@
     "death_retaliation": "⚔️ ¡<strong>{name}</strong> se metió con la persona equivocada! Era <strong>{role}</strong> ⚰️",
     "death_reveal_human": "🤦 ¡<strong>{name}</strong> reveló a un inocente y murió de vergüenza! ⚰️",
     "death_reveal_wolf": "🔦 ¡<strong>{name}</strong> fue revelado como <strong>{role}</strong> y ejecutado! ⚰️",
+    "death_secondary": "☠️ ¡<strong>{name}</strong> murió también! Razón: {reason} ⚰️",
     "death_serial": "🔪 ¡Cuerpo mutilado! <strong>{name}</strong> fue víctima del Asesino. 🩸 Era <strong>{role}</strong> ⚰️",
     "death_witch": "⚗️ Se escuchó un burbujeo... ☠ <strong>{name}</strong> se disolvió. Era <strong>{role}</strong> ⚰️",
     "death_wolf": "🐾 ¡Se encontraron restos! <strong>{name}</strong> fue asesinado 🫀 Era <strong>{role}</strong> ⚰️",
@@ -170,6 +171,7 @@
     "prostitute_collat": "👠 <strong>Daño Colateral:</strong> {name} muere también 🔞 Era {role}.",
     "prostitute_win": "🥰 La Prostituta hizo muchos amigos y ganó sola 🥇",
     "seer_result": "🔮 ¡Tu visión revela que <strong>{name}</strong> es <strong>{role}</strong>!",
+    "solo_win_continue": "🥇 ¡<span style='color: #fdd835'>{role} {name}</span> ha logrado una Victoria en Solitario!",
     "strangely": "Curiosamente, nadie muere...",
     "sun_rise_safe": "🌞 Sale el sol y nadie ha muerto.",
     "tie_deadlock": "Otro Empate. Nadie sera linchado.",

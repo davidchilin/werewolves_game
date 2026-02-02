@@ -1,6 +1,6 @@
 """
 app.py
-Version: 4.9.9
+Version: 5.0.0
 """
 import logging
 import html
@@ -817,25 +817,33 @@ def handle_admin_next_phase(data=None):
     elif current_phase == PHASE_LYNCH:
         resolve_lynch()
 
-
 def resolve_lynch():
     result = game_instance.resolve_lynch_vote()
+
+    # 1. Handle Announcements (if any)
     if result.get("announcements"):
         for ann in result["announcements"]:
             game_instance.message_history.append(ann)
-            print(f"resolve_lynch announcement: {ann}")
             socketio.emit("message", {"text": ann}, to=game["game_code"])
+
+    # 2. Determine Primary Lynch Result
     msg = {"key": "events.lynch_fail", "variables": {}}
     if result.get("armor_save"):
         msg = {"key": "events.lynch_armor", "variables": {}}
     elif result["killed_id"]:
         name = game_instance.players[result["killed_id"]].name
         role = game_instance.players[result["killed_id"]].role.name_key
-        msg = {"key": "events.lynch_success", "variables": {"name": name, "role": role}}
+        msg = {
+            "key": "events.lynch_success",
+            "variables": {"name": name, "role": role}
+        }
 
+    # Attach summary (Voted Yes/No) to the message object
     if result.get("summary"):
         msg["summary"] = result["summary"]
+
     game_instance.message_history.append(msg)
+
     socketio.emit(
         "lynch_vote_result",
         {
@@ -845,26 +853,58 @@ def resolve_lynch():
         },
         to=game["game_code"],
     )
+
+    # 3. Handle Secondary Deaths (Honeypot, Lovers, etc.)
     if result.get("secondary_deaths"):
         for d in result["secondary_deaths"]:
-            sec_msg = f"☠️ <strong>{d['name']}</strong> died as well! Reason: {d['reason']} ⚰️"
-            if "Honeypot" in d["reason"]:
-                clean_reason = d["reason"].replace("Honeypot retaliation: ", "")
-                # Clean up UUIDs if present in the message
-                sec_msg = f"🍯 <strong>{d['name']}</strong> was dragged down by the Honeypot! {clean_reason} 🐝"
-            elif d["reason"] == "Love Pact":
-                sec_msg = f"💔 <strong>{d['name']}</strong> died of a broken heart!"
+            # Attempt to find the role for the translation key (game engine might not send it in 'd')
+            role_key = "Unknown"
+            if "id" in d and d["id"] in game_instance.players:
+                r = game_instance.players[d["id"]].role
+                if r: role_key = r.name_key
+            elif "role" in d:
+                role_key = d["role"]
+
+            reason_raw = d.get("reason", "")
+            sec_msg = {}
+
+            # Case A: Engine sent a ready-made Translation Object
+            if isinstance(reason_raw, dict):
+                sec_msg = reason_raw
+
+            # Case B: Lovers Pact (Detect String -> Convert to Key)
+            elif reason_raw == "Love Pact":
+                sec_msg = {
+                    "key": "events.death_love",
+                    "variables": {"name": d["name"], "role": role_key}
+                }
+
+            # Case C: Honeypot (Detect String -> Convert to Key)
+            elif "Honeypot" in str(reason_raw):
+                # Remove the English prefix so we just display the mechanic/name if possible
+                clean_reason = str(reason_raw).replace("Honeypot retaliation: ", "")
+                sec_msg = {
+                    "key": "events.death_honey",
+                    "variables": {"name": d["name"], "role": role_key, "reason": clean_reason}
+                }
+
+            # Case D: Fallback (Generic Secondary Death)
+            else:
+                sec_msg = {
+                    "key": "events.death_secondary",
+                    "variables": {"name": d["name"], "reason": str(reason_raw)}
+                }
+
             game_instance.message_history.append(sec_msg)
             socketio.emit("message", {"text": sec_msg}, to=game["game_code"])
 
-    # Message werewolves teammates names, in case Wild_Child
+    # 4. Update Wolf Team & Check Game Over
     living_wolves = game_instance.get_living_players("Werewolves")
     for werewolf in living_wolves:
         send_werewolf_info(werewolf.id)
 
     socketio.sleep(GAME_DEFAULTS["PAUSE_DURATION"])
     check_game_over_or_next_phase()
-
 
 def check_game_over_or_next_phase():
     if game_instance.check_game_over():
@@ -1175,9 +1215,11 @@ def resolve_night():
                     "key": "events.death_wolf",
                     "variables": {"name": name, "role": role},
                 }
-                if reason == "Werewolf meat":
+                if isinstance(reason, dict):
+                    hist_msg = reason
+                elif reason == "Werewolf meat":
                     hist_msg["key"] = "events.death_wolf"
-                if reason == "Witch Poison":
+                elif reason == "Witch Poison":
                     hist_msg["key"] = "events.death_witch"
                 elif reason == "Love Pact":
                     hist_msg["key"] = "events.death_love"

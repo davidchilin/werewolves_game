@@ -1,4 +1,4 @@
-// Version 4.9.9
+// Version 5.0.0
 const PHASE_LOBBY = "Lobby";
 const PHASE_NIGHT = "Night";
 const PHASE_ACCUSATION = "Accusation";

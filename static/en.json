@@ -1,5 +1,5 @@
 {
-  "_comment": "version 4.9.9; update language in index.html",
+  "_comment": "version 5.0.0; update language in index.html",
   "prompts": {
     "villager_0": "Who is most likely to have an OnlyFans?",
     "villager_1": "Who would die first in a zombie apocalypse?",
@@ -153,6 +153,7 @@
     "death_retaliation": "⚔️ <strong>{name}</strong> messed with the wrong person! They were a <strong>{role}</strong> ⚰️",
     "death_reveal_human": "🤦 <strong>{name}</strong> revealed a Villager and died of shame! ⚰️",
     "death_reveal_wolf": "🔦 <strong>{name}</strong> was revealed to be a <strong>{role}</strong> and strung up! ⚰️",
+    "death_secondary": "☠️ <strong>{name}</strong> died as well! Reason: {reason} ⚰️",
     "death_serial": "🔪 A mutilated body was found! <strong>{name}</strong> was the victim of a Serial Killer! 🩸 They were a <strong>{role}</strong> ⚰️",
     "death_witch": "⚗️ A bubbling sound was heard... ☠ <strong>{name}</strong> dissolved into muck. They were a <strong>{role}</strong> ⚰️",
     "death_wolf": "🐾 Remnants of a body were found! <strong>{name}</strong> was killed 🫀 They were a <strong>{role}</strong> ⚰️",
@@ -170,6 +171,7 @@
     "prostitute_collat": "👠 <strong>Date Damage:</strong> {name} dies too 🔞 They were a {role}.",
     "prostitute_win": "🥰 The Prostitute made many friends and achieved a Solo Win 🥇",
     "seer_result": "🔮 Your vision reveals that <strong>{name}</strong> is a <strong>{role}</strong>.",
+    "solo_win_continue": "🥇 <span style='color: #fdd835'>{role} {name}</span> has achieved a Solo Win!",
     "strangely": "Strangely, nobody dies...",
     "sun_rise_safe": "🌞 The sun rises, and no one was killed.",
     "tie_deadlock": "Deadlock tie. No one lynched.",
