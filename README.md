@@ -1,4 +1,4 @@
-[Leer en Español](README.es.md)
+[🇬🇹 Español](README.es.md) | [🇩🇪 Deutsch](README.de.md)
 
 # **Werewolves Game**
 
@@ -204,7 +204,6 @@ To run this project locally, follow these steps:
       ```
 
     - macOS / Linux:
-
       ```bash
       python3 -m venv venv
       source venv/bin/activate
@@ -219,18 +218,50 @@ To run this project locally, follow these steps:
 5.  **Run the App:**
 
     ```bash
-    FLASK_APP=app.py flask run -h 0.0.0.0
+    FLASK_APP=app.py flask run
     ```
 
     OR alternatively for better performance and security run the Flask app
-    through your preferred port# and gunicorn:
+    through your preferred GAME_PORT and gunicorn:
 
     ```bash
     pip install gunicorn gevent
-    gunicorn --worker-class gevent -w 1 -b 0.0.0.0:5000 app:app
+    export GAME_PORT=5001
+    gunicorn --worker-class gevent -w 1 -b 0.0.0.0:$GAME_PORT app:app
     ```
 
-6.  **Access the game:** Open your web browser and go to game web address set in
-    `.env.werewolves CORS_ALLOWED_ORIGINS`. Defaults: `http://127.0.0.1:5000`.
-    Open multiple tabs or browsers to simulate different players joining the
-    game. Initial Game Code is `W` and first player to join is **Admin**.
+    AND if you use LetsEncrypt for SSL, you can deploy gunicorn with SSL, and
+    copy your certificates with deploy_certs.sh:
+
+    ```bash
+    sudo ./deploy_certs.sh cpu_user_name my.site.com
+    export GAME_PORT=5001
+    gunicorn --worker-class gevent -w 1 -b 0.0.0.0:$GAME_PORT   --certfile=./ssl_certs/fullchain.pem   --keyfile=./ssl_certs/privkey.pem   app:app
+    ```
+
+6.  **Access the game:** Open your web browser and go to game web address and
+    port set in `.env.werewolves CORS_ALLOWED_ORIGINS`. Defaults:
+    `http://127.0.0.1:5000`. Open multiple tabs or browsers to simulate
+    different players joining the game. Initial Game Code is `W` and first
+    player to join is **Admin**.
+
+### Configureation (config.py)
+
+- DEFAULT_LANGUAGE: Set to "es" or "de" to change the server default.
+- TIME_NIGHT / TIME_ACCUSATION: Change default durations (seconds).
+- PAUSE_DURATION: Seconds to pause between phases (to read text).
+- DEFAULT_ROLES: Which roles are auto-selected on a fresh boot.
+
+### Add Your Own Roles
+
+1. roles.py: Create a class inheriting from Role. Define team, night_action,
+   etc.
+2. app.py: Import your new role and add it to AVAILABLE_ROLES dict.
+3. static/game.js: Add the role key (const) and update updateRoleTooltip
+   colors/icons.
+4. static/en.json (and others): Add name/description to "roles" object.
+
+License
+
+Distributed under the GNU GPL v3 License. See [LICENSE](LICENSE) for more
+information.

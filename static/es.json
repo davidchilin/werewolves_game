@@ -1,5 +1,5 @@
 {
-  "_comment": "version 5.0.0; update language in index.html",
+  "_comment": "version 5.1.0; update language in index.html",
   "prompts": {
     "villager_0": "¿Quién es más probable que tenga un OnlyFans?",
     "villager_1": "¿Quién moriría primero en un apocalipsis de zombies?",
@@ -18,6 +18,17 @@
     "Serial_Killer": "Asesino"
   },
   "ui": {
+    "login": {
+      "error_rate_limit": "Demasiados intentos. Por favor espera.",
+      "error_name_required": "Se requiere nombre (sin caracteres especiales).",
+      "error_name_length": "El nombre debe tener 20 caracteres o menos.",
+      "error_code_required": "Se requiere el código del juego.",
+      "error_code_alnum": "El código debe ser alfanumérico.",
+      "error_code_length": "El código es demasiado largo.",
+      "error_code_invalid": "Código de juego inválido.",
+      "error_lobby_full": "La sala está llena.",
+      "error_name_taken": "El nombre ya está en uso."
+    },
     "lobby": {
       "add_player_btn": "Agregar Jugador",
       "admin_header": "Controles de Admin",
@@ -39,7 +50,7 @@
       "rating_guide": "💡 Guía de Balance",
       "rating_neg": "- Negativo: Equipo Lobo",
       "rating_neu": "~ Cero: Neutral / Desconocido",
-      "rating_note": "\"Al Azar\" selecciona roles balanceados con valor cercano a 0.",
+      "rating_note": "\"Al Azar\" selecciona roles equilibrados con un valor total cercano a 0. Las acciones nocturnas se procesan en orden ascendente, por lo que el 1 va antes que el 2.",
       "rating_pos": "+ Positivo: Equipo Cuidadano",
       "rating_title": "Rating de Balance:",
       "role_count_label": "CONTEO DE ROLES:",
@@ -148,6 +159,10 @@
   },
   "events": {
     "accusation_made": "🫵 <strong>{accuser}</strong> acusa a <strong>{target}</strong>!",
+    "chat_night_shh": "shhh... la aldea duerme tranquilamente, <strong>{name}</strong>",
+    "chat_restricted": "El chat está restringido actualmente.",
+    "cupid_info": "💘 ¡Estás enamorado de <strong>{name}</strong>! Si uno muere, ambos mueren.",
+    "cupid_info_dead": "Has muerto, pero deberías saber... 💘 ¡Estabas enamorado de <strong>{name}</strong>!",
     "death_honey": "🍯 <strong>{role} {name}</strong> cayó en una trampa. {reason} 🐝",
     "death_love": "💕 ¡<strong>{name}</strong> murió de corazón roto! 😈 Era <strong>{role}</strong> ⚰️",
     "death_retaliation": "⚔️ ¡<strong>{name}</strong> se metió con la persona equivocada! Era <strong>{role}</strong> ⚰️",
@@ -157,15 +172,15 @@
     "death_serial": "🔪 ¡Cuerpo mutilado! <strong>{name}</strong> fue víctima del Asesino. 🩸 Era <strong>{role}</strong> ⚰️",
     "death_witch": "⚗️ Se escuchó un burbujeo... ☠ <strong>{name}</strong> se disolvió. Era <strong>{role}</strong> ⚰️",
     "death_wolf": "🐾 ¡Se encontraron restos! <strong>{name}</strong> fue asesinado 🫀 Era <strong>{role}</strong> ⚰️",
-    "fool_win": "🤡 El Pendejo {name} los engañó a todos y ganó! 🥇",
+    "fool_win": "🤡 El Pendejo <strong>{name}</strong> los engañó a todos y ganó! 🥇",
     "lawyer_save": "⚖️ <strong>{name}</strong> fue votado, pero su Abogado lo salvó.",
     "lovers_pact": "💘 <strong>Pacto de Amor:</strong> {name} muere de corazón roto 💔 Era {role}.",
     "lynch_armor": "⚖️ El pueblo votó linchar, pero... <strong>extrañamente, nadie muere.</strong>",
     "lynch_fail": "Nadie fue linchado 🕊️",
-    "lynch_result": "⚖️ ¡{name} fue linchado! Era un {role} ⚰️",
+    "lynch_result": "⚖️ ¡<strong>{name}</strong> fue linchado! Era un {role} ⚰️",
     "lynch_success": "⚖️ ¡<strong>{name}</strong> fue linchado! Era <strong>{role}</strong> ⚰️",
     "mayor_tie": "⚖️ <strong>¡Empate!</strong> El Alcalde rompió el empate contra {target}.",
-    "night_kill": "🐾 ¡Se encontraron restos! {name} fue asesinado. Era un {role}.",
+    "night_kill": "🐾 ¡Se encontraron restos! <strong>{name}</strong> fue asesinado. Era un {role}.",
     "phase_change_msg": "Ha comenzado una nueva fase: <strong>{phase}</strong>.",
     "prostitute_block": "💋 Fuiste visitado por la Prostituta y te distrajiste demasiado. 💦",
     "prostitute_collat": "👠 <strong>Daño Colateral:</strong> {name} muere también 🔞 Era {role}.",
@@ -185,6 +200,7 @@
     "wolf_team": "Eres un Hombre Lobo 🐺 Tus compañeros son: <strong>{mates}</strong>."
   },
   "roles": {
+    "Magic_User": { "name": "Usuario Mágico" },
     "Villager": {
       "name": "Cuidadano",
       "short": "Encuentra a los Hombres Lobo y vota para eliminarlos.",

@@ -1,6 +1,6 @@
 """
 roles.py
-Version: 4.9.9
+Version: 5.1.0
 Defines the behavior of all roles using a generic base class and specific subclasses.
 """
 import random
@@ -138,14 +138,15 @@ class Role:
     def to_dict(self):
         """Serializes role info for the frontend."""
         return {
-            "name_key": self.name_key,
-            "description_key": self.description_key,
-            "team": self.team,
-            "is_night_active": self.is_night_active,
-            "short": self.ui_short,
-            "long": self.ui_long,
-            "rating": self.ui_rating,
             "color": self.ui_color,
+            "description_key": self.description_key,
+            "is_night_active": self.is_night_active,
+            "long": self.ui_long,
+            "name_key": self.name_key,
+            "priority": self.priority,
+            "rating": self.ui_rating,
+            "short": self.ui_short,
+            "team": self.team,
         }
 
 

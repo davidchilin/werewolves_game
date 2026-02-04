@@ -1,7 +1,8 @@
 """
 app.py
-Version: 5.0.0
+Version: 5.1.0
 """
+import json
 import logging
 import html
 import os
@@ -52,6 +53,35 @@ app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 log = logging.getLogger("werkzeug")
 log.setLevel(logging.ERROR)
 
+def flatten_dict(d, parent_key='', sep='.'):
+    """Recursively flattens a nested dictionary."""
+    items = []
+    for k, v in d.items():
+        new_key = f"{parent_key}{sep}{k}" if parent_key else k
+        if isinstance(v, dict):
+            items.extend(flatten_dict(v, new_key, sep=sep).items())
+        else:
+            items.append((new_key, v))
+    return dict(items)
+
+# Load and Flatten Translations immediately on startup
+TRANSLATIONS = {}
+for lang in ["en", "es", "de"]:
+    try:
+        with open(f"static/{lang}.json", "r", encoding="utf-8") as f:
+            raw_data = json.load(f)
+            TRANSLATIONS[lang] = flatten_dict(raw_data)
+            print(f"Loaded server translations for: {lang}")
+    except FileNotFoundError:
+        print(f"Warning: {lang}.json not found. Server translations unavailable for this language.")
+
+def t_server(key, lang="en"):
+    # 1. Select Dictionary (Fallback to EN if language missing)
+    dataset = TRANSLATIONS.get(lang, TRANSLATIONS.get("en", {}))
+
+    # 2. Direct Lookup (No splitting, no looping)
+    return dataset.get(key, key)
+
 # --- Global State ---
 game_instance = Game("main_game")
 
@@ -59,16 +89,27 @@ join_attempts = {} # for rate limiting
 
 # Configure CORS for Socket.IO from environment variables
 # This is crucial for security in a production environment.
-origins = os.environ.get("CORS_ALLOWED_ORIGINS")
-socketio = SocketIO(
-    app,
-    cors_allowed_origins=origins.split(",") if origins else "*",
-)
+origins = os.environ.get("CORS_ALLOWED_ORIGINS", "")
 
 if origins:
     print(f"+++> .env.werewolves FILE FOUND")
 else:
     print(f"---> .env.werewolves FILE NOT FOUND")
+
+nginx_port = os.environ.get("NGINX_PORT")
+game_port = os.environ.get("GAME_PORT")
+print(f"NGINX_PORT: ", nginx_port," GAME_PORT: ", game_port)
+print(f"origins: ", origins)
+# use GAME_PORT if provided via command line to override .env
+if game_port and nginx_port and origins:
+    origins = origins.replace(f":{nginx_port}", f":{game_port}")
+
+print(f"origins: ", origins)
+socketio = SocketIO(
+    app,
+    cors_allowed_origins=origins.split(",") if origins else "*",
+)
+
 
 # Game Dictionary stores connection/wrapper info
 game = {
@@ -397,13 +438,13 @@ def index():
         )
     # login properly then redirect to lobby
     if request.method == "POST":
+        lang = request.form.get("language", "en")
         # join rate limiting
         client_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
         current_time = time.time()
         last_attempt_time = join_attempts.get(client_ip, 0)
         if current_time - last_attempt_time < 2.0:
             return render_template("index.html", error="Too many attempts. Please wait.")
-
         # Update the timestamp for this IP
         join_attempts[client_ip] = current_time
 
@@ -412,29 +453,25 @@ def index():
 
         code = request.form.get("game_code", "").strip().upper()
         if not name:
-            return render_template("index.html", error="name is required (no special chars).")
+            return render_template("index.html", error=t_server("ui.login.error_name_required", lang))
         if len(name) > 20:
-            return render_template(
-                "index.html", error="Name must be 20 characters or less."
-            )
+            return render_template("index.html", error=t_server("ui.login.error_name_length", lang))
         if not code:
-            return render_template("index.html", error="Game code is required.")
+            return render_template("index.html", error=t_server("ui.login.error_code_required", lang))
         if not code.isalnum():
-            return render_template(
-                "index.html", error="Game code must be alphanumeric."
-            )
+            return render_template("index.html", error=t_server("ui.login.error_code_alnum", lang))
         if len(code) > 20:
-            return render_template("index.html", error="Game code is too long.")
+            return render_template("index.html", error=t_server("ui.login.error_code_length", lang))
         if code != game["game_code"]:
-            return render_template("index.html", error="Invalid game code.")
-        if len(game["players"]) >= 24: # Cap at 24 players (max roles supported)
-             return render_template("index.html", error="Lobby is full.")
+            return render_template("index.html", error=t_server("ui.login.error_code_invalid", lang))
+        if len(game["players"]) >= 24:
+             return render_template("index.html", error=t_server("ui.login.error_lobby_full", lang))
 
         for p in game["players"].values():
             if p.name.lower() == name.lower():
-                return render_template("index.html", error="Name is already taken.")
+                return render_template("index.html", error=t_server("ui.login.error_name_taken", lang))
 
-        session["language"] = request.form.get("language", "en")
+        session["language"] = lang
         session["player_id"], session["name"] = str(uuid.uuid4()), name
         return redirect(url_for("lobby"))
     return render_template("index.html")
@@ -634,14 +671,14 @@ def handle_send_message(data):
         else:
             # Non-Admins get silenced
             if is_night:
-                emit(
-                    "message",
-                    {
-                        "text": f"shhh...the village is sleeping quietly, <strong>{p.name}</strong>"
-                    },
-                )
+                msg = {
+                    "key": "events.chat_night_shh",
+                    "variables": {"name": p.name}
+                }
+                emit("message", {"text": msg})
             else:
-                emit("message", {"text": "Chat is currently restricted."})
+                msg = {"key": "events.chat_restricted", "variables": {}}
+                emit("message", {"text": msg})
         return
     channel = "lobby"
 
@@ -671,6 +708,33 @@ def handle_admin_toggle_chat():
         to=game["game_code"],
     )
 
+@socketio.on("admin_transfer_admin")
+def handle_admin_transfer(data):
+    if request.sid != game["admin_sid"]:
+        return
+
+    target_id = data.get("target_id")
+    if not target_id or target_id not in game["players"]:
+        return
+
+    current_admin_id = session.get("player_id")
+
+    # 1. Update wrappers
+    game["players"][current_admin_id].is_admin = False
+    game["players"][target_id].is_admin = True
+
+    # 2. Update Global SID
+    game["admin_sid"] = game["players"][target_id].sid
+
+    log_and_emit(f"===> Admin transferred from {game['players'][current_admin_id].name} to {game['players'][target_id].name}")
+
+    # 3. Broadcast updates
+    if game["game_state"] == PHASE_LOBBY:
+        broadcast_player_list()
+        # Also need to send settings to new admin so their UI updates
+        emit("sync_settings", lobby_state.get("settings", {}), to=game["admin_sid"])
+    else:
+        broadcast_game_state()
 
 @socketio.on("admin_set_timers")
 def handle_admin_set_timers(data):
@@ -982,11 +1046,17 @@ def send_cupid_info(player_id, specific_sid=None):
 
     # 4. Emit Event
     if target_sid:
-        pre_msg = ""
         if not engine_player_obj.is_alive:
-            pre_msg = "You died, but you should know... "
+             msg = {
+                "key": "events.cupid_info_dead",
+                "variables": {"name": partner_obj.name}
+            }
+        else:
+            msg = {
+                "key": "events.cupid_info",
+                "variables": {"name": partner_obj.name}
+            }
 
-        msg = f"{pre_msg}💘 You are in love with <strong>{partner_obj.name}</strong>! If one dies, you both die."
         socketio.emit("cupid_info", {"message": msg}, to=target_sid)
 
 
@@ -1195,7 +1265,7 @@ def resolve_night():
                 if player_wrapper and player_wrapper.sid:
                     socketio.emit(
                         "message",
-                        {"text": f"{event['message']}", "channel": "living"},
+                        {"text": event['message'], "channel": "living"},
                         to=player_wrapper.sid,
                     )
             elif event_type == "announcement":

@@ -1,4 +1,4 @@
-/* --- Version 4.9.2 --- */
+/* --- Version 5.1.0 --- */
 :root {
   --bg-body: black;
   --bg-panel: #111;
@@ -87,7 +87,8 @@ body {
   bottom: 0;
   z-index: 100; /* Standard high z-index */
   flex-direction: column;
-  justify-content: center;
+  padding-top: 30px;
+  justify-content: flex-start;
   align-items: center;
 }
 

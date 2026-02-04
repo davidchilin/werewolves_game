@@ -1,4 +1,4 @@
-// Version 5.0.0
+// Version 5.1.0
 const PHASE_LOBBY = "Lobby";
 const PHASE_NIGHT = "Night";
 const PHASE_ACCUSATION = "Accusation";
@@ -1357,11 +1357,17 @@ socket.on("night_result_kill", (data) => {
 });
 
 socket.on("seer_result", (data) => {
-  // [CHANGED] Translate the role name (e.g., "Werewolf" -> "Hombre Lobo")
-  const roleKey = `roles.${data.role}.name`;
+  // 1. Sanitize the incoming role string (e.g. "Magic User" -> "Magic_User")
+  // The backend likely sends "Magic User" (with space) or "Magic_User"
+  const safeRole = data.role.replace(/ /g, "_");
+
+  // 2. Construct key using the SANITIZED local variable
+  const roleKey = `roles.${safeRole}.name`;
+
+  // 3. Attempt translation
   const translatedRole = t({ key: roleKey }) || data.role;
 
-  // [CHANGED] Use translation key with variables
+  // 4. Send message
   const msg = t({
     key: "events.seer_result",
     variables: { name: data.name, role: translatedRole },
@@ -1503,6 +1509,20 @@ function updatePlayerListView(accusationCounts = {}) {
       li.style.color = "#ffffff";
       li.style.border = "1px solid darkviolet"; // Purple border
       li.style.backgroundColor = "rgba(187, 134, 252, 0.1)";
+    }
+
+    if (isAdmin && !isMe) {
+      const adminBtn = document.createElement("span");
+      adminBtn.innerText = "🪄";
+      adminBtn.style.cursor = "pointer";
+      adminBtn.style.marginLeft = "10px";
+      adminBtn.title = "Transfer Admin";
+      adminBtn.onclick = function () {
+        if (confirm(`Transfer Admin powers to ${p.name}?`)) {
+          socket.emit("admin_transfer_admin", { target_id: p.id });
+        }
+      };
+      li.appendChild(adminBtn);
     }
 
     els.playerList.appendChild(li);

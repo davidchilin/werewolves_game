@@ -1,4 +1,4 @@
-// Version 4.9.4
+// Version 5.1.0
 let translations = {};
 const currentLang = window.userLang || "en";
 
@@ -157,6 +157,7 @@ async function loadRoles() {
         rating: role.rating,
         color: role.color,
         team: role.team,
+        priority: role.priority || 0,
         displayName: roleName,
       };
 
@@ -227,6 +228,8 @@ async function loadRoles() {
                     <span style="float: left; font-weight: normal; ">
                         ${translatedTeam}
                     </span>
+                    <span style="color: #666; font-size: 0.9em;">Prio: ${role.priority || 0}</span>
+
                     ${role.rating}
                 </span>
             `;
@@ -367,6 +370,19 @@ socket.on("update_player_list", (data) => {
     if (player.is_admin) li.textContent += " 👑";
 
     if (isPlayerAdmin && player.id !== currentPlayerId) {
+      const adminBtn = document.createElement("span");
+      adminBtn.textContent = "🪄";
+      adminBtn.className = "exclude-btn"; // Reuse style or add new class
+      adminBtn.style.marginRight = "5px";
+      adminBtn.title = "Make Admin";
+      adminBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (confirm(`Make ${player.name} the Admin?`)) {
+          socket.emit("admin_transfer_admin", { target_id: player.id });
+        }
+      };
+      li.appendChild(adminBtn);
+
       const excludeBtn = document.createElement("span");
       excludeBtn.textContent = t("ui.lobby.exclude_btn", "Exclude");
       excludeBtn.className = "exclude-btn";
@@ -597,6 +613,14 @@ if (settingsContainer) {
 
     switch (target.id) {
       case "mode-pass-and-play":
+        if (target.checked) {
+          const timerBox = document.getElementById("disable-timers-checkbox");
+          if (timerBox && !timerBox.checked) {
+            timerBox.checked = true;
+            // Trigger change event so the backend gets the timer update too
+            timerBox.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+        }
         socket.emit("admin_update_settings", {
           mode: target.checked ? "pass_and_play" : "standard",
         });

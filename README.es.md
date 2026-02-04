@@ -1,4 +1,4 @@
-[Read in English](README.md)
+[🇺🇸 English](README.md) | [🇩🇪 Deutsch](README.de.md)
 
 # **Juego de Hombres Lobo**
 
@@ -232,19 +232,51 @@ Para ejecutar este proyecto localmente, sigue estos pasos:
 5.  **Ejecutar la App:**
 
     ```bash
-    FLASK_APP=app.py flask run -h 0.0.0.0
+    FLASK_APP=app.py flask run
     ```
 
     O alternativamente para mejor rendimiento y seguridad ejecuta el app Flask a
-    través de tu puerto preferido y gunicorn:
+    través de tu GAME_PORT preferido y gunicorn:
 
     ```bash
     pip install gunicorn gevent
-    gunicorn --worker-class gevent -w 1 -b 0.0.0.0:5000 app:app
+    export GAME_PORT=5001
+    gunicorn --worker-class gevent -w 1 -b 0.0.0.0:$GAME_PORT app:app
     ```
 
-6.  **Acceder al juego:** Abre tu navegador web y ve a la dirección web del
-    juego establecida en `.env.werewolves CORS_ALLOWED_ORIGINS`. Normalmente:
-    `http://127.0.0.1:5000`. Abre múltiples pestañas o navegadores para simular
-    diferentes jugadores uniéndose al juego. El Código de Juego Inicial es `W` y
-    el primer jugador en unirse es el **Admin**.
+    Y si usa LetsEncrypt para SSL, puede implementar gunicorn con SSL y copiar
+    sus certificados con deploy_certs.sh:
+
+    ```bash
+    sudo ./deploy_certs.sh cpu_user_name my.site.com
+    export GAME_PORT=5001
+    gunicorn --worker-class gevent -w 1 -b 0.0.0.0:$GAME_PORT   --certfile=./ssl_certs/fullchain.pem   --keyfile=./ssl_certs/privkey.pem   app:app
+    ```
+
+6.  **Acceder al juego:** Abre tu navegador web y ve a la dirección web y puerto
+    del juego establecida en `.env.werewolves CORS_ALLOWED_ORIGINS`.
+    Normalmente: `http://127.0.0.1:5000`. Abre múltiples pestañas o navegadores
+    para simular diferentes jugadores uniéndose al juego. El Código de Juego
+    Inicial es `W` y el primer jugador en unirse es el **Admin**.
+
+### Configuración (config.py)
+
+- DEFAULT_LANGUAGE: Configurar como "es" o "de" para cambiar el idioma en que
+  empieza el servidor.
+- TIME_NIGHT / TIME_ACCUSATION: Cambiar las duraciones predeterminadas (en
+  segundos).
+- PAUSE_DURATION: Segundos de pausa entre fases (para leer el texto).
+- DEFAULT_ROLES: Qué roles se seleccionan automáticamente al iniciar el juego.
+
+### Agrega tus Propios Roles
+
+1. roles.py: Crea una clase que herede de Role. Define team, night_action, etc.
+2. app.py: Importa tu nuevo rol y agrégalo al diccionario AVAILABLE_ROLES.
+3. static/game.js: Agrega la role key (const) y actualiza los colores/íconos en
+   updateRoleTooltip.
+4. static/en.json (y otros): Agrega el nombre/descripción al objeto "roles".
+
+Licencia
+
+Distribuido bajo la Licencia GNU GPL v3. Ver [LICENSE](LICENSE) para más
+información.
