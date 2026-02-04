@@ -163,8 +163,8 @@ To run this project locally, follow these steps:
 
     or download werewolves_game-master.zip and unzip to folder werewolves_game.
 
-2.  **Edit** `.env.werewolves` file. Change FLASK_SECRET_KEY
-    to_something_long_random, CORS_ALLOWED_ORIGINS to desired game web address
+2.  **Edit** `.env.werewolves` file. Change _FLASK_SECRET_KEY_ to
+    something_long_random, _CORS_ALLOWED_ORIGINS_ to desired game web address
     like:
     http://127.0.0.1:5000,http://your.ip.here:5000,https://your.site.here:5000
     OR leave blank to disable CORS and use any site.
@@ -231,7 +231,8 @@ To run this project locally, follow these steps:
     ```
 
     AND if you use LetsEncrypt for SSL, you can deploy gunicorn with SSL, and
-    copy your certificates with deploy_certs.sh:
+    copy your certificates with `deploy_certs.sh`, also update `.env.werewolves`
+    USE_HTTPS=true:
 
     ```bash
     sudo ./deploy_certs.sh cpu_user_name my.site.com

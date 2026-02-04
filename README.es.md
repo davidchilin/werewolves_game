@@ -175,9 +175,9 @@ Para ejecutar este proyecto localmente, sigue estos pasos:
 
     o descarga werewolves_game-master.zip y unzip en la carpeta werewolves_game.
 
-2.  **Editar** el archivo `.env.werewolves`. Cambia FLASK_SECRET_KEY a
-    algo_largo_y_raro, CORS_ALLOWED_ORIGINS a la dirección web deseada del juego
-    como:
+2.  **Editar** el archivo `.env.werewolves`. Cambia _FLASK_SECRET_KEY_ a
+    algo_largo_y_raro, _CORS_ALLOWED_ORIGINS_ a la dirección web deseada del
+    juego como:
     http://127.0.0.1:5000,http://tu.ip.aqui:5000,https://tu.sitio.aqui:5000 O
     deja en blanco para deshabilitar CORS y usar cualquier sitio.
 
@@ -245,7 +245,8 @@ Para ejecutar este proyecto localmente, sigue estos pasos:
     ```
 
     Y si usa LetsEncrypt para SSL, puede implementar gunicorn con SSL y copiar
-    sus certificados con deploy_certs.sh:
+    sus certificados con `deploy_certs.sh`, también actualizar `.env.werewolves`
+    USE_HTTPS=false:
 
     ```bash
     sudo ./deploy_certs.sh cpu_user_name my.site.com
@@ -275,8 +276,6 @@ Para ejecutar este proyecto localmente, sigue estos pasos:
 3. static/game.js: Agrega la role key (const) y actualiza los colores/íconos en
    updateRoleTooltip.
 4. static/en.json (y otros): Agrega el nombre/descripción al objeto "roles".
-
-Licencia
 
 Distribuido bajo la Licencia GNU GPL v3. Ver [LICENSE](LICENSE) para más
 información.
