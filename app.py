@@ -99,7 +99,7 @@ else:
 nginx_port = os.environ.get("NGINX_PORT")
 game_port = os.environ.get("GAME_PORT")
 print(f"NGINX_PORT: ", nginx_port," GAME_PORT: ", game_port)
-print(f"origins: ", origins)
+
 # use GAME_PORT if provided via command line to override .env
 if game_port and nginx_port and origins:
     origins = origins.replace(f":{nginx_port}", f":{game_port}")
@@ -514,7 +514,7 @@ def game_page():
     return render_template("game.html", player_role=role_str, player_id=player_id)
 
 
-@app.route("/favicon.ico")
+@app.route("/img/favicon.ico")
 def favicon():
     return send_from_directory(
         app.root_path, "favicon.ico", mimetype="image/vnd.microsoft.icon"

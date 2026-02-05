@@ -1,4 +1,5 @@
 [🇺🇸 English](README.md) | [🇬🇹 Español](README.es.md)
+![](https://repository-images.githubusercontent.com/1001769057/79681f17-e6ca-4261-bbb5-22fa20221af8)
 
 # **Werwölfe Spiel**
 
@@ -30,7 +31,7 @@ von einem bis mehreren Geräten im **Pass-and-Play**-Modus.
 
 ## **Hauptfunktionen**
 
-<img src="lobby.jpg" width="50%" align="right" />
+<img src="img/lobby.jpg" width="50%" align="right" />
 
 - **📱 Pass-and-Play-Modus:** Spielen Sie mit einem einzigen Telefon (oder
   mehreren), das im Raum herumgereicht wird. Die Benutzeroberfläche leitet die
@@ -83,7 +84,7 @@ von einem bis mehreren Geräten im **Pass-and-Play**-Modus.
 
 ## **Spielphasen**
 
-<img src="game_over.png" width="50%" align="right"/>
+<img src="img/game_over.png" width="50%" align="right"/>
 
 - **Nachtphase (Zeitgesteuert):**
 
@@ -181,7 +182,7 @@ Das Spiel unterstützt jetzt **24 einzigartige Rollen**:
 - **Honigtopf (Honeypot):** Wenn er getötet wird, stirbt der Mörder
   (Vergeltung).
 
-<img src="game_screen.png" width="80%" align="center"/>
+<img src="img/game_screen.png" width="80%" align="center"/>
 
 ## **Setup und Ausführung**
 
@@ -198,7 +199,7 @@ Um dieses Projekt lokal auszuführen, befolgen Sie diese Schritte:
     den Ordner werewolves_game.
 
 2.  **Bearbeiten** Sie die Datei `.env.werewolves`. Ändern Sie
-    _FLASK_SECRET_KEY_ zu etwas_langes_zufaelliges, _CORS_ALLOWED_ORIGINS_ zur
+    _FLASK_SECRET_KEY_ zu etwas*langes_zufaelliges, \_CORS_ALLOWED_ORIGINS* zur
     gewünschten Webadresse des Spiels wie:
     http://127.0.0.1:5000,http://ihre.ip.hier:5000,https://ihre.seite.hier:5000
     ODER lassen Sie es leer, um CORS zu deaktivieren und jede Seite zu
@@ -255,7 +256,7 @@ Um dieses Projekt lokal auszuführen, befolgen Sie diese Schritte:
 5.  **App ausführen:**
 
     ```bash
-    FLASK_APP=app.py flask run
+    FLASK_APP=app.py flask run -h 0.0.0.0
     ```
 
     ODER alternativ für bessere Leistung und Sicherheit die Flask-App über Ihren

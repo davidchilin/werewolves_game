@@ -1,7 +1,5 @@
 [🇬🇹 Español](README.es.md) | [🇩🇪 Deutsch](README.de.md)
-
-# **Werewolves Game**
-
+![](https://repository-images.githubusercontent.com/1001769057/79681f17-e6ca-4261-bbb5-22fa20221af8)
 A feature-rich, self-hosted real-time multiplayer social deduction game. Built
 with Python (Flask) and WebSockets, this project has evolved from a simple
 experiment into a fully playable party game supporting 24 unique roles, mobile
@@ -26,7 +24,7 @@ OR in person using one to several devices in **Pass-and-Play** mode.
 
 ## **Core Features**
 
-<img src="lobby.jpg" width="50%" align="right" />
+<img src="img/lobby.jpg" width="50%" align="right" />
 
 - **📱 Pass-and-Play Mode:** Play with a single phone (or several) passed around
   the room. The UI guides players to confirm their identity before revealing
@@ -73,7 +71,7 @@ OR in person using one to several devices in **Pass-and-Play** mode.
 
 ## **Game Phases**
 
-<img src="game_over.png" width="50%" align="right"/>
+<img src="img/game_over.png" width="50%" align="right"/>
 
 - **Night Phase (Timed):**
 
@@ -148,7 +146,7 @@ The game now supports **24 unique roles**:
 - **Monster:** Immune to Wolf attacks. Wins if left alone with 1 Wolf.
 - **Honeypot:** If killed, the killer dies (Retaliation).
 
-<img src="game_screen.png" width="80%" align="center"/>
+<img src="img/game_screen.png" width="80%" align="center"/>
 
 ## **Setup and Running**
 
@@ -164,7 +162,7 @@ To run this project locally, follow these steps:
     or download werewolves_game-master.zip and unzip to folder werewolves_game.
 
 2.  **Edit** `.env.werewolves` file. Change _FLASK_SECRET_KEY_ to
-    something_long_random, _CORS_ALLOWED_ORIGINS_ to desired game web address
+    something*long_random, \_CORS_ALLOWED_ORIGINS* to desired game web address
     like:
     http://127.0.0.1:5000,http://your.ip.here:5000,https://your.site.here:5000
     OR leave blank to disable CORS and use any site.
@@ -218,7 +216,7 @@ To run this project locally, follow these steps:
 5.  **Run the App:**
 
     ```bash
-    FLASK_APP=app.py flask run
+    FLASK_APP=app.py flask run -h 0.0.0.0
     ```
 
     OR alternatively for better performance and security run the Flask app

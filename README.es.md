@@ -1,4 +1,5 @@
 [🇺🇸 English](README.md) | [🇩🇪 Deutsch](README.de.md)
+![](https://repository-images.githubusercontent.com/1001769057/79681f17-e6ca-4261-bbb5-22fa20221af8)
 
 # **Juego de Hombres Lobo**
 
@@ -27,7 +28,7 @@ lugar, O en persona usando uno o varios dispositivos en modo **Pasar-y-Jugar**.
 
 ## **Características Principales**
 
-<img src="lobby.es.jpg" width="50%" align="right" />
+<img src="img/lobby.es.jpg" width="50%" align="right" />
 
 - **📱 Modo Pasar-y-Jugar:** Juega con un solo teléfono (o varios) que se pasan
   por la habitación. La interfaz guía a los jugadores para confirmar su
@@ -77,7 +78,7 @@ lugar, O en persona usando uno o varios dispositivos en modo **Pasar-y-Jugar**.
 
 ## **Fases del Juego**
 
-<img src="game_over.es.png" width="50%" align="right"/>
+<img src="img/game_over.es.png" width="50%" align="right"/>
 
 - **Fase Nocturna (Cronometrada):**
 
@@ -160,7 +161,7 @@ El juego ahora soporta **24 roles únicos**:
 - **Monstruo:** Inmune a ataques de Lobo. Gana si queda solo con 1 Lobo.
 - **Mielera:** Si muere, el asesino muere (Venganza).
 
-<img src="game_screen.es.png" width="80%" align="center"/>
+<img src="img/game_screen.es.png" width="80%" align="center"/>
 
 ## **Configuración y Ejecución**
 
@@ -176,7 +177,7 @@ Para ejecutar este proyecto localmente, sigue estos pasos:
     o descarga werewolves_game-master.zip y unzip en la carpeta werewolves_game.
 
 2.  **Editar** el archivo `.env.werewolves`. Cambia _FLASK_SECRET_KEY_ a
-    algo_largo_y_raro, _CORS_ALLOWED_ORIGINS_ a la dirección web deseada del
+    algo*largo_y_raro, \_CORS_ALLOWED_ORIGINS* a la dirección web deseada del
     juego como:
     http://127.0.0.1:5000,http://tu.ip.aqui:5000,https://tu.sitio.aqui:5000 O
     deja en blanco para deshabilitar CORS y usar cualquier sitio.
@@ -232,7 +233,7 @@ Para ejecutar este proyecto localmente, sigue estos pasos:
 5.  **Ejecutar la App:**
 
     ```bash
-    FLASK_APP=app.py flask run
+    FLASK_APP=app.py flask run -h 0.0.0.0
     ```
 
     O alternativamente para mejor rendimiento y seguridad ejecuta el app Flask a
