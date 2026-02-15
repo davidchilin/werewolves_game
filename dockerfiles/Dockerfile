@@ -3,12 +3,20 @@
 # docker run -p 5000:5000 --name werewolves_game werewolves_game
 
 FROM python:3.10-slim
-# Copy files to working directory in the container
+
 WORKDIR /werewolves_game
-COPY templates/ app.py favicon.ico requirements.txt .env.werewolves /werewolves_game/
-COPY templates/ /werewolves_game/templates/
+COPY requirements.txt .
+
 # Install any needed packages specified in requirements.txt
-RUN pip3 install --upgrade pip && pip install --no-cache-dir -r requirements.txt
+RUN pip3 install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install gunicorn gevent
+
+COPY templates/ ./templates/
+COPY static/ ./static/
+COPY app.py config.py  game_engine.py  roles.py .env.werewolves ./
+copy img/favicon.ico ./img/
+
 # Expose the port the app runs on
 EXPOSE 5000
 # Run flaksk app or run through gunicorn for production

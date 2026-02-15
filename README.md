@@ -4,7 +4,8 @@ A feature-rich, self-hosted real-time multiplayer social deduction game. Built
 with Python (Flask) and WebSockets, this project has evolved from a simple
 experiment into a fully playable party game supporting 24 unique roles, mobile
 "Pass-and-Play" support, multiple languages, and complex win conditions.
-[Install Instructions](#setup-and-running-the-project)
+[Install Instructions](#setup-and-running-the-project) or
+[Download executable for Linux_x86 and Android](https://github.com/davidchilin/werewolves_game/releases)
 
 ## **Description**
 
@@ -181,15 +182,16 @@ To run this project locally, follow these steps:
     B. Build docker compose and run.
 
     ```bash
-    docker compose up --build
-    docker compose up
+    docker compose -f dockerfiles/docker-compose.yml up --build
+    docker compose -f dockerfiles/docker-compose.yml up
     ```
 
     For nginx docker compose version: edit `.env.werewolves` file: NGINX_PORT to
     desired port (default 5000) and server_name in nginx.conf
 
     ```bash
-    docker compose -f ./docker-compose-nginx.yml up --build
+    docker compose -f dockerfiles/docker-compose-nginx.yml up --build
+    docker compose -f dockerfiles/docker-compose-nginx.yml up
     ```
 
     C. Create and activate a virtual environment:

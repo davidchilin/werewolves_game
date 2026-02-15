@@ -3,6 +3,7 @@
 # Check if both arguments are provided
 if [ -z "$1" ] || [ -z "$2" ]; then
     echo "Error: Missing arguments."
+    echo "copies letsencrtyp certs to local /ssl_certs directory"
     echo "Usage: $0 <my_user> <my_site>"
     exit 1
 fi

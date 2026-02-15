@@ -1,0 +1,9 @@
+copy into this python folder:
+/img/*
+/static/*
+/templates/*.html
+.env.werewolves
+app.py
+config.py
+game_engine.py
+roles.py

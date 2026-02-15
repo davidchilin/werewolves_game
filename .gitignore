@@ -116,3 +116,11 @@ dmypy.json
 pyrightconfig.json
 package-lock.json
 .git/
+
+.gradle/
+local.properties
+.idea/
+build/
+app/build/
+*.iml
+*.DS_Store

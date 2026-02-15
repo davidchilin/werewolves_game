@@ -1,0 +1,66 @@
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("com.chaquo.python")
+}
+
+android {
+    namespace = "com.example.werewolves_game"
+    compileSdk = 34
+
+    defaultConfig {
+        applicationId = "com.example.werewolves_game"
+        minSdk = 24
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0"
+        resConfigs("en", "es", "de")
+
+        ndk {
+            // Python 3.8 supports ALL of these, so this will work on old and new phones
+            //abiFilters += listOf("arm64-v8a")
+            abiFilters.add("armeabi-v7a")
+            //abiFilters.add("arm64-v8a")
+            //abiFilters.add("x86")
+            //abiFilters.add("x86_64")
+        }
+    }
+
+    buildTypes {
+        getByName("release") {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+    }
+
+    // This allows you to use Java 8 features (needed for some libraries)
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+}
+
+chaquopy {
+    defaultConfig {
+        version = "3.10"
+        pip {
+            install("flask")
+            install("flask-socketio")
+            install("jinja2")
+            install("python-dotenv")
+        }
+    }
+}
+
+// THIS BLOCK WAS MISSING. It provides the UI themes.
+dependencies {
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("com.google.android.material:material:1.11.0") // Fixes "Theme.Material3" error
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+}

@@ -1,0 +1,19 @@
+Version: '3.8'
+# docker-compose -f dockerfiles/docker-compose.yml up --build
+
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: dockerfiles/Dockerfile
+    container_name: werewolves_dev
+    ports:
+      - "5000:5000"
+    volumes:
+      - ..:/werewolves_game
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - PYTHONUNBUFFERED=1
+    env_file:
+      - ../.env.werewolves

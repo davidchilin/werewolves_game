@@ -1,11 +1,12 @@
 """
 app.py
-Version: 5.1.0
+Version: 5.2.1 android app version
 """
 import json
 import logging
 import html
 import os
+from os.path import join, dirname, exists
 import time
 import uuid
 from collections import Counter
@@ -27,7 +28,17 @@ from game_engine import *
 from roles import *
 
 # --- App Initialization ---
-load_dotenv(find_dotenv(filename=".env.werewolves"))
+# android web config
+internal_path = join(dirname(__file__), '.env.werewolves')
+external_path = "/storage/emulated/0/Android/data/com.example.werewolves_game/files/config.env"
+
+# android Load external first (overrides), then internal
+if exists(external_path):
+    print(f"Loading custom config from: {external_path}")
+    load_dotenv(external_path, override=True)
+else:
+    print(f"No custom config found at {external_path}, using default.")
+    load_dotenv(internal_path)
 
 app = Flask(__name__)
 # IMPORTANT: In production, this MUST be set as an environment variable in .env.werewolves
@@ -67,13 +78,15 @@ def flatten_dict(d, parent_key='', sep='.'):
 # Load and Flatten Translations immediately on startup
 TRANSLATIONS = {}
 for lang in ["en", "es", "de"]:
+    # Create the full path: /.../app/src/main/python/static/en.json
+    file_path = join(dirname(__file__), "static", f"{lang}.json")
     try:
-        with open(f"static/{lang}.json", "r", encoding="utf-8") as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             raw_data = json.load(f)
             TRANSLATIONS[lang] = flatten_dict(raw_data)
             print(f"Loaded server translations for: {lang}")
     except FileNotFoundError:
-        print(f"Warning: {lang}.json not found. Server translations unavailable for this language.")
+        print(f"Warning: {lang}.json not found at {file_path}")
 
 def t_server(key, lang="en"):
     # 1. Select Dictionary (Fallback to EN if language missing)
@@ -89,14 +102,14 @@ join_attempts = {} # for rate limiting
 
 # Configure CORS for Socket.IO from environment variables
 # This is crucial for security in a production environment.
-origins = os.environ.get("CORS_ALLOWED_ORIGINS", "")
+nginx_port = os.environ.get("NGINX_PORT")
 
-if origins:
+if nginx_port:
     print(f"+++> .env.werewolves FILE FOUND")
 else:
     print(f"---> .env.werewolves FILE NOT FOUND")
 
-nginx_port = os.environ.get("NGINX_PORT")
+origins = os.environ.get("CORS_ALLOWED_ORIGINS", "")
 game_port = os.environ.get("GAME_PORT")
 print(f"NGINX_PORT: ", nginx_port," GAME_PORT: ", game_port)
 
@@ -105,9 +118,28 @@ if game_port and nginx_port and origins:
     origins = origins.replace(f":{nginx_port}", f":{game_port}")
 
 print(f"origins: ", origins)
+
+try:
+    from java import jclass
+    IS_ANDROID = True
+except ImportError:
+    IS_ANDROID = False
+
+# 2. Set Async Mode dynamically
+# Android MUST use 'threading' to avoid crashes.
+# Computer (Gunicorn) should use None (Auto-detect), which will find 'gevent' automatically.
+socketio_async_mode = 'threading' if IS_ANDROID else None
+
+if IS_ANDROID:
+    print("Detected Android environment. Forcing async_mode='threading'.")
+else:
+    print("Detected PC environment. Using auto-detected async_mode (likely gevent/eventlet).")
+
+# 3. Initialize SocketIO with the variable
 socketio = SocketIO(
     app,
     cors_allowed_origins=origins.split(",") if origins else "*",
+    async_mode=socketio_async_mode
 )
 
 
@@ -525,6 +557,11 @@ def favicon():
 def get_roles():
     return jsonify([cls().to_dict() for cls in AVAILABLE_ROLES.values()])
 
+@app.route('/shutdown', methods=['POST'])
+def shutdown():
+    print("Received shutdown request via HTTP...")
+    socketio.stop()
+    return 'OK', 200
 
 # Only disable caching for HTML and JSON (Game Data)
 @app.after_request
@@ -1395,6 +1432,11 @@ def handle_vote_for_rematch():
             emit("rematch_vote_update", payload, to=game["game_code"])
 
 
+# for android
+def run_server(port_number):
+    port = int(port_number)
+    print(f"Starting server on port {port}...")
+    socketio.run(app, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True, debug=False)
+
 if __name__ == "__main__":
-    # This block is for local development only and will not be used by Gunicorn
     socketio.run(app, host="0.0.0.0", debug=False, allow_unsafe_werkzeug=True)
