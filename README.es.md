@@ -1,13 +1,12 @@
 [🇺🇸 English](README.md) | [🇩🇪 Deutsch](README.de.md)
 ![](https://repository-images.githubusercontent.com/1001769057/79681f17-e6ca-4261-bbb5-22fa20221af8)
-
-# **Juego de Hombres Lobo**
-
 Un juego de deducción social multijugador en tiempo real, rico en funciones y
 autoalojado. Construido con Python (Flask) y WebSockets, este proyecto ha
 evolucionado desde un simple experimento hasta un juego de fiesta completamente
 jugable que admite 24 roles únicos, soporte móvil para "Pasar-y-Jugar",
-múltiples idiomas. [Instrucciones de Instalación](#configuración-y-ejecución)
+múltiples idiomas. [Instrucciones de Instalación](#configuración-y-ejecución) o
+Descargar el ejecutable del servidor para
+[Linux(x86) and Android(apk)](https://github.com/davidchilin/werewolves_game/releases)
 
 ## **Descripción**
 
@@ -197,15 +196,16 @@ Para ejecutar este proyecto localmente, sigue estos pasos:
     B. Construir docker compose y ejecutar.
 
     ```bash
-    docker compose up --build
-    docker compose up
+    docker compose -f dockerfiles/docker-compose.yml up --build
+    docker compose -f dockerfiles/docker-compose.yml up
     ```
 
     Para la versión de nginx docker compose: edita el archivo `.env.werewolves`:
     NGINX_PORT al puerto deseado (normalmente 5000) y server_name en nginx.conf
 
     ```bash
-    docker compose -f ./docker-compose-nginx.yml up --build
+    docker compose -f dockerfiles/docker-compose-nginx.yml up --build
+    docker compose -f dockerfiles/docker-compose-nginx.yml up
     ```
 
     C. Crear y activar un entorno virtual:
@@ -277,6 +277,17 @@ Para ejecutar este proyecto localmente, sigue estos pasos:
 3. static/game.js: Agrega la role key (const) y actualiza los colores/íconos en
    updateRoleTooltip.
 4. static/en.json (y otros): Agrega el nombre/descripción al objeto "roles".
+
+### Android App
+
+<img src="img/android.jpg" width="50%" align="right"/>
+
+Check it out en
+[Releases](https://github.com/davidchilin/werewolves_game/releases), solo
+asegúrate de que todos los jugadores estén conectados al mismo WIFI. Todos los
+archiivos para compilar en Android Studio estan en la carpeta **android**. Mueve
+werewolves_game python, static, templates, img a dentro de
+`android/app/src/main/python/`
 
 Distribuido bajo la Licencia GNU GPL v3. Ver [LICENSE](LICENSE) para más
 información.

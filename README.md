@@ -4,8 +4,9 @@ A feature-rich, self-hosted real-time multiplayer social deduction game. Built
 with Python (Flask) and WebSockets, this project has evolved from a simple
 experiment into a fully playable party game supporting 24 unique roles, mobile
 "Pass-and-Play" support, multiple languages, and complex win conditions.
-[Install Instructions](#setup-and-running-the-project) or
-[Download executable for Linux_x86 and Android](https://github.com/davidchilin/werewolves_game/releases)
+[Install Instructions](#setup-and-running-the-project) or Download server
+executable for
+[Linux(x86) and Android(apk)](https://github.com/davidchilin/werewolves_game/releases)
 
 ## **Description**
 
@@ -261,6 +262,16 @@ To run this project locally, follow these steps:
 3. static/game.js: Add the role key (const) and update updateRoleTooltip
    colors/icons.
 4. static/en.json (and others): Add name/description to "roles" object.
+
+### Android App
+
+<img src="img/android.jpg" width="50%" align="right"/>
+
+Check it out in
+[Releases](https://github.com/davidchilin/werewolves_game/releases) , just make
+sure all players are on the same WIFI. All files to build in Android Studio are
+in folder **android**. Move werewolves_game python, static, templates, img into
+`android/app/src/main/python/`
 
 License
 

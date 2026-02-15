@@ -1,14 +1,13 @@
 [🇺🇸 English](README.md) | [🇬🇹 Español](README.es.md)
 ![](https://repository-images.githubusercontent.com/1001769057/79681f17-e6ca-4261-bbb5-22fa20221af8)
-
-# **Werwölfe Spiel**
-
 Ein funktionsreiches, selbst gehostetes Echtzeit-Multiplayer-Spiel für soziale
 Deduktion. Entwickelt mit Python (Flask) und WebSockets, hat sich dieses Projekt
 von einem einfachen Experiment zu einem voll spielbaren Partyspiel entwickelt,
 das 24 einzigartige Rollen, mobile "Pass-and-Play"-Unterstützung, mehrere
 Sprachen und komplexe Siegbedingungen unterstützt.
-[Installationsanleitung](#setup-und-ausführung)
+[Installationsanleitung](#setup-und-ausführung) or Download server executable
+for
+[Linux(x86) and Android(apk)](https://github.com/davidchilin/werewolves_game/releases)
 
 ## **Beschreibung**
 
@@ -220,8 +219,8 @@ Um dieses Projekt lokal auszuführen, befolgen Sie diese Schritte:
     B. Docker Compose bauen und ausführen.
 
     ```bash
-    docker compose up --build
-    docker compose up
+    docker compose -f dockerfiles/docker-compose.yml up --build
+    docker compose -f dockerfiles/docker-compose.yml up
     ```
 
     Für die nginx docker compose Version: bearbeiten Sie die Datei
@@ -229,7 +228,8 @@ Um dieses Projekt lokal auszuführen, befolgen Sie diese Schritte:
     server_name in nginx.conf
 
     ```bash
-    docker compose -f ./docker-compose-nginx.yml up --build
+    docker compose -f dockerfiles/docker-compose-nginx.yml up --build
+    docker compose -f dockerfiles/docker-compose-nginx.yml up
     ```
 
     C. Erstellen und aktivieren Sie eine virtuelle Umgebung:
@@ -302,6 +302,17 @@ Um dieses Projekt lokal auszuführen, befolgen Sie diese Schritte:
    Sie updateRoleTooltip Farben/Icons.
 4. static/en.json (und andere): Fügen Sie Name/Beschreibung zum "roles" Objekt
    hinzu.
+
+### Android App
+
+<img src="img/android.jpg" width="50%" align="right"/>
+
+Sehen Sie sich das unter
+[Releases](https://github.com/davidchilin/werewolves_game/releases) an. Stellen
+Sie einfach sicher, dass sich alle Spieler im gleichen WLAN befinden. Alle in
+Android Studio zu erstellenden Dateien befinden sich in Ordner **android**.
+Bewegen werewolves_game python, static, templates, img hinein
+`android/app/src/main/python/`
 
 Lizenz
 
