@@ -106,10 +106,9 @@ tasks.register<Copy>("syncPythonFiles") {
     }
 }
 
-// 4. Force this task to run before Chaquopy processes Python
-tasks.named("generateDebugPythonRequirements").configure {
-    dependsOn("syncPythonFiles")
-}
-tasks.named("generateReleasePythonRequirements").configure {
-    dependsOn("syncPythonFiles")
+afterEvaluate {
+    // We use findByName() to avoid crashing if a specific task doesn't exist
+    // and afterEvaluate ensures we wait until Android creates the tasks.
+    tasks.findByName("generateDebugPythonRequirements")?.dependsOn("syncPythonFiles")
+    tasks.findByName("generateReleasePythonRequirements")?.dependsOn("syncPythonFiles")
 }
