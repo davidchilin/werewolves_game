@@ -36,20 +36,22 @@ external_path = "/storage/emulated/0/Android/data/com.example.werewolves_game/fi
 if exists(external_path):
     print(f"Loading custom config from: {external_path}")
     load_dotenv(external_path, override=True)
-else:
-    print(f"No custom config found at {external_path}, using default.")
+elif exists(internal_path):
+    print(f"Loading internal config from: {internal_path}")
     load_dotenv(internal_path)
+else:
+    # If neither exists, find_dotenv will try to locate a generic .env
+    print("No specific .env.werewolves found. Searching for default .env...")
+    load_dotenv(find_dotenv())
 
 app = Flask(__name__)
 # IMPORTANT: In production, this MUST be set as an environment variable in .env.werewolves
-app.config["SECRET_KEY"] = os.environ.get(
-    "FLASK_SECRET_KEY")
-
-if not app.config["SECRET_KEY"]:
-    # For local dev, generate a random one (invalidates sessions on restart)
-    # For production, this ensures you don't use the hardcoded Github one.
-    print("WARNING: No FLASK_SECRET_KEY set. Generating temporary key.")
+raw_key = os.environ.get("FLASK_SECRET_KEY")
+if not raw_key:
+    print("WARNING: FLASK_SECRET_KEY not found in environment. Generating a random key for this session.")
     app.config["SECRET_KEY"] = str(uuid.uuid4())
+else:
+    app.config["SECRET_KEY"] = raw_key
 
 # 1. Block JavaScript from reading the cookie (Mitigates XSS)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
@@ -102,25 +104,22 @@ join_attempts = {} # for rate limiting
 
 # Configure CORS for Socket.IO from environment variables
 # This is crucial for security in a production environment.
-nginx_port = os.environ.get("NGINX_PORT")
-
-if nginx_port:
-    print(f"+++> .env.werewolves FILE FOUND")
-else:
-    print(f"---> .env.werewolves FILE NOT FOUND")
-
-origins = os.environ.get("CORS_ALLOWED_ORIGINS", "")
 game_port = os.environ.get("GAME_PORT")
-print(f"NGINX_PORT: ", nginx_port," GAME_PORT: ", game_port)
+nginx_port = os.environ.get("NGINX_PORT", "5000")
 
-# use GAME_PORT if provided via command line to override .env
-if game_port and nginx_port and origins:
-    origins = origins.replace(f":{nginx_port}", f":{game_port}")
+# Default to allowing all origins (*) if CORS_ALLOWED_ORIGINS is missing
+origins_raw = os.environ.get("CORS_ALLOWED_ORIGINS", "*")
 
-print(f"origins: ", origins)
+if origins_raw == "*":
+    origins = "*"
+else:
+    # If a specific origin exists, handle the port replacement logic
+    if game_port and nginx_port:
+        origins_raw = origins_raw.replace(f":{nginx_port}", f":{game_port}")
+    origins = origins_raw.split(",")
 
 try:
-    from java import jclass
+    from java import jclass # type: ignore # pylint: disable=import-error
     IS_ANDROID = True
 except ImportError:
     IS_ANDROID = False
@@ -128,7 +127,7 @@ except ImportError:
 # 2. Set Async Mode dynamically
 # Android MUST use 'threading' to avoid crashes.
 # Computer (Gunicorn) should use None (Auto-detect), which will find 'gevent' automatically.
-socketio_async_mode = 'threading' if IS_ANDROID else None
+socketio_async_mode = 'threading' if IS_ANDROID else 'gevent'
 
 if IS_ANDROID:
     print("Detected Android environment. Forcing async_mode='threading'.")
@@ -138,7 +137,7 @@ else:
 # 3. Initialize SocketIO with the variable
 socketio = SocketIO(
     app,
-    cors_allowed_origins=origins.split(",") if origins else "*",
+    cors_allowed_origins=origins,
     async_mode=socketio_async_mode
 )
 
@@ -1434,7 +1433,11 @@ def handle_vote_for_rematch():
 
 # for android
 def run_server(port_number):
-    port = int(port_number)
+    try:
+        port = int(port_number) if port_number else 5000
+    except (ValueError, TypeError):
+        port = 5000
+
     print(f"Starting server on port {port}...")
     socketio.run(app, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True, debug=False)
 
