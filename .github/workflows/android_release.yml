@@ -27,7 +27,7 @@ jobs:
     # Decode the secret back into a file
     - name: Decode Keystore
       run: |
-        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.jks
+        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/release.jks
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
