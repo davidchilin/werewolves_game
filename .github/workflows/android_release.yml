@@ -8,6 +8,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./android
     permissions:
       contents: write # Required to create the Release
 
@@ -27,10 +30,10 @@ jobs:
         echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.jks
 
     - name: Grant execute permission for gradlew
-      run: chmod +x android/gradlew
+      run: chmod +x gradlew
 
     - name: Build Signed Release APK
-      run: cd android && ./gradlew assembleRelease
+      run: ./gradlew assembleRelease
       env:
         SIGNING_KEY_STORE_PATH: release.jks
         SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
