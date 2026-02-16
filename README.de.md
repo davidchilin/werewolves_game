@@ -305,7 +305,7 @@ Um dieses Projekt lokal auszuführen, befolgen Sie diese Schritte:
 
 ### Android App
 
-<img src="img/android.jpg" width="50%" align="right"/>
+<img src="img/android.jpg" width="25%" align="right"/>
 
 Sehen Sie sich das unter
 [Releases](https://github.com/davidchilin/werewolves_game/releases) an. Stellen

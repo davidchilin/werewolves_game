@@ -117,6 +117,7 @@ pyrightconfig.json
 package-lock.json
 .git/
 
+# Android
 .gradle/
 local.properties
 .idea/

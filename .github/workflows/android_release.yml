@@ -1,0 +1,47 @@
+name: Android Release Build
+
+on:
+  push:
+    tags:
+      - 'v*' # Only build release when you push a tag like v1.0
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to create the Release
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
+
+    # Decode the secret back into a file
+    - name: Decode Keystore
+      run: |
+        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.jks
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x android/gradlew
+
+    - name: Build Signed Release APK
+      run: cd android && ./gradlew assembleRelease
+      env:
+        SIGNING_KEY_STORE_PATH: release.jks
+        SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        SIGNING_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+
+    - name: Release to GitHub
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: android/app/build/outputs/apk/release/app-release.apk
+        draft: false
+        prerelease: false
+        generate_release_notes: true

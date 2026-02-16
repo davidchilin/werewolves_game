@@ -2,10 +2,10 @@
 ![](https://repository-images.githubusercontent.com/1001769057/79681f17-e6ca-4261-bbb5-22fa20221af8)
 A feature-rich, self-hosted real-time multiplayer social deduction game. Built
 with Python (Flask) and WebSockets, this project has evolved from a simple
-experiment into a fully playable party game supporting 24 unique roles, mobile
-"Pass-and-Play" support, multiple languages, and complex win conditions.
-[Install Instructions](#setup-and-running-the-project) or Download server
-executable for
+experiment into a fully playable party game supporting 24 unique roles, no
+Narator needed, mobile "Pass-and-Play" support, multiple languages, and complex
+win conditions. [Install Instructions](#setup-and-running-the-project) or
+Download server executable for
 [Linux(x86) and Android(apk)](https://github.com/davidchilin/werewolves_game/releases)
 
 ## **Description**
@@ -26,7 +26,7 @@ OR in person using one to several devices in **Pass-and-Play** mode.
 
 ## **Core Features**
 
-<img src="img/lobby.jpg" width="50%" align="right" />
+<img src="img/lobby.jpg" width="25%" align="right" />
 
 - **📱 Pass-and-Play Mode:** Play with a single phone (or several) passed around
   the room. The UI guides players to confirm their identity before revealing
