@@ -303,6 +303,12 @@ Um dieses Projekt lokal auszuführen, befolgen Sie diese Schritte:
 4. static/en.json (und andere): Fügen Sie Name/Beschreibung zum "roles" Objekt
    hinzu.
 
+### Lokalisierung / Sprachenübersetzung hinzufügen
+
+Um Ihre Sprache hinzuzufügen, müssen Sie eine Sprachdatei hinzufügen, zum
+Beispiel „static/de.json“ für Deutsch UND „templates/index.html“ bearbeiten
+(fügen Sie „option value“ und „loginTranslations“ hinzu).
+
 ### Android App
 
 <img src="img/android.jpg" width="25%" align="right"/>

@@ -47,8 +47,8 @@ android {
     buildTypes {
         getByName("release") {
             signingConfig = signingConfigs.getByName("release")
-            isMinifyEnabled = true
-            isShrinkResources = true
+            isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
@@ -93,7 +93,7 @@ tasks.register<Copy>("syncPythonFiles") {
         include("static/**")      // JSON translations
         include("img/favicon.ico")         // Icon
         include("img/ic_launcher_werewolf.png")         // Icon
-        //include(".env.werewolves") // an Android version of .env.werewolves is already there.
+        include(".env.werewolves")
         exclude("venv/**", ".git/**", "android/**") // Don't copy junk
     }
 

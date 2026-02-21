@@ -263,6 +263,12 @@ To run this project locally, follow these steps:
    colors/icons.
 4. static/en.json (and others): Add name/description to "roles" object.
 
+### Add Localization / Language Translation
+
+In order to add your language you must add a language file, for example
+static/de.json for Deutsch AND edit templates/index.html (add "option value" and
+loginTranslations)
+
 ### Android App
 
 <img src="img/android.jpg" width="25%" align="right"/>

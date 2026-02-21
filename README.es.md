@@ -278,6 +278,12 @@ Para ejecutar este proyecto localmente, sigue estos pasos:
    updateRoleTooltip.
 4. static/en.json (y otros): Agrega el nombre/descripción al objeto "roles".
 
+### Agregar localización / Traducción de Idiomas
+
+Para agregar tu idioma debe agregar un archivo de idioma, por ejemplo
+static/de.json para Deutsch Y editar templates/index.html (agrege "option value"
+y loginTranslations)
+
 ### Android App
 
 <img src="img/android.jpg" width="25%" align="right"/>

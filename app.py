@@ -105,6 +105,7 @@ join_attempts = {} # for rate limiting
 # Configure CORS for Socket.IO from environment variables
 # This is crucial for security in a production environment.
 game_port = os.environ.get("GAME_PORT")
+print(f"GAME_PORT: ", game_port)
 nginx_port = os.environ.get("NGINX_PORT", "5000")
 
 # Default to allowing all origins (*) if CORS_ALLOWED_ORIGINS is missing
@@ -118,29 +119,31 @@ else:
         origins_raw = origins_raw.replace(f":{nginx_port}", f":{game_port}")
     origins = origins_raw.split(",")
 
+# 2. Set Async Mode dynamically
+# Android MUST use 'threading' to avoid crashes.
+# Computer (Gunicorn) should use None (Auto-detect), which will find 'gevent' automatically.
 try:
     from java import jclass # type: ignore # pylint: disable=import-error
     IS_ANDROID = True
 except ImportError:
     IS_ANDROID = False
 
-# 2. Set Async Mode dynamically
-# Android MUST use 'threading' to avoid crashes.
-# Computer (Gunicorn) should use None (Auto-detect), which will find 'gevent' automatically.
-socketio_async_mode = 'threading' if IS_ANDROID else 'gevent'
-
 if IS_ANDROID:
-    print("Detected Android environment. Forcing async_mode='threading'.")
+    socketio_async_mode = 'threading'
+    print(f"Detected Android environment. Forcing async_mode: {socketio_async_mode}.")
+    origins = "*"
 else:
-    print("Detected PC environment. Using auto-detected async_mode (likely gevent/eventlet).")
+    socketio_async_mode = None
+    print(f"Detected PC environment. async_mode: {socketio_async_mode}")
+
+print(f"Origins: ", origins)
 
 # 3. Initialize SocketIO with the variable
 socketio = SocketIO(
     app,
     cors_allowed_origins=origins,
-    async_mode=socketio_async_mode
+    async_mode=socketio_async_mode # type: ignore
 )
-
 
 # Game Dictionary stores connection/wrapper info
 game = {
