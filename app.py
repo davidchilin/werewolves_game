@@ -8,6 +8,7 @@ import html
 import os
 from os.path import join, dirname, exists
 import time
+import traceback # for debugging
 import uuid
 from collections import Counter
 from dotenv import find_dotenv, load_dotenv
