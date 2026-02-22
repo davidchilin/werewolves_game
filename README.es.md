@@ -5,7 +5,7 @@ autoalojado. Construido con Python (Flask) y WebSockets, este proyecto ha
 evolucionado desde un simple experimento hasta un juego de fiesta completamente
 jugable que admite 24 roles únicos, soporte móvil para "Pasar-y-Jugar",
 múltiples idiomas. [Instrucciones de Instalación](#configuración-y-ejecución) o
-Descargar el ejecutable del servidor para
+Descargar el programa del servidor para
 [Linux(x86) and Android(apk)](https://github.com/davidchilin/werewolves_game/releases)
 
 ## **Descripción**
@@ -261,7 +261,7 @@ Para ejecutar este proyecto localmente, sigue estos pasos:
     para simular diferentes jugadores uniéndose al juego. El Código de Juego
     Inicial es `W` y el primer jugador en unirse es el **Admin**.
 
-### Configuración (config.py)
+### Configuración de Juego (config.py)
 
 - DEFAULT_LANGUAGE: Configurar como "es" o "de" para cambiar el idioma en que
   empieza el servidor.
@@ -288,12 +288,13 @@ y loginTranslations)
 
 <img src="img/android.jpg" width="25%" align="right"/>
 
-Check it out en
-[Releases](https://github.com/davidchilin/werewolves_game/releases), solo
-asegúrate de que todos los jugadores estén conectados al mismo WIFI. Todos los
-archiivos para compilar en Android Studio estan en la carpeta **android**. Mueve
-werewolves_game python, static, templates, img a dentro de
-`android/app/src/main/python/`
+Miralos en [Releases](https://github.com/davidchilin/werewolves_game/releases),
+hecho con github action. Solo asegúrate de que todos los jugadores estén
+conectados al mismo WIFI. Todos los archiivos para compilar en Android Studio
+estan en la carpeta **android**. Mueve werewolves_game python, static,
+templates, img a dentro de `android/app/src/main/python/`
+
+### Licencia
 
 Distribuido bajo la Licencia GNU GPL v3. Ver [LICENSE](LICENSE) para más
 información.

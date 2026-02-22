@@ -5,9 +5,9 @@ Deduktion. Entwickelt mit Python (Flask) und WebSockets, hat sich dieses Projekt
 von einem einfachen Experiment zu einem voll spielbaren Partyspiel entwickelt,
 das 24 einzigartige Rollen, mobile "Pass-and-Play"-Unterstützung, mehrere
 Sprachen und komplexe Siegbedingungen unterstützt.
-[Installationsanleitung](#setup-und-ausführung) or Download server executable
-for
-[Linux(x86) and Android(apk)](https://github.com/davidchilin/werewolves_game/releases)
+[Installationsanleitung](#setup-und-ausführung) oder Serverprogramm
+herunterladen für
+[Android(apk) und Linux(x86)](https://github.com/davidchilin/werewolves_game/releases)
 
 ## **Beschreibung**
 
@@ -285,7 +285,7 @@ Um dieses Projekt lokal auszuführen, befolgen Sie diese Schritte:
     verschiedene Spieler zu simulieren, die dem Spiel beitreten. Der anfängliche
     Spielcode ist `W` und der erste Spieler, der beitritt, ist **Admin**.
 
-### Konfiguration (config.py)
+### Spielkonfiguration (config.py)
 
 - DEFAULT_LANGUAGE: Auf "es" oder "de" setzen, um den Serverstandard zu ändern.
 - TIME_NIGHT / TIME_ACCUSATION: Standarddauer ändern (Sekunden).
@@ -320,7 +320,7 @@ Android Studio zu erstellenden Dateien befinden sich in Ordner **android**.
 Bewegen werewolves_game python, static, templates, img hinein
 `android/app/src/main/python/`
 
-Lizenz
+### Lizenz
 
 Verbreitet unter der GNU GPL v3 Lizenz. Siehe [LICENSE](LICENSE) für weitere
 Informationen.

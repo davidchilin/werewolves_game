@@ -5,8 +5,8 @@ with Python (Flask) and WebSockets, this project has evolved from a simple
 experiment into a fully playable party game supporting 24 unique roles, no
 Narator needed, mobile "Pass-and-Play" support, multiple languages, and complex
 win conditions. [Install Instructions](#setup-and-running-the-project) or
-Download server executable for
-[Linux(x86) and Android(apk)](https://github.com/davidchilin/werewolves_game/releases)
+Download server program for
+[Android(apk) and Linux(x86)](https://github.com/davidchilin/werewolves_game/releases)
 
 ## **Description**
 
@@ -247,7 +247,7 @@ To run this project locally, follow these steps:
     different players joining the game. Initial Game Code is `W` and first
     player to join is **Admin**.
 
-### Configureation (config.py)
+### Game Configuration (config.py)
 
 - DEFAULT_LANGUAGE: Set to "es" or "de" to change the server default.
 - TIME_NIGHT / TIME_ACCUSATION: Change default durations (seconds).
@@ -274,12 +274,12 @@ loginTranslations)
 <img src="img/android.jpg" width="25%" align="right"/>
 
 Check it out in
-[Releases](https://github.com/davidchilin/werewolves_game/releases) , just make
-sure all players are on the same WIFI. All files to build in Android Studio are
-in folder **android**. Move werewolves_game python, static, templates, img into
-`android/app/src/main/python/`
+[Releases](https://github.com/davidchilin/werewolves_game/releases), autobuild
+using github actions! Just make sure all players are on the same WIFI. All files
+to build in Android Studio are in folder **android**. Move werewolves_game
+python, static, templates, img into `android/app/src/main/python/`
 
-License
+### License
 
 Distributed under the GNU GPL v3 License. See [LICENSE](LICENSE) for more
 information.
