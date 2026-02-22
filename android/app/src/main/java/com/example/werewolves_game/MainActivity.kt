@@ -10,6 +10,7 @@ import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
+import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.ImageView
@@ -166,7 +167,10 @@ class MainActivity : AppCompatActivity() {
         // Pass 'this' (the Activity) to Python so it can call appendLog
         python.getModule("builtins").put("mainActivity", this)
 
-        python.execute("""
+        val sys = python.getModule("sys")
+        val exec = python.getModule("builtins").get("exec")
+
+        val pyCode = """
             import sys
             from android.util import Log
             import mainActivity
@@ -186,7 +190,9 @@ class MainActivity : AppCompatActivity() {
 
             sys.stdout = LogStream("python.stdout", True)
             sys.stderr = LogStream("python.stderr", False)
-        """.trimIndent())
+        """.trimIndent()
+
+        exec.call(pyCode)
     }
 
     private fun isWifiConnected(): Boolean {
