@@ -163,36 +163,37 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupPythonLogging() {
-        val python = Python.getInstance()
-        // Pass 'this' (the Activity) to Python so it can call appendLog
-        python.getModule("builtins").put("mainActivity", this)
+        try {
+            val python = Python.getInstance()
+            // Ensure mainActivity is available to Python
+            python.getModule("builtins").put("mainActivity", this)
 
-        val sys = python.getModule("sys")
-        val exec = python.getModule("builtins").get("exec")
+            // Use a simpler script that doesn't trigger deep system frame checks
+            val pyCode = """
+import sys
+from android.util import Log
+import mainActivity
 
-        val pyCode = """
-            import sys
-            from android.util import Log
-            import mainActivity
+class LogStream:
+    def write(self, s):
+        if s and s.strip():
+            Log.i("python", s)
+            try:
+                mainActivity.appendLog(s)
+            except:
+                pass
+    def flush(self):
+        pass
 
-            class LogStream:
-                def __init__(self, tag, is_stdout=True):
-                    self.tag = tag
-                    self.is_stdout = is_stdout
-                def write(self, s):
-                    if s.strip():
-                        # 1. Log to Android System (for adb logcat)
-                        Log.i(self.tag, s)
-                        # 2. Log to App UI
-                        mainActivity.appendLog(s)
-                def flush(self):
-                    pass
+sys.stdout = LogStream()
+sys.stderr = LogStream()
+           """.trimIndent()
 
-            sys.stdout = LogStream("python.stdout", True)
-            sys.stderr = LogStream("python.stderr", False)
-        """.trimIndent()
-
-        exec?.call(pyCode)
+            val exec = python.getModule("builtins").get("exec")
+            exec?.call(pyCode)
+        } catch (e: Exception) {
+            Log.e("LOG_SETUP", "Failed to setup logging: ${e.message}")
+        }
     }
 
     private fun isWifiConnected(): Boolean {
