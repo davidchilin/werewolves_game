@@ -163,8 +163,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun isWifiConnected(): Boolean {
-        val wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
-        return wifiManager.isWifiEnabled && wifiManager.connectionInfo.networkId != -1
+        val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        // Check if Wi-Fi is enabled AND we have a valid IP Address assigned
+        return wifiManager.isWifiEnabled && wifiManager.connectionInfo.ipAddress != 0
     }
 
     private fun resetUI(start: Button, stop: Button, status: TextView, portInput: TextInputEditText) {
