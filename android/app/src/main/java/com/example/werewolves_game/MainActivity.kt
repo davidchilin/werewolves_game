@@ -192,7 +192,7 @@ class MainActivity : AppCompatActivity() {
             sys.stderr = LogStream("python.stderr", False)
         """.trimIndent()
 
-        exec.call(pyCode)
+        exec?.call(pyCode)
     }
 
     private fun isWifiConnected(): Boolean {
