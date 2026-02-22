@@ -113,14 +113,14 @@ class MainActivity : AppCompatActivity() {
                 } catch (e: PyException) {
                     appendLog("FATAL PYTHON CRASH: ${e.message}")
                     runOnUiThread {
-                        tvStatus.text = "Python Crash:\n${e.message}"
                         resetUI(btnStart, btnStop, tvStatus, etPort)
+                        tvStatus.text = "Python Crash:\n${e.message}"
                     }
                 } catch (e: Exception) {
                     appendLog("JAVA THREAD ERROR: ${e.message}")
                     runOnUiThread {
-                        tvStatus.text = "Java Error: ${e.message}"
                         resetUI(btnStart, btnStop, tvStatus, etPort)
+                        tvStatus.text = "Java Error: ${e.message}"
                     }
                 }
             }
@@ -144,18 +144,18 @@ class MainActivity : AppCompatActivity() {
 
                     runOnUiThread {
                         if (responseCode == 200) {
-                            Toast.makeText(this, "Server Stopped", Toast.LENGTH_SHORT).show()
                             resetUI(btnStart, btnStop, tvStatus,etPort)
+                            Toast.makeText(this, "Server Stopped", Toast.LENGTH_SHORT).show()
                         } else {
-                            tvStatus.text = "Status: Error $responseCode"
                             // Force UI reset anyway if the server is unreachable
                             resetUI(btnStart, btnStop, tvStatus, etPort)
+                            tvStatus.text = "Status: Error $responseCode"
                         }
                     }
                 } catch (e: Exception) {
                     runOnUiThread {
-                        Toast.makeText(this, "Server unreachable, UI reset", Toast.LENGTH_SHORT).show()
                         resetUI(btnStart, btnStop, tvStatus,etPort)
+                        Toast.makeText(this, "Server unreachable, UI reset", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
