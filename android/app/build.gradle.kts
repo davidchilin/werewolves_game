@@ -13,7 +13,7 @@ android {
         minSdk = 24
         targetSdk = 34
         versionCode = 1
-        versionName = "1.0"
+        versionName = System.getenv("VERSION_NAME") ?: "1.0"
         resConfigs("en", "es", "de")
 
         ndk {
@@ -73,6 +73,31 @@ chaquopy {
             install("python-dotenv")
         }
     }
+
+    sourceSets {
+        getByName("main") {
+            // Tells Chaquopy to look in the root folder of your GitHub repository
+            srcDir("../../")
+
+            // EXPLICITLY INCLUDE ALL NECESSARY FILES:
+            include("app.py")
+            include("config.py")
+            include("game_engine.py")
+            include("roles.py")
+            include(".env.werewolves")
+
+            // INCLUDE FOLDERS (Using ** to get all files inside them)
+            include("static/**")
+            include("templates/**")
+            include("img/**")
+
+            // EXCLUDE HEAVY/UNNECESSARY FOLDERS SO THE APK DOESN'T BLOAT
+            exclude(".venv/**")
+            exclude("android/**")
+            exclude(".git/**")
+            exclude("__pycache__/**")
+        }
+    }
 }
 
 // THIS BLOCK WAS MISSING. It provides the UI themes.
@@ -84,31 +109,3 @@ dependencies {
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
 }
 
-// AUTOMATION: Copy Python files from Root Project to Android App before building
-tasks.register<Copy>("syncPythonFiles") {
-    // 1. Where to copy FROM (Your Root Directory, 3 levels up from this file)
-    from("../../../") {
-        include("*.py")           // app.py, config.py, etc.
-        include("templates/*.html")   // HTML files
-        include("static/**")      // JSON translations
-        include("img/favicon.ico")         // Icon
-        include("img/ic_launcher_werewolf.png")         // Icon
-        include(".env.werewolves")
-        exclude("venv/**", ".git/**", "android/**") // Don't copy junk
-    }
-
-    // 2. Where to copy TO
-    into("src/main/python")
-
-    // 3. Print a message so you know it worked
-    doFirst {
-        println("🔥 SYNCING PYTHON FILES FROM ROOT TO ANDROID...")
-    }
-}
-
-afterEvaluate {
-    // We use findByName() to avoid crashing if a specific task doesn't exist
-    // and afterEvaluate ensures we wait until Android creates the tasks.
-    tasks.findByName("generateDebugPythonRequirements")?.dependsOn("syncPythonFiles")
-    tasks.findByName("generateReleasePythonRequirements")?.dependsOn("syncPythonFiles")
-}

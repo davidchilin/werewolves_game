@@ -35,6 +35,9 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        val tvTitle = findViewById<TextView>(R.id.tvTitle)
+        val versionName = packageManager.getPackageInfo(packageName, 0).versionName
+        tvTitle.text = "Werewolves Server $versionName"
 
         // 1. Setup UI Elements
         val btnStart = findViewById<Button>(R.id.btnStart)

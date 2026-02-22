@@ -40,6 +40,7 @@ jobs:
     - name: Build Signed Release APK
       run: ./gradlew assembleRelease
       env:
+        VERSION_NAME: ${{ github.ref_name }}
         SIGNING_KEY_STORE_PATH: release.jks
         SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
