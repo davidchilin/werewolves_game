@@ -1,0 +1,1 @@
+Multiplayer server for classic "Mafia" game Werewolves. Plays over same WiFi.

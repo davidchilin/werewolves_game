@@ -1,0 +1,17 @@
+werewolves_game is a feature-rich, self-hosted real-time multiplayer social deduction game. This app runs a local web server right on your Android device, allowing you and your friends to play the classic party game Werewolves (also known as Mafia) using your own phone browsers—no internet connection required, just a shared Wi-Fi network!
+
+Best of all, the app acts as the automated game engine, meaning **no human Narrator is needed**. Everyone gets to play!
+
+**How to Play:**
+Start the server from the app, and it will generate a QR code and a local IP address. Your friends (minimum of 4, ideally 7+) join the lobby via their web browsers. Once started, the game secretly assigns roles and automatically cycles through "Night" and "Day" phases, handling all the complex death, voting, and win logic for you.
+
+**Core Features:**
+* **Automated Game Loop:** The server handles all phases, night actions, and win checks (Villagers win, Wolves win, or Solo wins).
+* **📱 Pass-and-Play Mode:** Only have one device? Play by passing a single phone around the room with a secure UI that guides players to confirm their identity before viewing their secret role.
+* **👻 Ghost Mode:** Keep eliminated players engaged! Ghosts have a small chance to participate during the accusation and lynch voting phases.
+* **🎭 24 Unique Roles:** Play with complex roles like the Alpha Werewolf, Prostitute, Lawyer, and Serial Killer.
+* **🏆 Solo Win Conditions:** Neutral roles like the Monster, Fool, or Demented Villager can win the game alone, ignoring traditional team allegiances.
+* **🌍 Multiple Languages:** Play a single game with the UI translated into multiple languages simultaneously.
+* **Robust Admin Controls:** The lobby admin can adjust timer durations, kick players, and toggle game rules on the fly.
+
+Gather your friends, connect to the same Wi-Fi, and find out who among you is the werewolf!

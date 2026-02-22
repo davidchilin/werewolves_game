@@ -131,25 +131,5 @@
             android:padding="8dp"
             android:visibility="gone" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Debug Console:"
-            android:textStyle="bold"
-            android:textColor="#FFFFFF"
-            android:layout_marginTop="32dp"
-            android:layout_marginBottom="4dp"/>
-
-        <TextView
-            android:id="@+id/tvDebugLog"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:fontFamily="monospace"
-            android:text="> System Ready..."
-            android:textColor="#AAAAAA"
-            android:background="#222222"
-            android:padding="12dp"
-            android:textSize="12sp" />
-
     </LinearLayout>
 </ScrollView>

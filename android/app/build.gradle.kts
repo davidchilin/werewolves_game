@@ -67,6 +67,11 @@ chaquopy {
     defaultConfig {
         version = "3.10"
         pip {
+            if (file("python_wheels").exists()) {
+                    options("--find-links", "python_wheels", "--no-index")
+                }
+
+
             install("flask")
             install("flask-socketio")
             install("jinja2")

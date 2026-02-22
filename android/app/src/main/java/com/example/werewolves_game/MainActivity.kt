@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
-import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
@@ -19,8 +18,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.chaquo.python.android.AndroidPlatform
-import com.chaquo.python.Python
 import com.chaquo.python.PyException
+import com.chaquo.python.Python
 import com.google.android.material.textfield.TextInputEditText
 import com.google.zxing.BarcodeFormat
 import com.journeyapps.barcodescanner.BarcodeEncoder
@@ -38,7 +37,7 @@ class MainActivity : AppCompatActivity() {
 
         val tvVersion = findViewById<TextView>(R.id.tvVersion)
         val versionName = packageManager.getPackageInfo(packageName, 0).versionName
-        tvVersion.text = "v$versionName"
+        tvVersion.text = "$versionName"
 
         // 1. Setup UI Elements
         val btnStart = findViewById<Button>(R.id.btnStart)
@@ -58,7 +57,7 @@ class MainActivity : AppCompatActivity() {
         btnStart.setOnClickListener {
             val portText = etPort.text.toString()
             if (portText.isEmpty()) {
-                etPort.error = "Enter a $@%^ port#!"
+                etPort.error = "Enter a $@%^ port #!"
                 return@setOnClickListener
             }
 
@@ -100,22 +99,17 @@ class MainActivity : AppCompatActivity() {
             // Start Python in a background thread
             serverThread = thread {
                 try {
-                    appendLog("Initializing Python Instance...")
                     val python = Python.getInstance()
-                    appendLog("Loading app.py module...")
                     val pythonModule = python.getModule("app")
-
-                    appendLog("Starting Flask-SocketIO server on port $portText...")
-                    // Passing the port as a string is safer to avoid Kotlin NumberFormatExceptions
                     pythonModule.callAttr("run_server", portText)
                 } catch (e: PyException) {
-                    appendLog("FATAL PYTHON CRASH: ${e.message}")
+                    Log.e("PYTHON_CRASH", e.message ?: "Unknown Python error")
                     runOnUiThread {
                         resetUI(btnStart, btnStop, tvStatus, etPort)
                         tvStatus.text = "Python Crash:\n${e.message}"
                     }
                 } catch (e: Exception) {
-                    appendLog("JAVA THREAD ERROR: ${e.message}")
+                    Log.e("JAVA_CRASH", e.message ?: "Unknown Java error")
                     runOnUiThread {
                         resetUI(btnStart, btnStop, tvStatus, etPort)
                         tvStatus.text = "Java Error: ${e.message}"
@@ -161,22 +155,9 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         } catch (e: Exception) {
-            android.util.Log.e("IP_ERROR", "Error getting network IP: ${e.message}")
+            Log.e("IP_ERROR", "Error getting network IP: ${e.message}")
         }
         return "0.0.0.0"
-    }
-
-    private fun appendLog(message: String) {
-        runOnUiThread {
-            val tvDebugLog = findViewById<TextView>(R.id.tvDebugLog)
-            val mainScrollView = findViewById<ScrollView>(R.id.mainScrollView)
-            // Append the message with a timestamp
-            val timestamp = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date())
-            tvDebugLog.append("\n[$timestamp] $message")
-
-            // Auto-scroll to the bottom so the latest log is always visible
-            mainScrollView?.post { mainScrollView.fullScroll(View.FOCUS_DOWN) }
-        }
     }
 
     private fun checkBatteryOptimization() {
@@ -190,7 +171,7 @@ class MainActivity : AppCompatActivity() {
                 startActivity(intent)
             } catch (e: Exception) {
                 // Some devices block this intent
-                Toast.makeText(this, "Enable 'Unrestricted Battery' so server can still work in background.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Enable 'Unrestricted Battery' so game can still work in background.", Toast.LENGTH_LONG).show()
             }
         }
     }

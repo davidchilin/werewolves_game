@@ -1,0 +1,1 @@
+Servidor multijugador del clásico juego Werewolves (Mafia) para WiFi local.

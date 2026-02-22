@@ -26,7 +26,7 @@ OR in person using one to several devices in **Pass-and-Play** mode.
 
 ## **Core Features**
 
-<img src="img/lobby.jpg" width="25%" align="right" />
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/lobby.jpg" width="25%" align="right"/>
 
 - **📱 Pass-and-Play Mode:** Play with a single phone (or several) passed around
   the room. The UI guides players to confirm their identity before revealing
@@ -73,7 +73,7 @@ OR in person using one to several devices in **Pass-and-Play** mode.
 
 ## **Game Phases**
 
-<img src="img/game_over.png" width="50%" align="right"/>
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/game_over.png" width="50%" align="right"/>
 
 - **Night Phase (Timed):**
 
@@ -148,7 +148,7 @@ The game now supports **24 unique roles**:
 - **Monster:** Immune to Wolf attacks. Wins if left alone with 1 Wolf.
 - **Honeypot:** If killed, the killer dies (Retaliation).
 
-<img src="img/game_screen.png" width="80%" align="center"/>
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/game_screen.png" width="80%" align="center"/>
 
 ## **Setup and Running**
 
@@ -271,7 +271,7 @@ loginTranslations)
 
 ### Android App
 
-<img src="img/android.jpg" width="25%" align="right"/>
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/android.jpg" width="50%" align="right"/>
 
 Check it out in
 [Releases](https://github.com/davidchilin/werewolves_game/releases), autobuild

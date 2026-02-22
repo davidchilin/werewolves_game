@@ -1,0 +1,17 @@
+werewolves_game es un juego de deducción social multijugador en tiempo real, autoalojado y repleto de funciones. Esta aplicación ejecuta un servidor web local directamente en tu dispositivo Android, lo que te permite a ti y a tus amigos jugar al clásico juego de fiesta Werewolves (también conocido como Mafia) utilizando los navegadores de vuestros propios teléfonos: ¡no se requiere conexión a Internet, solo una red Wi-Fi compartida!
+
+Lo mejor de todo es que la aplicación actúa como el motor de juego automatizado, lo que significa que **no se necesita un narrador humano**. ¡Todos pueden jugar!
+
+**Cómo jugar:**
+Inicia el servidor desde la aplicación y se generará un código QR y una dirección IP local. Tus amigos (mínimo de 4, idealmente más de 7) se unen a la sala a través de sus navegadores web. Una vez que comienza, el juego asigna roles en secreto y avanza automáticamente a través de las fases de "Noche" y "Día", manejando toda la compleja lógica de muertes, votaciones y victorias por ti.
+
+**Características principales:**
+* **Ciclo de juego automatizado:** El servidor maneja todas las fases, las acciones nocturnas y las comprobaciones de victoria (Ganan los Cuidadanos, Ganan los Lobos o Victorias en Solitario).
+* **📱 Modo "Pasar y Jugar" (Pass-and-Play):** ¿Solo tienes un dispositivo? Juega pasando un solo teléfono por la habitación con una interfaz de usuario segura que guía a los jugadores a confirmar su identidad antes de ver su rol secreto.
+* **👻 Modo Fantasma:** ¡Mantén involucrados a los jugadores eliminados! Los fantasmas tienen una pequeña posibilidad de participar durante las fases de acusación y votación de linchamiento.
+* **🎭 24 Roles Únicos:** Juega con roles complejos como el Hombre Lobo Alfa, la Prostituta, el Abogado y el Asesino.
+* **🏆 Condiciones de Victoria en Solitario:** Roles neutrales como el Monstruo, el Pendejo o el Cuidadano Demente pueden ganar el juego solos, ignorando las alianzas de equipo tradicionales.
+* **🌍 Múltiples Idiomas:** Juega una sola partida con la interfaz traducida a varios idiomas simultáneamente.
+* **Controles de Administrador Robustos:** El administrador de la sala puede ajustar la duración de los temporizadores, expulsar jugadores y activar o desactivar las reglas del juego sobre la marcha.
+
+¡Reúne a tus amigos, conéctate al mismo Wi-Fi y descubre quién de vosotros es el hombre lobo!

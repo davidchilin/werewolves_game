@@ -27,7 +27,7 @@ lugar, O en persona usando uno o varios dispositivos en modo **Pasar-y-Jugar**.
 
 ## **Características Principales**
 
-<img src="img/lobby.es.jpg" width="50%" align="right" />
+<img src="fastlane/metadata/android/es/images/phoneScreenshots/lobby.es.jpg" width="50%" align="right"/>
 
 - **📱 Modo Pasar-y-Jugar:** Juega con un solo teléfono (o varios) que se pasan
   por la habitación. La interfaz guía a los jugadores para confirmar su
@@ -77,7 +77,7 @@ lugar, O en persona usando uno o varios dispositivos en modo **Pasar-y-Jugar**.
 
 ## **Fases del Juego**
 
-<img src="img/game_over.es.png" width="50%" align="right"/>
+<img src="fastlane/metadata/android/es/images/phoneScreenshots/game_over.es.png" width="50%" align="right"/>
 
 - **Fase Nocturna (Cronometrada):**
 
@@ -160,7 +160,7 @@ El juego ahora soporta **24 roles únicos**:
 - **Monstruo:** Inmune a ataques de Lobo. Gana si queda solo con 1 Lobo.
 - **Mielera:** Si muere, el asesino muere (Venganza).
 
-<img src="img/game_screen.es.png" width="80%" align="center"/>
+<img src="fastlane/metadata/android/es/images/phoneScreenshots/game_screen.es.png" width="80%" align="center"/>
 
 ## **Configuración y Ejecución**
 
@@ -286,7 +286,7 @@ y loginTranslations)
 
 ### Android App
 
-<img src="img/android.jpg" width="25%" align="right"/>
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/android.jpg" width="50%" align="right"/>
 
 Miralos en [Releases](https://github.com/davidchilin/werewolves_game/releases),
 hecho con github action. Solo asegúrate de que todos los jugadores estén
