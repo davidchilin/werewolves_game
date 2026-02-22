@@ -1,6 +1,6 @@
 """
 app.py
-Version: 5.2.1 android app version
+Version: 5.2.3 android app working
 """
 import json
 import logging
@@ -562,9 +562,8 @@ def get_roles():
 
 @app.route('/shutdown', methods=['POST'])
 def shutdown():
-    print("Received shutdown request via HTTP...")
     socketio.stop()
-    return 'OK', 200
+    return "Server shutting down...", 200
 
 # Only disable caching for HTML and JSON (Game Data)
 @app.after_request

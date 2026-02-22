@@ -35,9 +35,10 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        val tvTitle = findViewById<TextView>(R.id.tvTitle)
+
+        val tvVersion = findViewById<TextView>(R.id.tvVersion)
         val versionName = packageManager.getPackageInfo(packageName, 0).versionName
-        tvTitle.text = "Werewolves Server $versionName"
+        tvVersion.text = "v$versionName"
 
         // 1. Setup UI Elements
         val btnStart = findViewById<Button>(R.id.btnStart)
@@ -124,38 +125,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnStop.setOnClickListener {
-            val portText = etPort.text.toString()
-            val currentIp = getWifiIpAddress()
-
-            // We "Stop" by sending a request to the Python shutdown route
-            thread {
-                try {
-                    val url = URL("http://${currentIp}:$portText/shutdown")
-                    val connection = url.openConnection() as HttpURLConnection
-                    connection.requestMethod = "POST"
-                    connection.connectTimeout = 2000 // Don't hang forever
-                    connection.readTimeout = 2000
-
-                    // This triggers the /shutdown route in app.py
-                    val responseCode = connection.responseCode
-
-                    runOnUiThread {
-                        if (responseCode == 200) {
-                            resetUI(btnStart, btnStop, tvStatus,etPort)
-                            Toast.makeText(this, "Server Stopped", Toast.LENGTH_SHORT).show()
-                        } else {
-                            // Force UI reset anyway if the server is unreachable
-                            resetUI(btnStart, btnStop, tvStatus, etPort)
-                            tvStatus.text = "Status: Error $responseCode"
-                        }
-                    }
-                } catch (e: Exception) {
-                    runOnUiThread {
-                        resetUI(btnStart, btnStop, tvStatus,etPort)
-                        Toast.makeText(this, "Server unreachable, UI reset", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
+            Toast.makeText(this, "Closing Server...", Toast.LENGTH_SHORT).show()
+            // This aggressively kills the app and instantly frees Port 5000
+            finishAffinity()
+            System.exit(0)
         }
     }
 

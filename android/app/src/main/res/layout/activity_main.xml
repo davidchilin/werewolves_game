@@ -30,10 +30,21 @@
             android:textSize="28sp"
             android:textStyle="bold"
             android:textColor="#FF55CC"
+            android:textAlignment="center"
             android:shadowColor="#880088"
             android:shadowDx="0"
             android:shadowDy="0"
             android:shadowRadius="15" />
+
+         <TextView
+            android:id="@+id/tvVersion"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="#FFFFFF"
+            android:textAlignment="center"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="8dp" />
 
         <TextView
             android:id="@+id/note"
