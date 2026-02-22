@@ -45,11 +45,15 @@ jobs:
         SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         SIGNING_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
 
+    - name: Rename APK with Version Tag
+      run: |
+        mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/app-release-${{ github.ref_name }}.apk
+
     - name: Release to GitHub
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
       with:
-        files: android/app/build/outputs/apk/release/app-release.apk
+        files: android/app/build/outputs/apk/release/app-release-${{ github.ref_name }}.apk
         draft: false
         prerelease: false
         generate_release_notes: true

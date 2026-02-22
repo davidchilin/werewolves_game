@@ -190,12 +190,6 @@ class MainActivity : AppCompatActivity() {
         return "0.0.0.0"
     }
 
-    private fun isWifiConnected(): Boolean {
-        // If we found a valid IP address, we are connected to a network!
-        val ip = getWifiIpAddress()
-        return ip != "0.0.0.0" && ip.isNotEmpty()
-    }
-
     private fun appendLog(message: String) {
         runOnUiThread {
             val tvDebugLog = findViewById<TextView>(R.id.tvDebugLog)
