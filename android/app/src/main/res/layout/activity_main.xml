@@ -114,4 +114,29 @@
         android:padding="8dp"
         android:visibility="gone" />
 
+<TextView
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="Debug Console:"
+    android:textStyle="bold"
+    android:layout_marginTop="16dp"/>
+
+<ScrollView
+    android:id="@+id/svLog"
+    android:layout_width="match_parent"
+    android:layout_height="200dp"
+    android:background="#eeeeee"
+    android:padding="8dp"
+    android:layout_marginTop="4dp">
+
+    <TextView
+        android:id="@+id/tvDebugLog"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="monospace"
+        android:text="> System Ready..."
+        android:textColor="#333333"
+        android:textSize="12sp" />
+</ScrollView>
+
 </LinearLayout>

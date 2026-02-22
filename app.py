@@ -1443,7 +1443,16 @@ def run_server(port_number):
         port = 5000
 
     print(f"Starting server on port {port}...")
-    socketio.run(app, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True, debug=False)
+
+    try:
+        # Keep debug=False to avoid the process reloader crash
+        socketio.run(app, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True, debug=False)
+    except Exception as e:
+        # This will show up in 'adb logcat -s python.stdout python.stderr'
+        print("-" * 30)
+        print(f"PYTHON SERVER CRASHED: {e}")
+        traceback.print_exc()
+        print("-" * 30)
 
 if __name__ == "__main__":
     socketio.run(app, host="0.0.0.0", debug=False, allow_unsafe_werkzeug=True)
