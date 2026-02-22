@@ -14,6 +14,7 @@ import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -109,7 +110,8 @@ class MainActivity : AppCompatActivity() {
                     val pythonModule = python.getModule("app")
 
                     appendLog("Starting Flask-SocketIO server on port $portText...")
-                    pythonModule.callAttr("run_server", portText.toInt())
+                    // Passing the port as a string is safer to avoid Kotlin NumberFormatExceptions
+                    pythonModule.callAttr("run_server", portText)
                 } catch (e: PyException) {
                     appendLog("FATAL PYTHON CRASH: ${e.message}")
                     runOnUiThread {
@@ -162,40 +164,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupPythonLogging() {
-        try {
-            val python = Python.getInstance()
-            // Ensure mainActivity is available to Python
-            python.getModule("builtins").put("mainActivity", this)
-
-            // Use a simpler script that doesn't trigger deep system frame checks
-            val pyCode = """
-import sys
-from android.util import Log
-import mainActivity
-
-class LogStream:
-    def write(self, s):
-        if s and s.strip():
-            Log.i("python", s)
-            try:
-                mainActivity.appendLog(s)
-            except:
-                pass
-    def flush(self):
-        pass
-
-sys.stdout = LogStream()
-sys.stderr = LogStream()
-           """.trimIndent()
-
-            val exec = python.getModule("builtins").get("exec")
-            exec?.call(pyCode)
-        } catch (e: Exception) {
-            Log.e("LOG_SETUP", "Failed to setup logging: ${e.message}")
-        }
-    }
-
     private fun isWifiConnected(): Boolean {
         val wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
         return wifiManager.isWifiEnabled && wifiManager.connectionInfo.networkId != -1
@@ -228,17 +196,15 @@ sys.stderr = LogStream()
     private fun appendLog(message: String) {
         runOnUiThread {
             val tvDebugLog = findViewById<TextView>(R.id.tvDebugLog)
-            val svLog = findViewById<android.widget.ScrollView>(R.id.svLog)
-
+            val mainScrollView = findViewById<ScrollView>(R.id.mainScrollView)
             // Append the message with a timestamp
             val timestamp = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date())
             tvDebugLog.append("\n[$timestamp] $message")
 
             // Auto-scroll to the bottom so the latest log is always visible
-            svLog.post { svLog.fullScroll(View.FOCUS_DOWN) }
+            mainScrollView?.post { mainScrollView.fullScroll(View.FOCUS_DOWN) }
         }
     }
-
 
     private fun checkBatteryOptimization() {
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
