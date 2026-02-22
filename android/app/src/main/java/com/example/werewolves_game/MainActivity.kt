@@ -50,8 +50,6 @@ class MainActivity : AppCompatActivity() {
             Python.start(AndroidPlatform(this))
         }
 
-        setupPythonLogging()
-
         // 4. Start Button Logic
         btnStart.setOnClickListener {
             val portText = etPort.text.toString()
