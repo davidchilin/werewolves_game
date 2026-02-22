@@ -58,12 +58,6 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // 2. Safety Check: Is Wi-Fi actually on?
-            if (!isWifiConnected()) {
-                Toast.makeText(this, "Connect to Wi-Fi to start server", Toast.LENGTH_LONG).show()
-                return@setOnClickListener
-            }
-
             // Disable button so they don't click it twice
             btnStart.visibility = View.GONE
             etPort.isEnabled = false
