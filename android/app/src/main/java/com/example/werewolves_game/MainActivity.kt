@@ -162,12 +162,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun isWifiConnected(): Boolean {
-        val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-        // Check if Wi-Fi is enabled AND we have a valid IP Address assigned
-        return wifiManager.isWifiEnabled && wifiManager.connectionInfo.ipAddress != 0
-    }
-
     private fun resetUI(start: Button, stop: Button, status: TextView, portInput: TextInputEditText) {
         start.visibility = View.VISIBLE
         start.isEnabled = true
@@ -182,14 +176,30 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getWifiIpAddress(): String {
-        val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-        val ip = wifiManager.connectionInfo.ipAddress
-        // Convert integer IP to standard format (e.g. 192.168.1.5)
-        return String.format("%d.%d.%d.%d",
-            (ip and 0xff),
-            (ip shr 8 and 0xff),
-            (ip shr 16 and 0xff),
-            (ip shr 24 and 0xff))
+        try {
+            // Ask the OS for all active network connections (bypasses WifiManager)
+            val interfaces = java.net.NetworkInterface.getNetworkInterfaces()
+            for (intf in interfaces) {
+                // Ignore inactive networks and the local loopback (127.0.0.1)
+                if (intf.isLoopback || !intf.isUp) continue
+
+                for (addr in intf.inetAddresses) {
+                    // Find the standard IPv4 address (e.g., 192.168.x.x)
+                    if (!addr.isLoopbackAddress && addr is java.net.Inet4Address) {
+                        return addr.hostAddress ?: "0.0.0.0"
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("IP_ERROR", "Error getting network IP: ${e.message}")
+        }
+        return "0.0.0.0"
+    }
+
+    private fun isWifiConnected(): Boolean {
+        // If we found a valid IP address, we are connected to a network!
+        val ip = getWifiIpAddress()
+        return ip != "0.0.0.0" && ip.isNotEmpty()
     }
 
     private fun appendLog(message: String) {
