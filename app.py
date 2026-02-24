@@ -31,7 +31,7 @@ from roles import *
 # --- App Initialization ---
 # android web config
 internal_path = join(dirname(__file__), '.env.werewolves')
-external_path = "/storage/emulated/0/Android/data/com.example.werewolves_game/files/config.env"
+external_path = "/storage/emulated/0/Android/data/io.github.davidchilin.werewolves_game/files/config.env"
 
 # android Load external first (overrides), then internal
 if exists(external_path):

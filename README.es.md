@@ -6,7 +6,7 @@ evolucionado desde un simple experimento hasta un juego de fiesta completamente
 jugable que admite 24 roles únicos, soporte móvil para "Pasar-y-Jugar",
 múltiples idiomas. [Instrucciones de Instalación](#configuración-y-ejecución) o
 Descargar el programa del servidor para
-[Linux(x86) and Android(apk)](https://github.com/davidchilin/werewolves_game/releases)
+[Linux(x86) y Android(apk)](https://github.com/davidchilin/werewolves_game/releases)
 
 ## **Descripción**
 

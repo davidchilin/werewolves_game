@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.werewolves_game"
+    namespace = "io.github.davidchilin.werewolves_game"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.werewolves_game"
+        applicationId = "io.github.davidchilin.werewolves_game"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
@@ -69,6 +69,8 @@ chaquopy {
         pip {
             if (file("python_wheels").exists()) {
                     options("--find-links", "python_wheels", "--no-index")
+
+                    install("./python_wheels/markupsafe_src")
                 }
 
 

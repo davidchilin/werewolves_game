@@ -1,4 +1,4 @@
-package com.example.werewolves_game
+package io.github.davidchilin.werewolves_game
 
 import android.content.ClipboardManager
 import android.content.ClipData
