@@ -69,10 +69,7 @@ chaquopy {
         pip {
             if (file("python_wheels").exists()) {
                     options("--find-links", "python_wheels", "--no-index")
-
-                    install("./python_wheels/markupsafe_src")
                 }
-
 
             install("flask")
             install("flask-socketio")
