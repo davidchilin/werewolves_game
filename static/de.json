@@ -1,5 +1,5 @@
 {
-  "_comment": "version 5.1.0; German translation",
+  "_comment": "version 5.2.5.3; Aktualisieren Sie die Sprache in index.html",
   "prompts": {
     "villager_0": "Wer hat am wahrscheinlichsten einen OnlyFans-Account?",
     "villager_1": "Wer würde in einer Zombie-Apokalypse zuerst sterben?",
@@ -78,7 +78,7 @@
       "alert_error": "Fehler: {msg}",
       "alert_relogin": "Neuer Spielcode gesetzt.\nDu wirst zum Login zurückgeleitet.",
       "cannot_select_same": "Du kannst dieselbe Person nicht zweimal wählen!",
-      "chat_night_placeholder": "Schlafenszeit... zzz",
+      "chat_night_placeholder": "Schlafenszeit... 💤",
       "chat_restricted_placeholder": "Chat ist eingeschränkt.",
       "chat_whisper_placeholder": "Flüstern...",
       "dead_message": "<h3>Du bist tot 💀 Du kannst das Spiel schweigend beobachten.</h3>",
@@ -159,6 +159,7 @@
   },
   "events": {
     "accusation_made": "🫵 <strong>{accuser}</strong> klagt <strong>{target}</strong> an!",
+    "accusation_none": "Keine Anschuldigungen. 🌒 Schlafen...",
     "chat_night_shh": "psst... das Dorf schläft ruhig, <strong>{name}</strong>",
     "chat_restricted": "Der Chat ist derzeit eingeschränkt.",
     "cupid_info": "💘 Du bist in <strong>{name}</strong> verliebt! Wenn einer stirbt, sterben beide.",

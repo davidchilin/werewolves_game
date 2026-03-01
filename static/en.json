@@ -1,5 +1,5 @@
 {
-  "_comment": "version 5.1.0; update language in index.html",
+  "_comment": "version 5.2.5.3; update language in index.html",
   "prompts": {
     "villager_0": "Who is most likely to have an OnlyFans?",
     "villager_1": "Who would die first in a zombie apocalypse?",
@@ -78,7 +78,7 @@
       "alert_error": "Error: {msg}",
       "alert_relogin": "New game code set.\nYou will now be returned to the login screen.",
       "cannot_select_same": "Cannot select the same person twice!",
-      "chat_night_placeholder": "sleepy quiet time...zzz",
+      "chat_night_placeholder": "sleepy quiet time...💤",
       "chat_restricted_placeholder": "Chat is restricted.",
       "chat_whisper_placeholder": "Whisper...",
       "dead_message": "<h3>You are dead 💀 You can observe the game in silence.</h3>",
@@ -159,6 +159,7 @@
   },
   "events": {
     "accusation_made": "🫵 <strong>{accuser}</strong> accuses <strong>{target}</strong>!",
+    "accusation_none": "No accusations.🌒 Sleeping...",
     "chat_night_shh": "shhh...the village is sleeping quietly, <strong>{name}</strong>",
     "chat_restricted": "Chat is currently restricted.",
     "cupid_info": "💘 You are in love with <strong>{name}</strong>! If one dies, you both die.",

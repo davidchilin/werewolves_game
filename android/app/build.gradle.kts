@@ -65,7 +65,7 @@ android {
 
 chaquopy {
     defaultConfig {
-        version = "3.10"
+        version = "3.13"
         pip {
             if (file("python_wheels").exists()) {
                     options("--find-links", "python_wheels", "--no-index")

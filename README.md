@@ -1,10 +1,9 @@
 [🇬🇹 Español](README.es.md) | [🇩🇪 Deutsch](README.de.md)
 ![](https://repository-images.githubusercontent.com/1001769057/79681f17-e6ca-4261-bbb5-22fa20221af8)
-A feature-rich, self-hosted real-time multiplayer social deduction game. Built
-with Python (Flask) and WebSockets, this project has evolved from a simple
-experiment into a fully playable party game supporting 24 unique roles, no
-Narator needed, mobile "Pass-and-Play" support, multiple languages, and complex
-win conditions. [Install Instructions](#setup-and-running-the-project) or
+A self-hosted real-time multiplayer social deduction game. Built with Python
+(Flask) and WebSockets, supporting 24 unique roles, no Narator needed, mobile
+"Pass-and-Play" support, multiple languages simultaneously, and automated death
+and vote logic. [Install Instructions](#setup-and-running-the-project) or
 Download server program for
 [Android(apk) and Linux(x86)](https://github.com/davidchilin/werewolves_game/releases)
 
@@ -12,13 +11,13 @@ Download server program for
 
 This project is a web-based implementation of the classic party game Werewolves.
 Players (minimum of 4, ideally +7) join a lobby using a unique game code, are
-secretly assigned roles (Villager, Wolf, or Seer), and then cycle through
+secretly assigned roles (Villager, Wolf, Seer, ...), and then cycle through
 "night" and "day" phases. During the night, wolves secretly choose a player to
 eliminate, and the seer can investigate a player's role. During the day, players
 discuss and vote to lynch someone they suspect is a wolf. The game supports
 complex interactions: lovers linked by Cupid, chain-reaction deaths
 (Honeypot/Hunter), solo-winning roles (Serial Killer/Fool), and "Ghost Mode"
-where dead players can still influence the outcome.
+where dead players can still influence the game outcome.
 
 The game is designed to be played alongside a separate video or voice chat (like
 _Jitsi Meet_ or Zoom), where the real-time discussion and deception take place
@@ -40,15 +39,16 @@ OR in person using one to several devices in **Pass-and-Play** mode.
 - **🏆 Solo Win Conditions:** Neutral roles like the **Monster**, **Fool**, or
   **Demented Villager** can win alone, ignoring team allegiances.
 
-- **Robust Admin Controls:** The first player to join becomes the admin and has
-  the ability to:
-  - Exclude players from the lobby.
-  - Start the game once enough players have joined (minimum of 4).
+- **Robust Admin Controls:** The first player to join the game becomes admin and
+  has the ability to:
+  - Exclude players from the lobby
+  - Start the game once enough players have joined (minimum of 4)
   - Set custom timer durations (in seconds) for the Night, Accusation, and Lynch
-    Vote phases.
-  - Set a new game code.
-  - Set admin only chat.
-  - Turn on **Pass-and-Play** and **Ghost Mode**.
+    Vote phases
+  - Set a new game code
+  - Set admin only chat
+  - Turn on **Pass-and-Play** and **Ghost Mode**
+  - Transfer **admin** status
 - **Persistent Sessions:** Players can refresh their browser or momentarily
   disconnect without losing their place in the game (although timer might be
   incorrect)
@@ -75,15 +75,14 @@ OR in person using one to several devices in **Pass-and-Play** mode.
 
 <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/game_over.png" width="50%" align="right"/>
 
-- **Night Phase (Timed):**
+- **Night Phase:**
 
   - Phase ends when either the timer runs out OR all Wolves and the Seer have
     submitted their actions.
-
   - After the night's actions, the game checks if a winning condition has been
     met before proceeding.
 
-- **Accusation Phase (Timed):**
+- **Accusation Phase:**
 
   - Phase ends when either the timer runs out OR all living players have made an
     accusation.
@@ -95,7 +94,7 @@ OR in person using one to several devices in **Pass-and-Play** mode.
     - If the tie is among more than two players, the accusation phase is
       restarted once. A second tie results in no lynch vote.
 
-- **Lynch Vote Phase (Timed):**
+- **Lynch Vote Phase:**
 
   - If a single player has the most accusations, a trial begins.
   - Phase ends when either the timer runs out OR all living players have voted.
@@ -106,9 +105,11 @@ OR in person using one to several devices in **Pass-and-Play** mode.
   - After the vote, the game checks if a winning condition has been met before
     proceeding to the night.
 
-- **General Day Phase Actions:** Living players can vote to end the day phase
-  early (minimum 30 seconds) and start the accusation process. If a majority
-  choose sleep, the game transitions to night.
+- **General Day Phase Actions:** Living players can discuss who the wolf is, and
+  can vote to end the day phase early (minimum 30 seconds) and start the
+  accusation process. The Werewolves must coordinate openly during the day
+  phase, don't look too suspicious. If a majority choose sleep, the game
+  transitions to night.
 
 ## **Roles**
 
@@ -129,7 +130,8 @@ The game now supports **24 unique roles**:
 - **Revealer:** Can instantly kill a Wolf, but dies if they reveal a Villager.
 - **Martyr:** Grants a "2nd Life" (armor) to someone upon dying.
 - **Tough Villager:** Survives the first attempt on their life.
-- **Wild Child:** Picks a role model. If the model dies, becomes a Werewolf.
+- **Wild Child:** Picks a role model. If the role model dies, becomes a
+  Werewolf.
 
 ### 🐺 The Pack
 

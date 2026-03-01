@@ -1,6 +1,6 @@
 """
 config.py
-Version: 4.9.5
+Version: 5.2.5.3
 Central location for all game defaults and timer settings.
 """
 
@@ -14,5 +14,5 @@ GAME_DEFAULTS = {
     "ENABLE_PASS_AND_PLAY": False,
     "DEFAULT_ROLES": ["Villager", "Werewolf"],
     "WOLF_RATIO": 0.25,
-    "PAUSE_DURATION": 4,
+    "PAUSE_DURATION": 3,
 }

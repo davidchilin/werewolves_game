@@ -1,19 +1,18 @@
 [🇺🇸 English](README.md) | [🇩🇪 Deutsch](README.de.md)
 ![](https://repository-images.githubusercontent.com/1001769057/79681f17-e6ca-4261-bbb5-22fa20221af8)
-Un juego de deducción social multijugador en tiempo real, rico en funciones y
-autoalojado. Construido con Python (Flask) y WebSockets, este proyecto ha
-evolucionado desde un simple experimento hasta un juego de fiesta completamente
-jugable que admite 24 roles únicos, soporte móvil para "Pasar-y-Jugar",
-múltiples idiomas. [Instrucciones de Instalación](#configuración-y-ejecución) o
-Descargar el programa del servidor para
+Un juego social de deducción en tiempo real, rico en funciones y autoalojado.
+Construido con Python (Flask) y WebSockets, y jugable con 24 roles únicos,
+soporte móvil para "Pasar-y-Jugar", múltiples idiomas.
+[Instrucciones de Instalación](#configuración-y-ejecución) o Descargar el
+programa del servidor para
 [Linux(x86) y Android(apk)](https://github.com/davidchilin/werewolves_game/releases)
 
 ## **Descripción**
 
 Este proyecto es una implementación web del clásico juego de fiesta
 _Werewolves_. Los jugadores (mínimo 4, idealmente +7) se unen en una sala usando
-un código de juego único, se les asignan roles secretamente (Cuidadano, Lobo o
-Vidente), y luego pasan por fases de "noche" y "día". Durante la noche, los
+un código de juego, se les asignan roles secretamente (Cuidadano, Lobo o
+Vidente, etc), y luego pasan por fases de "noche" y "día". Durante la noche, los
 lobos eligen secretamente a un jugador para eliminar, y el vidente puede
 investigar el rol de un jugador. Durante el día, los jugadores discuten y votan
 para linchar a alguien que sospechen de ser un lobo. El juego tiene
@@ -79,14 +78,14 @@ lugar, O en persona usando uno o varios dispositivos en modo **Pasar-y-Jugar**.
 
 <img src="fastlane/metadata/android/es/images/phoneScreenshots/game_over.es.png" width="50%" align="right"/>
 
-- **Fase Nocturna (Cronometrada):**
+- **Fase Nocturna:**
 
   - La fase termina cuando el tiempo se agota O todos los Lobos y el Vidente han
     enviado sus acciones.
   - Después de las acciones nocturnas, el juego verifica si se ha cumplido una
     condición ganadora antes de continuar.
 
-- **Fase de Acusación (Cronometrada):**
+- **Fase de Acusación:**
 
   - La fase termina cuando el tiempo se agota O todos los jugadores vivos han
     hecho una acusación.
@@ -100,7 +99,7 @@ lugar, O en persona usando uno o varios dispositivos en modo **Pasar-y-Jugar**.
       reinicia una vez. Un segundo empate resulta en que no haya voto de
       linchamiento.
 
-- **Fase de Voto de Linchamiento (Cronometrada):**
+- **Fase de Voto de Linchamiento:**
 
   - Si un solo jugador tiene la mayoría de acusaciones, comienza un juicio.
   - La fase termina cuando el tiempo se agota O todos los jugadores vivos han

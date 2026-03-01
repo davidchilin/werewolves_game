@@ -85,14 +85,14 @@ von einem bis mehreren Geräten im **Pass-and-Play**-Modus.
 
 <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/game_over.png" width="50%" align="right"/>
 
-- **Nachtphase (Zeitgesteuert):**
+- **Nachtphase:**
 
   - Die Phase endet, wenn entweder der Timer abläuft ODER alle Wölfe und die
     Seherin ihre Aktionen eingereicht haben.
   - Nach den Aktionen der Nacht prüft das Spiel, ob eine Siegbedingung erfüllt
     wurde, bevor es fortfährt.
 
-- **Anklagephase (Zeitgesteuert):**
+- **Anklagephase:**
 
   - Die Phase endet, wenn entweder der Timer abläuft ODER alle lebenden Spieler
     eine Anschuldigung erhoben haben.
@@ -108,7 +108,7 @@ von einem bis mehreren Geräten im **Pass-and-Play**-Modus.
       Anklagephase einmal neu gestartet. Ein zweiter Gleichstand führt dazu,
       dass keine Lynch-Abstimmung stattfindet.
 
-- **Lynch-Abstimmungsphase (Zeitgesteuert):**
+- **Lynch-Abstimmungsphase:**
 
   - Wenn ein einzelner Spieler die meisten Anschuldigungen hat, beginnt ein
     Prozess.

@@ -682,7 +682,10 @@ class Game:
 
         if not valid_votes:
             self.set_phase(PHASE_NIGHT)
-            return {"result": "night", "message": "No accusations.🌒 Sleeping..."}
+            return {
+                    "result": "night",
+                    "message": {"key": "events.accusation_none", "variables": {}}
+            }
 
         counts = Counter(valid_votes)
         most_common = counts.most_common(2)

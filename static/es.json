@@ -1,5 +1,5 @@
 {
-  "_comment": "version 5.1.0; update language in index.html",
+  "_comment": "version 5.2.5.3; Aktaulizar idioma en index.html",
   "prompts": {
     "villager_0": "¿Quién es más probable que tenga un OnlyFans?",
     "villager_1": "¿Quién moriría primero en un apocalipsis de zombies?",
@@ -159,6 +159,7 @@
   },
   "events": {
     "accusation_made": "🫵 <strong>{accuser}</strong> acusa a <strong>{target}</strong>!",
+    "accusation_none": "No hay acusaciones. 🌒 Durmiendo...",
     "chat_night_shh": "shhh... la aldea duerme tranquilamente, <strong>{name}</strong>",
     "chat_restricted": "El chat está restringido actualmente.",
     "cupid_info": "💘 ¡Estás enamorado de <strong>{name}</strong>! Si uno muere, ambos mueren.",
@@ -208,7 +209,7 @@
       "night": {
         "prompt": "{prompt}",
         "button": "Seleccionar",
-        "feedback": "Hiciste una elección interesante: {target}."
+        "feedback": "Hiciste una elección interesante: {target}. Ahora estás soñando de deliciosas pupusas meintras las criaturas de la noche andan revirando"
       }
     },
     "Werewolf": {
