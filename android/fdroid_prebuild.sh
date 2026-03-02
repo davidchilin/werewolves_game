@@ -2,7 +2,6 @@
 cd app
 mkdir -p python_wheels
 
-# Note: We are specifically using pip3.10 here!
 pip3 download -d python_wheels flask flask-socketio python-dotenv
 pip3 download --no-binary markupsafe markupsafe
 
