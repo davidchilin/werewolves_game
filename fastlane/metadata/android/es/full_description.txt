@@ -1,17 +1,19 @@
-werewolves_game es un juego de deducción social multijugador en tiempo real, autoalojado y repleto de funciones. Esta aplicación ejecuta un servidor web local directamente en tu dispositivo Android, lo que te permite a ti y a tus amigos jugar al clásico juego de fiesta Werewolves (también conocido como Mafia) utilizando los navegadores de vuestros propios teléfonos: ¡no se requiere conexión a Internet, solo una red Wi-Fi compartida!
+<p>werewolves_game apk ejecutará un sitio de werewolves_game directamente en tu dispositivo donde otros jugadores en la misma red WIFI pueden conectarse (no se necesita internet). El Apk te dará la dirección web (http, no https) donde se encuentra el juego. La primera persona en unirse al juego será administrador y controlará los ajustes del juego (qué roles incluir, reloj, etc.)</p>
 
-Lo mejor de todo es que la aplicación actúa como el motor de juego automatizado, lo que significa que **no se necesita un narrador humano**. ¡Todos pueden jugar!
+<p>Lo mejor de todo es que la aplicación automiza el juego, lo que significa que no se necesita un narrador humano. ¡Todos pueden jugar!</p>
 
-**Cómo jugar:**
-Inicia el servidor desde la aplicación y se generará un código QR y una dirección IP local. Tus amigos (mínimo de 4, idealmente más de 7) se unen a la sala a través de sus navegadores web. Una vez que comienza, el juego asigna roles en secreto y avanza automáticamente a través de las fases de "Noche" y "Día", manejando toda la compleja lógica de muertes, votaciones y victorias por ti.
+<p><b>Cómo instalar y jugar:</b><br>
+Descarga el apk, es solo para dispositivos arm64 v8a (consulta Github para las versiones linux x86 y arm v7). El Apk te preguntará si estás seguro de instalarla, di que Sí (información del juego y todo el source code están aquí en el repositorio y el apk se construye automáticamente en Github mediante github-actions). Al ejecutar el apk por primera vez, te preguntará si está bien ejecutarse en <i>background</i> mientras se usa, di que Sí (o si no, el servidor de werewolves_game no responderá cuando esté fuera de vista). Puedes elegir cualquier port, el predeterminado es 5000 (se recomienda &gt;= 5000). El Apk te dará la dirección web del juego y un código QR, por ejemplo http://192.168.1.5:5000; escribe o copia y pega eso en tu navegador web. La primera persona en unirse al juego será administrador, la contraseña inicial es "w". Necesitas al menos 4 jugadores (más de 7 es mejor) para "Iniciar Juego". Una vez iniciado, el juego asigna roles secretamente y alterna automáticamente entre las fases de "Noche" y "Día", manejando por ti toda la lógica de muertes, votaciones y condiciones de victoria. Recomiendo desactivar el reloj la primera vez que juegen y que el administrador avance manaulmente las fases. ¡Disfruta!</p>
 
-**Características principales:**
-* **Ciclo de juego automatizado:** El servidor maneja todas las fases, las acciones nocturnas y las comprobaciones de victoria (Ganan los Cuidadanos, Ganan los Lobos o Victorias en Solitario).
-* **📱 Modo "Pasar y Jugar" (Pass-and-Play):** ¿Solo tienes un dispositivo? Juega pasando un solo teléfono por la habitación con una interfaz de usuario segura que guía a los jugadores a confirmar su identidad antes de ver su rol secreto.
-* **👻 Modo Fantasma:** ¡Mantén involucrados a los jugadores eliminados! Los fantasmas tienen una pequeña posibilidad de participar durante las fases de acusación y votación de linchamiento.
-* **🎭 24 Roles Únicos:** Juega con roles complejos como el Hombre Lobo Alfa, la Prostituta, el Abogado y el Asesino.
-* **🏆 Condiciones de Victoria en Solitario:** Roles neutrales como el Monstruo, el Pendejo o el Cuidadano Demente pueden ganar el juego solos, ignorando las alianzas de equipo tradicionales.
-* **🌍 Múltiples Idiomas:** Juega una sola partida con la interfaz traducida a varios idiomas simultáneamente.
-* **Controles de Administrador Robustos:** El administrador de la sala puede ajustar la duración de los temporizadores, expulsar jugadores y activar o desactivar las reglas del juego sobre la marcha.
+<p><b>Características principales:</b></p>
+<ul>
+    <li><b>Bucle de juego automatizado:</b> El servidor maneja todas las fases, las acciones nocturnas y las comprobaciones de victoria (victoria de los Cuidadano, victoria de los Lobos o victorias en solitario).</li>
+    <li><b>📱 Modo Pasar-y-Jugar:</b> ¿Solo tienes un dispositivo? Juega pasando un solo teléfono por la habitación con una interfaz de usuario segura que guía a los jugadores a confirmar su identidad antes de ver su rol secreto.</li>
+    <li><b>👻 Modo Fantasma:</b> ¡Mantén a los jugadores eliminados involucrados! Los fantasmas tienen una pequeña probabilidad de participar durante las fases de acusación y votación de linchamiento.</li>
+    <li><b>🎭 24 Roles Únicos:</b> Juega con roles complejos como el Lobo Alfa, la Prostituta, el Abogado y el Asesino.</li>
+    <li><b>🏆 Condiciones de Victoria en Solitario:</b> Los roles neutrales como el Monstruo, el Loco o el Cuidadano Demente pueden ganar el juego solos, ignorando las lealtades tradicionales de equipo.</li>
+    <li><b>🌍 Múltiples Idiomas:</b> Juega una sola partida con la interfaz de usuario traducida a varios idiomas simultáneamente.</li>
+    <li><b>Controles de Administrador Robustos:</b> El administrador de la sala puede ajustar la duración de los temporizadores, expulsar jugadores y cambiar las reglas del juego sobre la marcha.</li>
+</ul>
 
-¡Reúne a tus amigos, conéctate al mismo Wi-Fi y descubre quién de vosotros es el hombre lobo!
+<p>¡Reúne a tus amigos, conéctate al mismo Wi-Fi y descubre quién de ustedes es un hombre lobo!</p>

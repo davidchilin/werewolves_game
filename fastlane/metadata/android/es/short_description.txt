@@ -1,1 +1,1 @@
-Servidor multijugador del clásico juego Werewolves (Mafia) para WiFi local.
+Juega Werewolves (Mafia) con tus amigos sobre WiFi (sin internet)
