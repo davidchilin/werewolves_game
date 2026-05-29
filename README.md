@@ -1,17 +1,21 @@
 [🇬🇹 Español](README.es.md) | [🇩🇪 Deutsch](README.de.md)
+<a href="https://f-droid.org/packages/io.github.davidchilin.werewolves_game/"><img src="https://fdroid.gitlab.io/artwork/badge/get-it-on-en.svg" alt="Get it on F-Droid" align="right" height=80/></a>
+<a href="https://apt.izzysoft.de/fdroid/index/apk/io.github.davidchilin.werewolves_game?repo=main"><img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" align="right" height=80/></a>
+
 ![](https://repository-images.githubusercontent.com/1001769057/79681f17-e6ca-4261-bbb5-22fa20221af8)
-A self-hosted real-time multiplayer social deduction game. Built with Python
-(Flask) and WebSockets, supporting 24 unique roles, no Narator needed, mobile
-"Pass-and-Play" support, multiple languages simultaneously, and automated death
-and vote logic. [Install Instructions](#setup-and-running-the-project) or
-Download server program for
-[Android(apk) and Linux(x86)](https://github.com/davidchilin/werewolves_game/releases)
+A self-hosted multiplayer social deduction game (only one person runs the
+server). Built with Python (Flask) and WebSockets, supporting 24 unique roles,
+no Narator needed, mobile "Pass-and-Play" support, multiple languages
+simultaneously, and automated death and vote logic.
+[Install Instructions](#setup-and-running-the-project) or Download server
+program for
+[Android(apk) and Linux(x86)](https://github.com/davidchilin/werewolves_game/releases).
 
 ## **Description**
 
-This project is a web-based implementation of the classic party game Werewolves.
-Players (minimum of 4, ideally +7) join a lobby using a unique game code, are
-secretly assigned roles (Villager, Wolf, Seer, ...), and then cycle through
+This program is a web-based implementation of the classic party game Werewolves.
+Players (minimum of 4, ideally +7) join a lobby using a unique game code ("w"),
+are secretly assigned roles (Villager, Wolf, Seer, ...), and then cycle through
 "night" and "day" phases. During the night, wolves secretly choose a player to
 eliminate, and the seer can investigate a player's role. During the day, players
 discuss and vote to lynch someone they suspect is a wolf. The game supports
@@ -166,7 +170,7 @@ To run this project locally, follow these steps:
     or download werewolves_game-master.zip and unzip to folder werewolves_game.
 
 2.  **Edit** `.env.werewolves` file. Change _FLASK_SECRET_KEY_ to
-    something*long_random, \_CORS_ALLOWED_ORIGINS* to desired game web address
+    _something_long_random, CORS_ALLOWED_ORIGINS_ to desired game web address
     like:
     http://127.0.0.1:5000,http://your.ip.here:5000,https://your.site.here:5000
     OR leave blank to disable CORS and use any site.

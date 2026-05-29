@@ -1,4 +1,7 @@
 [🇺🇸 English](README.md) | [🇩🇪 Deutsch](README.de.md)
+<a href="https://f-droid.org/packages/io.github.davidchilin.werewolves_game/"><img src="https://fdroid.gitlab.io/artwork/badge/get-it-on-en.svg" alt="Get it on F-Droid" align="right" height=80/></a>
+<a href="https://apt.izzysoft.de/fdroid/index/apk/io.github.davidchilin.werewolves_game?repo=main"><img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" align="right" height=80/></a>
+
 ![](https://repository-images.githubusercontent.com/1001769057/79681f17-e6ca-4261-bbb5-22fa20221af8)
 Un juego social de deducción en tiempo real, rico en funciones y autoalojado.
 Construido con Python (Flask) y WebSockets, y jugable con 24 roles únicos,
