@@ -3,18 +3,18 @@
 <a href="https://apt.izzysoft.de/fdroid/index/apk/io.github.davidchilin.werewolves_game?repo=main"><img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" align="right" height=80/></a>
 
 ![](https://repository-images.githubusercontent.com/1001769057/79681f17-e6ca-4261-bbb5-22fa20221af8)
-Un juego social de deducción en tiempo real, rico en funciones y autoalojado.
-Construido con Python (Flask) y WebSockets, y jugable con 24 roles únicos,
-soporte móvil para "Pasar-y-Jugar", múltiples idiomas.
-[Instrucciones de Instalación](#configuración-y-ejecución) o Descargar el
-programa del servidor para
+Un juego social de deducción en tiempo real y autoalojado. Construido con Python
+(Flask) y WebSockets, y jugable con 24 roles únicos, soporte móvil para
+"Pasar-y-Jugar", múltiples idiomas.
+[Instrucciones de Instalación](#configuración-y-ejecución) o Descargar la
+applicacion servidor para
 [Linux(x86) y Android(apk)](https://github.com/davidchilin/werewolves_game/releases)
 
 ## **Descripción**
 
 Este proyecto es una implementación web del clásico juego de fiesta
 _Werewolves_. Los jugadores (mínimo 4, idealmente +7) se unen en una sala usando
-un código de juego, se les asignan roles secretamente (Cuidadano, Lobo o
+el código de juego "w", se les asignan roles secretamente (Cuidadano, Lobo o
 Vidente, etc), y luego pasan por fases de "noche" y "día". Durante la noche, los
 lobos eligen secretamente a un jugador para eliminar, y el vidente puede
 investigar el rol de un jugador. Durante el día, los jugadores discuten y votan
@@ -41,7 +41,7 @@ lugar, O en persona usando uno o varios dispositivos en modo **Pasar-y-Jugar**.
   **Prostituta**, **Abogado** y **Asesino**.
 - シ **Múltiples Idiomas:** Juega un solo juego en múltiples idiomas
   simultáneamente.
-- **🏆 Victoria en Solitario:** Roles neutrales como el **Monstruo**, **Loco** o
+- **🏆 Victoria Solitario:** Roles neutrales como el **Monstruo**, **Loco** o
   **Cuidadano Demente** pueden ganar solos, ignorando las lealtades del equipo.
 
 - **Controles de Admin Robustos:** El primer jugador en unirse se convierte en
@@ -53,7 +53,7 @@ lugar, O en persona usando uno o varios dispositivos en modo **Pasar-y-Jugar**.
     Acusación y Voto de Linchamiento.
   - Establecer un nuevo código de juego.
   - Configurar chat solo para administradores.
-  - Activar **Pasar-y-Jugar** y **Modo Fantasma**.
+  - Activar **Pasar-y-Jugar**, **Modo Fantasma**, y **Modo solo**.
 - **Sesiones Persistentes:** Los jugadores pueden actualizar su navegador o
   desconectarse momentáneamente sin perder su lugar en el juego (aunque el reloj
   podría ser incorrecto).

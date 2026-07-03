@@ -3,29 +3,29 @@
 <a href="https://apt.izzysoft.de/fdroid/index/apk/io.github.davidchilin.werewolves_game?repo=main"><img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" align="right" height=80/></a>
 
 ![](https://repository-images.githubusercontent.com/1001769057/79681f17-e6ca-4261-bbb5-22fa20221af8)
-A self-hosted multiplayer social deduction game (only one person runs the
-server). Built with Python (Flask) and WebSockets, supporting 24 unique roles,
-no Narator needed, mobile "Pass-and-Play" support, multiple languages
-simultaneously, and automated death and vote logic.
-[Install Instructions](#setup-and-running-the-project) or Download server
-program for
+A self-hosted multiplayer social deduction game (only one person needs to run
+the app). Built with Python (Flask) and WebSockets, supporting 24 unique roles,
+**no Narator needed**, mobile "Pass-and-Play" support, multiple simultaneous
+languages, and automated vote and death logic.
+[Install Instructions](#setup-and-running-the-project) or Download server app
+for
 [Android(apk) and Linux(x86)](https://github.com/davidchilin/werewolves_game/releases).
 
 ## **Description**
 
-This program is a web-based implementation of the classic party game Werewolves.
-Players (minimum of 4, ideally +7) join a lobby using a unique game code ("w"),
-are secretly assigned roles (Villager, Wolf, Seer, ...), and then cycle through
-"night" and "day" phases. During the night, wolves secretly choose a player to
-eliminate, and the seer can investigate a player's role. During the day, players
-discuss and vote to lynch someone they suspect is a wolf. The game supports
-complex interactions: lovers linked by Cupid, chain-reaction deaths
+This application is a web-based implementation of the classic party game
+_Werewolves_. Players (minimum of 4, ideally +7) join a lobby using a unique
+game code "w", are secretly assigned roles (Villager, Wolf, Seer, ...), and then
+cycle through "night" and "day" phases. During the night, wolves secretly choose
+a player to eliminate, and the seer can investigate a player's role. During the
+day, players discuss and vote to lynch whoever they suspect is a wolf. The game
+supports complex interactions: linked lovers by Cupid, chain-reaction deaths
 (Honeypot/Hunter), solo-winning roles (Serial Killer/Fool), and "Ghost Mode"
 where dead players can still influence the game outcome.
 
 The game is designed to be played alongside a separate video or voice chat (like
 _Jitsi Meet_ or Zoom), where the real-time discussion and deception take place
-OR in person using one to several devices in **Pass-and-Play** mode.
+**OR** in person using one to several devices in **Pass-and-Play** mode.
 
 ## **Core Features**
 
@@ -51,7 +51,7 @@ OR in person using one to several devices in **Pass-and-Play** mode.
     Vote phases
   - Set a new game code
   - Set admin only chat
-  - Turn on **Pass-and-Play** and **Ghost Mode**
+  - Turn on **Pass-and-Play**, **Ghost Mode**, **Solo-wins**
   - Transfer **admin** status
 - **Persistent Sessions:** Players can refresh their browser or momentarily
   disconnect without losing their place in the game (although timer might be
@@ -83,8 +83,8 @@ OR in person using one to several devices in **Pass-and-Play** mode.
 
   - Phase ends when either the timer runs out OR all Wolves and the Seer have
     submitted their actions.
-  - After the night's actions, the game checks if a winning condition has been
-    met before proceeding.
+  - After completing night's actions, the game checks if a winning condition has
+    been met before proceeding to accusation phase.
 
 - **Accusation Phase:**
 

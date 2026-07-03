@@ -215,7 +215,7 @@
     "Werewolf": {
       "name": "Werwolf",
       "short": "Töte Dorfbewohner bei Nacht. Lass dich nicht erwischen.",
-      "long": "Du bist Teil des Rudels. Jede Nacht wachst du mit den anderen Werwölfen auf und ihr müsst einstimmig ein Opfer wählen. Tagsüber musst du dich als unschuldiger Dorfbewohner tarnen.",
+      "long": "Du bist Teil des Rudels. Jede Nacht wachst du mit den anderen Werwölfen auf und ihr müsst einstimmig/+80% ein Opfer wählen. Tagsüber musst du dich als unschuldiger Dorfbewohner tarnen.",
       "night": {
         "prompt": "Werwolf, wen wirst du fressen?",
         "button": "Töten",

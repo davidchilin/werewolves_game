@@ -190,6 +190,7 @@ class Werewolf(Role):
 
     def night_action(self, player_obj, target_player_obj, game_context):
         # The engine will aggregate Werewolf votes, but the action is simply voting a target
+        # Werewolf Kill Logic: Unanimous for less than 5 active werewolves, else require >=80% of active werewolves to choose same victim.
         return {"action": "kill_vote", "target": target_player_obj.id}
 
     def get_night_ui_schema(self, player_obj, game_context):

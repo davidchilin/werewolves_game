@@ -215,7 +215,7 @@
     "Werewolf": {
       "name": "Hombre Lobo",
       "short": "Mata Cuidadanos por la noche. Que no te atrapen.",
-      "long": "Eres parte de la manada. Cada noche, despiertas con los otros Hombres Lobo y deben acordar una víctima unánimemente para matar. Durante el día, debes colaborar con los otros Lobos mientras actúas como un inocente cuidadano.",
+      "long": "Eres parte de la manada. Cada noche, despiertas con los otros Hombres Lobo y deben acordar una víctima unánimemente/+80% para matar. Durante el día, debes colaborar con los otros Lobos mientras actúas como un inocente cuidadano.",
       "night": {
         "prompt": "Hombre Lobo, ¿a quién comerás?",
         "button": "Matar",

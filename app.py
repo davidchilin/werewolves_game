@@ -499,7 +499,7 @@ def index():
             return render_template("index.html", error=t_server("ui.login.error_code_length", lang))
         if code != game["game_code"]:
             return render_template("index.html", error=t_server("ui.login.error_code_invalid", lang))
-        if len(game["players"]) >= 24:
+        if len(game["players"]) >= 32:
              return render_template("index.html", error=t_server("ui.login.error_lobby_full", lang))
 
         for p in game["players"].values():

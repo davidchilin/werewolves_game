@@ -215,7 +215,7 @@
     "Werewolf": {
       "name": "Werewolf",
       "short": "Kill Villagers at night. Don't get caught.",
-      "long": "You are part of the pack. Every night, you wake up with the other Werewolves and must agree unanimously on a victim to kill. During the day, you must colloborate with the other Werwolves while still acting like an innocent Villager to avoid being caught.",
+      "long": "You are part of the pack. Every night, you wake up with the other Werewolves and must agree unanimously/+80% on a victim to kill. During the day, you must colloborate with the other Werwolves while still acting like an innocent Villager to avoid being caught.",
       "night": {
         "prompt": "Werewolf, who will you eat?",
         "button": "Kill",

@@ -603,7 +603,7 @@ class Game:
                 )
 
         # 4. Resolve Werewolf Votes
-        # Unanimous vote kills, else no kill
+        # Logic: Unanimous for less than 5 active werewolves, else require >=80% of active werewolves to choose same victim.
         living_werewolves = self.get_living_players("Werewolves")
         active_werewolves = [
             w
@@ -613,12 +613,21 @@ class Game:
 
         pending_wolf_kills = []
         if werewolf_vote_ids and len(active_werewolves) > 0:
-            # Simple Logic: Unanimous (or majority depending on your rules, simplified to unanimous/single target here based on previous code)
-            # Your previous code checked len(set(ids)) == 1
-            if len(set(werewolf_vote_ids)) == 1 and len(werewolf_vote_ids) >= len(
-                active_werewolves
-            ):
-                target_id = werewolf_vote_ids[0]
+            num_active_werewolves = len(active_werewolves)
+
+            vote_counts = Counter(werewolf_vote_ids)
+            top_target_id, count = vote_counts.most_common(1)[0]
+
+            is_unanimous = (
+                len(set(werewolf_vote_ids)) == 1
+                and len(werewolf_vote_ids) >= num_active_werewolves
+            )
+            is_eighty_percent = (
+                num_active_werewolves >= 5 and (count / len(werewolf_vote_ids)) >= 0.80
+            )
+
+            if is_unanimous or is_eighty_percent:
+                target_id = top_target_id
                 victim = self.players.get(target_id)
                 if victim and victim.is_alive:
                     if "protected" in victim.status_effects:
@@ -683,8 +692,8 @@ class Game:
         if not valid_votes:
             self.set_phase(PHASE_NIGHT)
             return {
-                    "result": "night",
-                    "message": {"key": "events.accusation_none", "variables": {}}
+                "result": "night",
+                "message": {"key": "events.accusation_none", "variables": {}},
             }
 
         counts = Counter(valid_votes)
