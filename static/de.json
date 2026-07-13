@@ -44,6 +44,8 @@
       "ghost_mode": "Geistermodus aktivieren",
       "min_players_warning": "Mindestens 4 Spieler erforderlich.",
       "new_code_placeholder": "Neuer Code",
+      "pg_mode": "PG Modus",
+      "pg_desc": "Familienfreundliche Tagesaufforderungen.",
       "players_header": "Spieler:",
       "pnp_desc": "Ein Gerät. Pausiert Züge.",
       "pnp_mode": "Pass-and-Play-Modus",

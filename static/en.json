@@ -44,6 +44,8 @@
       "ghost_mode": "Enable Ghost Mode",
       "min_players_warning": "Need at least 4 players to start.",
       "new_code_placeholder": "New Code",
+      "pg_mode": "PG Mode",
+      "pg_desc": "Restricts day prompts to family-friendly choices.",
       "players_header": "Players:",
       "pnp_desc": "Single device mode. Pauses turns.",
       "pnp_mode": "Pass-and-Play Mode",

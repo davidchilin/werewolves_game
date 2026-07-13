@@ -601,6 +601,9 @@ def handle_admin_update_settings(data):
     for k, v in data.items():
         lobby_state["settings"][k] = v
 
+    if "pg_mode" in data:
+        game_instance.pg_mode = data["pg_mode"]
+
     # Broadcast updates to all clients in lobby
     emit("sync_settings", lobby_state["settings"], to=game["game_code"])
 
@@ -879,6 +882,7 @@ def handle_start_game(data):
     game_instance.ghost_mode = settings.get("ghost_mode", False)
     game_instance.mode = settings.get("mode", "standard")
     game_instance.isPassAndPlay = game_instance.mode == "pass_and_play"
+    game_instance.pg_mode = settings.get("pg_mode", False)
 
     # Optional: Apply timer settings immediately if they exist
     timers_settings = settings.get("timers", {})

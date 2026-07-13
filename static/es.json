@@ -45,6 +45,8 @@
       "min_players_warning": "Se necesitan al menos 4 jugadores para iniciar.",
       "new_code_placeholder": "Nuevo Código",
       "players_header": "Jugadores:",
+      "pg_mode": "Modo PG",
+      "pg_desc": "Preguntas familiares del día.",
       "pnp_desc": "Un solo dispositivo. Pausa entre turnos.",
       "pnp_mode": "Modo Pasar-y-Jugar",
       "random_roles_btn": "🎲 Roles al Azar",

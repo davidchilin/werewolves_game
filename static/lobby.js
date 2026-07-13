@@ -318,6 +318,12 @@ socket.on("sync_settings", (settings) => {
     ghostCb.checked = !!settings.ghost_mode;
   }
 
+  const pgCheckbox = document.getElementById("mode-pg");
+  if (pgCheckbox) {
+    pgCheckbox.checked = settings.pg_mode || false;
+    pgCheckbox.disabled = !isPlayerAdmin; // Only admins can change it
+  }
+
   // 4. Restore Timers
   if (settings.timers) {
     const t = settings.timers;
@@ -474,12 +480,16 @@ document.getElementById("start-game-btn").onclick = () => {
     lynch_vote: document.getElementById("lynch-vote-timer-input").value,
   };
 
+  const pgCheckbox = document.getElementById("mode-pg");
+  const pgMode = pgCheckbox ? pgCheckbox.checked : false;
+
   socket.emit("start_game", {
     roles: selectedRoles,
     settings: {
       mode: passAndPlay ? "pass_and_play" : "standard",
       solo_win_continues: soloContinues,
       ghost_mode: ghostMode,
+      pg_mode: pgMode,
       timers: timers,
     },
   });
@@ -636,6 +646,12 @@ if (settingsContainer) {
       case "ghost-mode-checkbox":
         socket.emit("admin_update_settings", {
           ghost_mode: target.checked,
+        });
+        break;
+
+      case "mode-pg":
+        socket.emit("admin_update_settings", {
+          pg_mode: target.checked,
         });
         break;
 

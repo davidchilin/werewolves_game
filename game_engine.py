@@ -53,6 +53,7 @@ class Game:
         self.mode = self.settings.get("mode", mode)
         self.isPassAndPlay = self.mode == "pass_and_play"
         self.ghost_mode = self.settings.get("ghost_mode", False)
+        self.pg_mode = self.settings.get("pg_mode", False)
         self.lock = RLock()
         self.message_history = []
 
@@ -268,7 +269,12 @@ class Game:
         # Use night_count to rotate through the shuffled list
         # We use absolute value or max(0) to ensure positive index if night_count is -1
         safe_night = max(0, self.night_count)
-        return self.prompt_order[safe_night % len(self.prompt_order)]
+        raw_index = self.prompt_order[safe_night % len(self.prompt_order)]
+
+        if self.pg_mode:
+            return raw_index % 5
+
+        return raw_index
 
     def receive_night_action(self, player_id, target_id):
         """
@@ -585,8 +591,9 @@ class Game:
             if top_target_id in self.players:
                 idx = self.get_current_prompt_index()
 
+                limit = 5 if self.pg_mode else Role.VILLAGER_PROMPT_COUNT
                 # [CHANGED] Generate key instead of accessing list
-                safe_idx = idx % Role.VILLAGER_PROMPT_COUNT
+                safe_idx = idx % limit
                 prompt_key = f"prompts.villager_{safe_idx}"
 
                 final_events.append(
