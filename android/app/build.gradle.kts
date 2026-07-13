@@ -12,8 +12,8 @@ android {
         applicationId = "io.github.davidchilin.werewolves_game"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = System.getenv("VERSION_NAME") ?: "1.0"
+        versionCode = 1.1
+        versionName = System.getenv("VERSION_NAME") ?: "1.1"
         resConfigs("en", "es", "de")
 
         ndk {
