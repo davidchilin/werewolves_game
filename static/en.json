@@ -1,14 +1,15 @@
 {
-  "_comment": "version 5.2.5.3; update language in index.html",
+  "_comment": "version 5.2.5.8; update language in index.html",
   "prompts": {
-    "villager_0": "Who is most likely to have an OnlyFans?",
-    "villager_1": "Who would die first in a zombie apocalypse?",
-    "villager_2": "Who looks the most suspicious right now?",
-    "villager_3": "Who is the most lightweight drinker?",
-    "villager_4": "Who has the highest body count?",
+    "villager_0": "Who would die first in a zombie apocalypse?",
+    "villager_1": "Who looks the most suspicious right now?",
+    "villager_2": "Who is a finger licker?",
+    "villager_3": "Dim didi dum :)",
+    "villager_4": "Who most likely supports Bernie?",
     "villager_5": "Who has the cutest smile?",
-    "villager_6": "Who is a finger licker?",
-    "villager_7": "Dim didi dum :)"
+    "villager_6": "Who is most likely to have an OnlyFans?",
+    "villager_7": "Who is the most lightweight drinker?",
+    "villager_8": "Who has the highest body count?"
   },
   "teams": {
     "Villagers": "Villagers",

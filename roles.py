@@ -64,7 +64,7 @@ class Role:
     description_key = "desc_generic"
     team = "Neutral"  # Villager, Werewolf, Neutral
     priority = 8  # 0 = First (e.g., Bodyguard), 50 = Last (e.g.,Werewolf)
-    VILLAGER_PROMPT_COUNT = 8
+    VILLAGER_PROMPT_COUNT = 9
 
     ui_short = "No description."
     ui_long = "No description."

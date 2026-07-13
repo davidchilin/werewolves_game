@@ -1,14 +1,15 @@
 {
-  "_comment": "version 5.2.5.3; Aktaulizar idioma en index.html",
+  "_comment": "version 5.2.5.8; Aktaulizar idioma en index.html",
   "prompts": {
-    "villager_0": "¿Quién es más probable que tenga un OnlyFans?",
-    "villager_1": "¿Quién moriría primero en un apocalipsis de zombies?",
-    "villager_2": "¿Quién parece más sospechoso ahora mismo?",
-    "villager_3": "¿Quién se emborracha más rápido?",
-    "villager_4": "¿Quién tiene el 'body count' más alto?",
+    "villager_0": "¿Quién moriría primero en un apocalipsis de zombies?",
+    "villager_1": "¿Quién parece más sospechoso ahora mismo?",
+    "villager_2": "¿Quién se chupa los dedos al comer?",
+    "villager_3": "Dim didi dum :)",
+    "villager_4": "¿Quién es más probable de apoyar a Bernie?",
     "villager_5": "¿Quién tiene la sonrisa más linda?",
-    "villager_6": "¿Quién se chupa los dedos al comer?",
-    "villager_7": "Dim didi dum :)"
+    "villager_6": "¿Quién es más probable que tenga un OnlyFans?",
+    "villager_7": "¿Quién se emborracha más rápido?",
+    "villager_8": "¿Quién tiene el 'body count' más alto?"
   },
   "teams": {
     "Villagers": "Cuidadanos",

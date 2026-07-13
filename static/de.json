@@ -1,14 +1,15 @@
 {
-  "_comment": "version 5.2.5.3; Aktualisieren Sie die Sprache in index.html",
+  "_comment": "version 5.2.5.8; Aktualisieren Sie die Sprache in index.html",
   "prompts": {
-    "villager_0": "Wer hat am wahrscheinlichsten einen OnlyFans-Account?",
-    "villager_1": "Wer würde in einer Zombie-Apokalypse zuerst sterben?",
-    "villager_2": "Wer sieht gerade am verdächtigsten aus?",
-    "villager_3": "Wer verträgt am wenigsten Alkohol?",
-    "villager_4": "Wer hat den höchsten Body-Count?",
+    "villager_0": "Wer würde in einer Zombie-Apokalypse zuerst sterben?",
+    "villager_1": "Wer sieht gerade am verdächtigsten aus?",
+    "villager_2": "Wer leckt sich beim Essen die Finger ab?",
+    "villager_3": "Dim didi dum :)",
+    "villager_4": "Wer unterstützt Bernie am ehesten?",
     "villager_5": "Wer hat das süßeste Lächeln?",
-    "villager_6": "Wer leckt sich beim Essen die Finger ab?",
-    "villager_7": "Dim didi dum :)"
+    "villager_6": "Wer hat am wahrscheinlichsten einen OnlyFans-Account?",
+    "villager_7": "Wer verträgt am wenigsten Alkohol?",
+    "villager_8": "Wer hat den höchsten Body-Count?"
   },
   "teams": {
     "Villagers": "Dorfbewohner",

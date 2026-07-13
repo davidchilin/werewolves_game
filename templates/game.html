@@ -127,6 +127,21 @@
             </button>
           </form>
         </div>
+
+        <div
+          style="
+            color: #faf;
+            font-size: 12px;
+            width: 100;
+            text-align: center;
+            padding-top: 10px;
+          "
+        >
+          source code:
+          <a href="https://github.com/davidchilin/werewolves_game"
+            >https://github.com/davidchilin/werewolves_game</a
+          >
+        </div>
       </div>
     </div>
 
@@ -173,11 +188,5 @@
       window.userLang = "{{ session.get('language', 'en') }}";
     </script>
     <script src="{{ url_for('static', filename='game.js') }}"></script>
-    <div style="color: #faf; font-size: 12px">
-      source code:
-      <a href="https://github.com/davidchilin/werewolves_game"
-        >https://github.com/davidchilin/werewolves_game</a
-      >
-    </div>
   </body>
 </html>
