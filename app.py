@@ -1,6 +1,6 @@
 """
 app.py
-Version: 5.2.3 android app working
+Version: 5.2.6.1
 """
 import json
 import logging
@@ -149,7 +149,7 @@ socketio = SocketIO(
 # Game Dictionary stores connection/wrapper info
 game = {
     "admin_sid": None,
-    "game_code": "W",
+    "game_code": GAME_DEFAULTS["DEFAULT_CODE"],
     "game_state": PHASE_LOBBY,
     "players": {},  # Dict[player_id(uuid), PlayerWrapper_Obj]
 }

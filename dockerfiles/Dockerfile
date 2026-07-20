@@ -15,7 +15,7 @@ RUN pip3 install --upgrade pip && \
 COPY templates/ ./templates/
 COPY static/ ./static/
 COPY app.py config.py  game_engine.py  roles.py .env.werewolves ./
-copy img/favicon.ico ./img/
+COPY img/favicon.ico ./img/
 
 # Expose the port the app runs on
 EXPOSE 5000

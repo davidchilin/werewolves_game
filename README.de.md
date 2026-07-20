@@ -215,7 +215,7 @@ Um dieses Projekt lokal auszuführen, befolgen Sie diese Schritte:
     zum Beispiel auf 8080 ändern: -p 8080:5000.
 
     ```bash
-    docker build -t werewolves_game .
+    docker build -t werewolves_game -f dockerfiles/Dockerfile .
     docker run -p 5000:5000 --name werewolves_game werewolves_game
     ```
 
@@ -290,6 +290,8 @@ Um dieses Projekt lokal auszuführen, befolgen Sie diese Schritte:
 
 ### Spielkonfiguration (config.py)
 
+- DEFAULT_CODE: Setzt den anfängliche game_code, normalerweise `W`, case
+  insensitive.
 - DEFAULT_LANGUAGE: Auf "es" oder "de" setzen, um den Serverstandard zu ändern.
 - TIME_NIGHT / TIME_ACCUSATION: Standarddauer ändern (Sekunden).
 - PAUSE_DURATION: Sekunden zum Pausieren zwischen Phasen (um Text zu lesen).

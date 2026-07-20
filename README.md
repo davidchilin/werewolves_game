@@ -182,7 +182,7 @@ To run this project locally, follow these steps:
     example: -p 8080:5000.
 
     ```bash
-    docker build -t werewolves_game .
+    docker build -t werewolves_game -f dockerfiles/Dockerfile .
     docker run -p 5000:5000 --name werewolves_game werewolves_game
     ```
 
@@ -255,6 +255,7 @@ To run this project locally, follow these steps:
 
 ### Game Configuration (config.py)
 
+- DEFAULT_CODE: Set initial default game_code, normally `W`, case insensitive.
 - DEFAULT_LANGUAGE: Set to "es" or "de" to change the server default.
 - TIME_NIGHT / TIME_ACCUSATION: Change default durations (seconds).
 - PAUSE_DURATION: Seconds to pause between phases (to read text).

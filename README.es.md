@@ -191,7 +191,7 @@ Para ejecutar este proyecto localmente, sigue estos pasos:
     navegador a 8080 por ejemplo: -p 8080:5000.
 
     ```bash
-    docker build -t werewolves_game .
+    docker build -t werewolves_game -f dockerfiles/Dockerfile .
     docker run -p 5000:5000 --name werewolves_game werewolves_game
     ```
 
@@ -265,6 +265,8 @@ Para ejecutar este proyecto localmente, sigue estos pasos:
 
 ### Configuración de Juego (config.py)
 
+- DEFAULT_CODE: Establece el código inicial, normalmente `W`, no distingue entre
+  mayúsculas y minúsculas.
 - DEFAULT_LANGUAGE: Configurar como "es" o "de" para cambiar el idioma en que
   empieza el servidor.
 - TIME_NIGHT / TIME_ACCUSATION: Cambiar las duraciones predeterminadas (en
