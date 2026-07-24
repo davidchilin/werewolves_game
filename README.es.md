@@ -1,4 +1,4 @@
-[🇺🇸 English](README.md) | [🇩🇪 Deutsch](README.de.md)
+[🇺🇸 English](README.md) | [🇩🇪 Deutsch](README.de.md) | [🇨🇳 中文](README.zh.md)
 <a href="https://f-droid.org/packages/io.github.davidchilin.werewolves_game/"><img src="https://fdroid.gitlab.io/artwork/badge/get-it-on-en.svg" alt="Get it on F-Droid" align="right" height=80/></a>
 <a href="https://apt.izzysoft.de/fdroid/index/apk/io.github.davidchilin.werewolves_game?repo=main"><img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" align="right" height=80/></a>
 

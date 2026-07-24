@@ -1,0 +1,454 @@
+{
+  "_comment": "version 5.2.5.8; 更新语言请修改 index.html",
+  "prompts": {
+    "villager_0": "谁会在丧尸末日中第一个死？",
+    "villager_1": "现在谁看起来最可疑？",
+    "villager_2": "谁吃饭会舔手指？",
+    "villager_3": "叮咚叮咚 :)",
+    "villager_4": "谁最可能支持伯尼？",
+    "villager_5": "谁的笑容最可爱？",
+    "villager_6": "谁最可能有 OnlyFans？",
+    "villager_7": "谁酒量最小？",
+    "villager_8": "谁的情史最丰富？"
+  },
+  "teams": {
+    "Villagers": "村民",
+    "Werewolves": "狼人",
+    "Neutral": "中立",
+    "Monster": "怪物",
+    "Serial_Killer": "连环杀手"
+  },
+  "ui": {
+    "login": {
+      "error_rate_limit": "尝试次数过多，请稍后再试。",
+      "error_name_required": "请输入名字（无特殊字符）。",
+      "error_name_length": "名字不能超过20个字符。",
+      "error_code_required": "请输入游戏码。",
+      "error_code_alnum": "游戏码只能包含字母和数字。",
+      "error_code_length": "游戏码太长。",
+      "error_code_invalid": "无效的游戏码。",
+      "error_lobby_full": "大厅已满。",
+      "error_name_taken": "该名字已被使用。"
+    },
+    "lobby": {
+      "add_player_btn": "添加玩家",
+      "admin_header": "管理员控制",
+      "chat_header": "大厅聊天",
+      "chat_placeholder": "输入消息...",
+      "chat_restricted": "聊天仅限管理员",
+      "disable_timers": "禁用计时器",
+      "exclude_btn": "踢出",
+      "game_code": "游戏码：",
+      "game_mode_header": "游戏模式",
+      "ghost_desc": "死者可以投票……偶尔。",
+      "ghost_mode": "开启幽灵模式",
+      "min_players_warning": "至少需要4名玩家才能开始。",
+      "new_code_placeholder": "新游戏码",
+      "pg_mode": "PG模式",
+      "pg_desc": "适合家庭的白天话题。",
+      "players_header": "玩家：",
+      "pnp_desc": "单设备模式，轮流操作。",
+      "pnp_mode": "传递游玩模式",
+      "random_roles_btn": "🎲 随机选择角色",
+      "rating_guide": "💡 评分指南",
+      "rating_neg": "- 负面：狼人阵营",
+      "rating_neu": "~ 零：中立 / 未知",
+      "rating_note": "\"随机\"按钮会选择总值接近0的平衡角色。角色夜间行动按升序处理，因此1在2之前。",
+      "rating_pos": "+ 正面：村民阵营",
+      "rating_title": "角色平衡评分：",
+      "role_count_label": "角色数量：",
+      "roles_header": "角色",
+      "roles_warning": "⚠️ 选择的角色太多！请取消选择 {count} 个角色。",
+      "send_btn": "发送",
+      "set_code_btn": "设置",
+      "set_code_label": "设置新游戏码：",
+      "set_timers_btn": "设置计时器",
+      "solo_win_desc": "不等团队获胜。",
+      "solo_win_mode": "单人胜利结束游戏",
+      "start_game_btn": "开始游戏",
+      "timer_accusation": "指控（秒）：",
+      "timer_lynch": "处决投票（秒）：",
+      "timer_night": "夜晚（秒）：",
+      "timers_header": "计时器设置（+30秒）",
+      "title": "大厅 - 等待玩家中",
+      "toggle_chat_btn": "切换管理员聊天",
+      "waiting_text": "等待玩家加入...",
+      "you_suffix": "（你）"
+    },
+    "game": {
+      "accusation_prompt": "谁是狼人？讨论时间到！",
+      "action_submitted": "行动已提交。",
+      "alert_error": "错误：{msg}",
+      "alert_relogin": "新的游戏码已设置。\n你将被返回登录页面。",
+      "cannot_select_same": "不能两次选择同一个人！",
+      "chat_night_placeholder": "安静的睡眠时间...💤",
+      "chat_restricted_placeholder": "聊天受限。",
+      "chat_whisper_placeholder": "悄悄话...",
+      "dead_message": "<h3>你已经死了 💀 你可以安静地旁观游戏。</h3>",
+      "done_back_btn": "完成 / 返回",
+      "final_role_item": "<strong>{name}</strong>{badges} 是 {role}",
+      "final_roles": "最终身份：",
+      "force_phase_btn": "强制下一阶段",
+      "game_history": "游戏历史",
+      "game_loading": "入睡中...",
+      "game_log_title": "游戏日志",
+      "game_over_title": "游戏结束",
+      "ghost_active": "👻 幽灵模式激活：...",
+      "ghost_chat_title": "幽灵聊天 👻",
+      "ghost_fail": "👻 你的幽灵哀嚎无人听见...",
+      "identity_check_title": "身份确认",
+      "living_chat_title": "生者聊天",
+      "loading": "加载中...",
+      "lynch_prompt": "你要处决 <span style='color:#bb86fc'>{name}</span> 吗？",
+      "next_phase_btn": "下一阶段",
+      "night_phase_title": "夜晚阶段 🌙",
+      "nobody": "无人",
+      "pause_timers_btn": "暂停计时器 ⏸️",
+      "players_header": "玩家",
+      "please_wait": "请稍候...",
+      "pnp_instruction": "选择你的名字来执行操作。",
+      "post_game_chat": "赛后聊天",
+      "ready_for_night": "准备进入夜晚？",
+      "rematch_status": "{count} / {total} 名玩家已投票返回。",
+      "resume_timers_btn": "恢复计时器 ▶️",
+      "return_lobby_btn": "投票返回大厅",
+      "timer_disabled": "计时器 ♾️",
+      "timer_left": "剩余时间：",
+      "time_up": "时间到！",
+      "voted_btn": "已投票！",
+      "voted_no": "反对票：",
+      "voted_yes": "赞成票：",
+      "vote_failed": "投票失败。",
+      "votes_needed": "还需要 <strong>{count}</strong> 票才能睡觉！",
+      "waiting_others": "等待其他玩家...",
+      "waiting_result": "等待结果...",
+      "win_generic": "{team} 获胜！",
+      "win_villagers": "村民获胜！",
+      "win_werewolves": "狼人获胜！",
+      "you_accused": "你指控了 <span style='color:#ff5252'>{name}</span>。",
+      "your_role_label": "你的身份："
+    },
+    "pnp": {
+      "btn_cancel": "取消",
+      "btn_no": "不，返回",
+      "btn_ready": "我准备好了",
+      "btn_yes": "是的，我是 {name}",
+      "confirm_msg": "请确认 <strong>{name}</strong> 持有设备。<br>不要让别人看到屏幕。",
+      "confirm_title": "确认身份",
+      "done_msg": "行动已记录。",
+      "done_title": "完成",
+      "force_msg": "⚠️ <strong>警告：</strong><br>这将跳过当前阶段的剩余回合。<br>确定吗？",
+      "force_title": "强制下一阶段",
+      "force_yes": "是的，强制下一阶段",
+      "hub_day": "指控阶段 🫵",
+      "hub_night": "夜晚阶段 🌙",
+      "hub_vote": "处决投票 🔥",
+      "identity_ask": "你是 <strong>{name}</strong> 吗？",
+      "identity_title": "身份确认",
+      "pass_device": "请传递设备..."
+    }
+  },
+  "actions": {
+    "accuse": "指控",
+    "vote_sleep": "💤 投票睡觉",
+    "vote_sleep_timer": "💤 投票睡觉（{time}秒）",
+    "voted_sleep": "已投票睡觉 💤",
+    "lynch_yes": "是",
+    "lynch_no": "否",
+    "kill": "杀死",
+    "protect": "保护",
+    "heal": "治愈",
+    "poison": "毒药"
+  },
+  "events": {
+    "accusation_made": "🫵 <strong>{accuser}</strong> 指控 <strong>{target}</strong>！",
+    "accusation_none": "无人被指控。🌒 入睡中...",
+    "chat_night_shh": "嘘...村庄正在安静地沉睡，<strong>{name}</strong>",
+    "chat_restricted": "聊天当前受限。",
+    "cupid_info": "💘 你与 <strong>{name}</strong> 相爱了！一人死亡，两人同去。",
+    "cupid_info_dead": "你死了，但你应该知道…… 💘 你与 <strong>{name}</strong> 相爱了！",
+    "death_honey": "🍯 <strong>{role} {name}</strong> 掉进了陷阱！{reason} 🐝",
+    "death_love": "💕 <strong>{name}</strong> 心碎而死！😈 他们是 <strong>{role}</strong> ⚰️",
+    "death_retaliation": "⚔️ <strong>{name}</strong> 惹错了人！他们是 <strong>{role}</strong> ⚰️",
+    "death_reveal_human": "🤦 <strong>{name}</strong> 揭露了一名村民，羞愧而死！⚰️",
+    "death_reveal_wolf": "🔦 <strong>{name}</strong> 被揭露为 <strong>{role}</strong> 并被处死！⚰️",
+    "death_secondary": "☠️ <strong>{name}</strong> 也死了！原因：{reason} ⚰️",
+    "death_serial": "🔪 发现一具残缺的尸体！<strong>{name}</strong> 是连环杀手的受害者！🩸 他们是 <strong>{role}</strong> ⚰️",
+    "death_witch": "⚗️ 听到了冒泡声……☠️ <strong>{name}</strong> 化为污泥。他们是 <strong>{role}</strong> ⚰️",
+    "death_wolf": "🐾 发现了尸体的残骸！<strong>{name}</strong> 被杀了 🫀 他们是 <strong>{role}</strong> ⚰️",
+    "fool_win": "🤡 愚人 <strong>{name}</strong> 骗过了所有人，被处决获得单人胜利！🥇",
+    "lawyer_save": "⚖️ <strong>{name}</strong> 被投票出局，但他们的律师找到了漏洞！",
+    "lovers_pact": "💘 <strong>爱侣契约：</strong> {name} 心碎而死 💔 他们是 {role}。",
+    "lynch_armor": "⚖️ 村庄投票处决，但……<strong>奇怪的是，没有人死。</strong>",
+    "lynch_fail": "无人被处决 🕊️",
+    "lynch_result": "⚖️ <strong>{name}</strong> 被处决了！他们是 {role} ⚰️",
+    "lynch_success": "⚖️ <strong>{name}</strong> 被处决了！他们是 <strong>{role}</strong> ⚰️",
+    "mayor_tie": "⚖️ <strong>平票！</strong> 市长打破平局，反对 {target}！",
+    "night_kill": "🐾 发现了尸体的残骸！<strong>{name}</strong> 被杀了。他们是 {role}。",
+    "phase_change_msg": "新阶段开始了：<strong>{phase}</strong>。",
+    "prostitute_block": "💋 妓女拜访了你，你太分心了！💦",
+    "prostitute_collat": "👠 <strong>约会伤害：</strong> {name} 也死了 🔞 他们是 {role}。",
+    "prostitute_win": "🥰 妓女交了很多朋友，获得了单人胜利 🥇",
+    "seer_result": "🔮 你的预言显示 <strong>{name}</strong> 是 <strong>{role}</strong>。",
+    "solo_win_continue": "🥇 <span style='color: #fdd835'>{role} {name}</span> 获得了单人胜利！",
+    "strangely": "奇怪的是，没有人死……",
+    "sun_rise_safe": "🌞 太阳升起，没有人被杀。",
+    "tie_deadlock": "平局僵持。无人被处决。",
+    "tie_restart": "⚖️ 平局！重新讨论。",
+    "trial_started": "⛓️ <strong>{target}</strong> 正在受审！",
+    "village_poll": "📊 <strong>村庄投票：</strong> <em>{prompt}</em> <span style='color: #ff5252'><strong>{target}</strong></span>",
+    "win_solo": "单人胜者 {role} {name} 已达成目标！",
+    "win_villagers": "所有狼人都已被消灭。",
+    "win_werewolves": "狼人占领了村庄。",
+    "wolf_lone": "你是唯一的狼人 🐺",
+    "wolf_team": "你是狼人 🐺 你的狼队友是：<strong>{mates}</strong>。"
+  },
+  "roles": {
+    "Magic_User": { "name": "魔法使用者" },
+    "Villager": {
+      "name": "村民",
+      "short": "找出狼人并将他们投票出局。",
+      "long": "你没有特殊的夜间能力。你的力量在于你的投票和推理能力。倾听他人，发现矛盾，处决野兽。",
+      "night": {
+        "prompt": "{prompt}",
+        "button": "选择",
+        "feedback": "你做出了一个有趣的选择，选择了 {target}。你在夜晚生物骚动时梦见了美味的玉米饼……"
+      }
+    },
+    "Werewolf": {
+      "name": "狼人",
+      "short": "夜间杀死村民。不要被抓到。",
+      "long": "你是狼群的一员。每晚，你与其他狼人一起醒来，必须一致同意/+80%选择一名受害者杀死。白天，你必须与其他狼人协作，同时表现得像无辜的村民一样以免被抓。",
+      "night": {
+        "prompt": "狼人，你们要吃谁？",
+        "button": "猎杀",
+        "feedback": "你对 {target} 垂涎欲滴。"
+      }
+    },
+    "Seer": {
+      "name": "预言家",
+      "short": "夜间查看一名玩家的身份！（狼人？）",
+      "long": "你是村庄最强大的调查者。每晚，你选择一名玩家，揭示该玩家的阵营——是狼人还是村民。注意：怪物会被视为狼人。",
+      "night": {
+        "prompt": "预言家，你要查看谁的身份？",
+        "button": "调查",
+        "feedback": "你看到了 {target} 的身份。"
+      }
+    },
+    "Alpha_Werewolf": {
+      "name": "头狼",
+      "short": "如果最后一个存活则单人获胜。",
+      "long": "你是狼人的领袖。你与狼群一起投票夜间猎杀。然而，你的目标是独自坐在你的山上。如果是唯一存活的狼人且最多只有一个非怪物存活，则单人获胜。",
+      "night": {
+        "prompt": "狼人，你们要吃谁？",
+        "button": "猎杀",
+        "feedback": "你对 {target} 垂涎欲滴。"
+      }
+    },
+    "Bodyguard": {
+      "name": "守卫",
+      "short": "选择一名玩家保护其免受狼人袭击。",
+      "long": "每晚，你可以选择一名玩家守护。如果狼人攻击该玩家，你的保护会拯救他们，无人死亡。你不能连续两晚保护同一个人。",
+      "night": {
+        "prompt": "守卫，你要保护谁？",
+        "button": "保护",
+        "feedback": "正在为 {target} 下达保护指令。"
+      }
+    },
+    "Cupid": {
+      "name": "丘比特",
+      "short": "将两名玩家链接在致命的爱情中。",
+      "long": "在你的第一个夜晚，选择两名玩家成为\"爱侣\"。这两人会知道他们爱人的名字。他们的命运相连：如果其中一人被杀（夜间或处决），另一人会立刻心碎而死。",
+      "night": {
+        "prompt": "选择爱侣：",
+        "description": "被选中的玩家陷入致命的爱情。如果一人死亡，另一人将心碎而死。",
+        "button": "射箭",
+        "feedback": "爱意在空气中弥漫……{target} 和 {target2}。"
+      }
+    },
+    "Demented_Villager": {
+      "name": "疯狂村民",
+      "short": "如果最后一个存活则单人获胜。",
+      "long": "你没有特殊能力，对预言家显示为村民。然而，ChatGPT说服你要杀光所有人才能赢。注意：如果和怪物、蜜罐、猎人、连环杀手或野孩子一起，你不会是最后一个。",
+      "night": {
+        "prompt": "{prompt}",
+        "button": "选择",
+        "feedback": "你做出了一个有趣的选择，选择了 {target}。"
+      }
+    },
+    "Fool": {
+      "name": "愚人",
+      "short": "试图让村民将自己处决。",
+      "long": "你是中立的混乱代理人。你既不属于村民也不属于狼人。如果你的终极胜利是说服村庄处决你，你就获胜了。",
+      "night": {
+        "prompt": "{prompt}",
+        "button": "选择",
+        "feedback": "你做出了一个有趣的选择，选择了 {target}。"
+      }
+    },
+    "Honeypot": {
+      "name": "蜜罐",
+      "short": "陷阱角色。如果被杀，杀死你的人也会死。",
+      "long": "你是一名村民，但碰不得。如果你被杀，无论是被狼人还是处决，他们都将付出生命的代价。",
+      "night": {
+        "prompt": "{prompt}",
+        "button": "选择",
+        "feedback": "你做出了一个有趣的选择，选择了 {target}。"
+      }
+    },
+    "Hunter": {
+      "name": "猎人",
+      "short": "临死前可以反击另一名玩家。",
+      "long": "夜间你可以选择一个人，在你死后将其杀死。",
+      "night": {
+        "prompt": "猎人：如果你死了，你要射杀谁？",
+        "button": "瞄准",
+        "feedback": "你瞄准了 {target}（只有你死后才会触发）。"
+      }
+    },
+    "Backlash_Werewolf": {
+      "name": "反击狼人",
+      "short": "临死前可以反击另一名玩家。",
+      "long": "你是一只拥有致命反应能力的狼人。你可以在夜间选择一个人，在你死后复仇。",
+      "night": {
+        "prompt": "反击狼人行动",
+        "description": "1. 投票夜间猎杀（狼群行动）<br>2. 选择复仇目标（你死后该目标死亡）",
+        "button": "提交选择",
+        "feedback": "你投票杀死了 {target}，并标记 {target2} 为复仇目标。"
+      }
+    },
+    "Lawyer": {
+      "name": "律师",
+      "short": "选择一名客户，使其在第二天不能被处决。",
+      "long": "你为被指控者辩护。夜间，你选择一名玩家作为你的客户。如果该玩家进入处决审判，处决将失败，他们会活下来。",
+      "night": {
+        "prompt": "律师，在这荒谬的法庭上你要为谁辩护？",
+        "button": "辩护",
+        "feedback": "你正在为 {target} 准备辩护词。"
+      }
+    },
+    "Martyr": {
+      "name": "殉道者",
+      "short": "死亡时将第二条生命赠予一名玩家。",
+      "long": "夜间你可以选择一名玩家，在你死后将你的生命之力传承给他们。",
+      "night": {
+        "prompt": "殉道者，你死后要将第二条生命赐予谁？",
+        "button": "祝福",
+        "feedback": "你在守护着 {target}。"
+      }
+    },
+    "Mayor": {
+      "name": "市长",
+      "short": "投票可在指控阶段打破平局。",
+      "long": "你是村庄的领袖。由于你的政治影响力，你的投票在每日指控中具有打破平局的权重。你可以秘密宣布你的继任者。你的继任者只有在他们的角色没有夜间行动（如村民或怪物）时才能指定他们的继任者。",
+      "night": {
+        "prompt": "市长，谁是下一任市长？",
+        "button": "选举",
+        "feedback": "政治真是美妙，对吧 {target} ;)"
+      }
+    },
+    "Monster": {
+      "name": "怪物",
+      "short": "如果最后一个存活则单人获胜。无阵营。",
+      "long": "你是一头超自然的野兽。你既不属于村民也不属于狼人；你属于你自己。你免疫狼人攻击，被视为狼人。如果最多只有一个狼人存活且你活着，则单人获胜。",
+      "night": {
+        "prompt": "{prompt}",
+        "button": "选择",
+        "feedback": "你做出了一个有趣的选择，选择了 {target}。"
+      }
+    },
+    "Prostitute": {
+      "name": "妓女",
+      "short": "夜间拜访一名玩家，阻止其夜间行动。",
+      "long": "每晚你可以拜访另一名玩家。被拜访玩家的夜间选择将被秘密取消。如果你或拜访的玩家被杀，你们都会死。拜访大多数玩家以获得单人胜利！",
+      "night": {
+        "prompt": "妓女，今晚要去拜访谁？",
+        "button": "拜访",
+        "feedback": "正在拜访 {target}。"
+      }
+    },
+    "Random_Seer": {
+      "name": "随机预言家",
+      "short": "拥有秘密属性：理智、偏执、天真、疯狂",
+      "long": "25%正常理智、25%偏执（到处看到狼人）、25%天真（只看到村民）、25%疯狂（看到相反身份）。建议与普通预言家一起游戏。预言家的精神状态是秘密属性。",
+      "night": {
+        "prompt": "预言家，你要查看谁的身份？",
+        "button": "调查",
+        "feedback": "你看到了 {target} 的身份。"
+      }
+    },
+    "Revealer": {
+      "name": "揭露者",
+      "short": "揭露一名玩家的身份？揭露狼人——狼人死亡；揭露村民——你死亡。",
+      "long": "你拥有高风险的能力。你选择一名玩家进行\"揭露\"。如果他们是狼人，他们会被曝光并立即死亡。如果他们是村民，你会因诬告无辜者而羞愧而死。",
+      "night": {
+        "prompt": "揭露者：揭露一只狼人。如果错了，你就会死💀",
+        "button": "揭露",
+        "feedback": "你揭露了 {target}。"
+      }
+    },
+    "Serial_Killer": {
+      "name": "连环杀手",
+      "short": "每晚杀一人。最后一个存活则获胜。",
+      "long": "你是第三方。你不会与村民或狼人一起获胜。每晚，你选择一名受害者进行残杀。你的杀戮不能被守卫阻止。你最多只能与另一个活人共存并单人获胜。",
+      "night": {
+        "prompt": "连环杀手，你的下一个受害者是谁？",
+        "button": "谋杀",
+        "feedback": "🪚 你为 {target} 准备好了工具。"
+      }
+    },
+    "Sorcerer": {
+      "name": "术士",
+      "short": "狼人阵营。寻找其他魔法角色。",
+      "long": "你属于狼人阵营，但不会和他们一起醒来猎杀。相反，你调查玩家以识别谁是预言家或其他魔法使用者，如女巫和揭露者。",
+      "night": {
+        "prompt": "术士，找出预言家或女巫！",
+        "button": "扫描",
+        "feedback": "你凝视虚空，看到了 {target} 的身份。"
+      }
+    },
+    "Tough_Villager": {
+      "name": "坚韧村民",
+      "short": "可以抵挡一次死亡的村民。",
+      "long": "你没有主动能力，但你穿着盔甲。第一次死亡时，你会神秘地幸存。你只有在第二次死亡时才会真正死去。",
+      "night": {
+        "prompt": "{prompt}",
+        "button": "选择",
+        "feedback": "你做出了一个有趣的选择，选择了 {target}。"
+      }
+    },
+    "Tough_Werewolf": {
+      "name": "坚韧狼人",
+      "short": "第一次被杀时能够存活。",
+      "long": "你与狼群一起猎杀。如果猎人射击你、女巫毒害你、处决针对你或连环杀手攻击你，你都能抵挡那第一次攻击。",
+      "night": {
+        "prompt": "狼人，你们要吃谁？",
+        "button": "猎杀",
+        "feedback": "你对 {target} 垂涎欲滴。"
+      }
+    },
+    "Wild_Child": {
+      "name": "野孩子",
+      "short": "选择一个榜样。如果榜样死亡，孩子变成狼人。",
+      "long": "在第一个夜晚，你选择另一名玩家作为你的\"榜样\"。只要他们活着并养育你，你就保持人性。如果他们死了，你就变成狼人并加入狼群。",
+      "night": {
+        "prompt": "野孩子，选择你的榜样：",
+        "button": "选择",
+        "feedback": "你仰慕 {target}。"
+      }
+    },
+    "Witch": {
+      "name": "女巫",
+      "short": "拥有两瓶药水：一瓶毒药，一瓶解药。",
+      "long": "你在狼人之前醒来。你可以使用治愈药水猜对并救下受害者，或使用毒药药水杀死你选择的另一名玩家。每瓶药水每局只能使用一次。",
+      "night": {
+        "prompt": "女巫，谁要喝药水？",
+        "button": "喂药",
+        "feedback": "{target} 喝了 {potion}。",
+        "potion_heal": "治愈药水",
+        "potion_poison": "毒药药水",
+        "potion_none": "什么都不做"
+      }
+    }
+  }
+}
