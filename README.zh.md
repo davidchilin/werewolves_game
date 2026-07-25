@@ -24,7 +24,7 @@
 
 ## **核心功能**
 
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/lobby.jpg" width="25%" align="right"/>
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/lobby.zh.png" width="25%" align="right"/>
 
 - **📱 轮流玩模式：**
   使用一台手机（或多台）在房间里传递。界面会引导玩家确认身份后再显示私密角色界面。
@@ -60,7 +60,7 @@
 
 ## **游戏阶段**
 
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/game_over.png" width="50%" align="right"/>
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/game_over.zh.png" width="50%" align="right"/>
 
 - **夜晚阶段：**
 
@@ -125,7 +125,7 @@
 - **怪物：** 免疫狼人攻击。如果与 1 只狼人单独存活则获胜。
 - **蜜罐：** 如果被杀，杀死蜜罐的人也会死（复仇）。
 
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/game_screen.png" width="80%" align="center"/>
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/game_screen.zh.png" width="80%" align="center"/>
 
 ## **搭建与运行**
 
@@ -237,12 +237,12 @@
 
 要添加新语言，需要添加语言文件（例如 `static/fr.json`），并编辑
 `templates/index.html`（添加 `option value`
-和 loginTranslations）。并将“fr”添加到 app.py, 并添加“fr”到app.py
+和 loginTranslations）。并将 “fr” 添加到 app.py
 `for lang in ["en", "es", "fr"]:`
 
 ### Android 应用
 
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/android.jpg" width="50%" align="right"/>
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/android.jpg" width="30%" align="right"/>
 
 查看
 [Releases](https://github.com/davidchilin/werewolves_game/releases)，使用 GitHub

@@ -1,3 +1,4 @@
+//
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -12,9 +13,9 @@ android {
         applicationId = "io.github.davidchilin.werewolves_game"
         minSdk = 24
         targetSdk = 34
-        versionCode = 2
-        versionName = System.getenv("VERSION_NAME") ?: "2"
-        resConfigs("en", "es", "de")
+        versionCode = 3
+        versionName = System.getenv("VERSION_NAME") ?: "3"
+        resConfigs("en", "es", "de", "zh")
 
         ndk {
             // Python 3.8 supports ALL of these, so this will work on old and new phones

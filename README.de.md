@@ -33,7 +33,7 @@ von einem bis mehreren Geräten im **Pass-and-Play**-Modus.
 
 ## **Hauptfunktionen**
 
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/lobby.jpg" width="50%" align="right"/>
+<img src="fastlane/metadata/android/de/images/phoneScreenshots/lobby.de.png" width="50%" align="right"/>
 
 - **📱 Pass-and-Play-Modus:** Spielen Sie mit einem einzigen Telefon (oder
   mehreren), das im Raum herumgereicht wird. Die Benutzeroberfläche leitet die
@@ -86,7 +86,7 @@ von einem bis mehreren Geräten im **Pass-and-Play**-Modus.
 
 ## **Spielphasen**
 
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/game_over.png" width="50%" align="right"/>
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/game_over.de.png" width="50%" align="right"/>
 
 - **Nachtphase:**
 
@@ -184,7 +184,7 @@ Das Spiel unterstützt jetzt **24 einzigartige Rollen**:
 - **Honigtopf (Honeypot):** Wenn er getötet wird, stirbt der Mörder
   (Vergeltung).
 
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/game_screen.png" width="80%" align="center"/>
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/game_screen.de.png" width="80%" align="center"/>
 
 ## **Setup und Ausführung**
 
@@ -317,7 +317,7 @@ hinzufügen `for lang in ["en", "es", "de"]:`
 
 ### Android App
 
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/android.jpg" width="50%" align="right"/>
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/android.jpg" width="30%" align="right"/>
 
 Sehen Sie sich das unter
 [Releases](https://github.com/davidchilin/werewolves_game/releases) an. Stellen
