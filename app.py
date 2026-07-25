@@ -80,7 +80,7 @@ def flatten_dict(d, parent_key='', sep='.'):
 
 # Load and Flatten Translations immediately on startup
 TRANSLATIONS = {}
-for lang in ["en", "es", "de"]:
+for lang in ["en", "es", "de", "zh"]:
     # Create the full path: /.../app/src/main/python/static/en.json
     file_path = join(dirname(__file__), "static", f"{lang}.json")
     try:
