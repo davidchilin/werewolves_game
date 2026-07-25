@@ -1,0 +1,19 @@
+<p>werewolves_game apk führt eine werewolves_game-Website direkt auf deinem Gerät aus, mit der sich andere Spieler im selben WLAN-Netzwerk verbinden können (kein Internet erforderlich). Die Apk gibt dir die Webadresse (http, nicht https) an, unter der das Spiel läuft. Die erste Person, die dem Spiel beitritt, wird Administrator und steuert die Spieleinstellungen (welche Rollen enthalten sein sollen, Timer usw.).</p>
+
+<p>Das Beste von allem ist, dass die App das Spiel automatisiert, was bedeutet, dass kein menschlicher Erzähler erforderlich ist. Jeder kann mitspielen!</p>
+
+<p><b>So wird installiert und gespielt:</b><br>
+Lade die Apk herunter; sie ist nur für arm64 v8a-Geräte bestimmt (siehe GitHub für Linux x86- und arm v7-Versionen). Die Apk wird dich fragen, ob du sicher bist, dass du sie installieren möchtest – wähle Ja (Spieleinformationen und der gesamte Quellcode befinden sich hier im Repository, und die Apk wird automatisch auf GitHub über github-actions erstellt). Wenn du die Apk zum ersten Mal ausführst, wirst du gefragt, ob sie im <i>Hintergrund</i> ausgeführt werden darf – wähle Ja (andernfalls antwortet der werewolves_game-Server nicht, wenn die App im Hintergrund läuft). Du kannst jeden beliebigen Port wählen, der Standardport ist 5000 (empfohlen wird &gt;= 5000). Die Apk gibt dir die Webadresse des Spiels und einen QR-Code an, zum Beispiel http://192.168.1.5:5000; gib diese Adresse in deinen Webbrowser ein oder kopiere sie hinein. Die erste Person, die dem Spiel beitritt, wird Administrator, das anfängliche Passwort lautet "w". Du benötigst mindestens 4 Spieler (7 oder mehr sind am besten), um "Spiel starten" zu aktivieren. Nach dem Start weist das Spiel geheim Rollen zu und wechselt automatisch zwischen den Phasen "Nacht" und "Tag", wobei die gesamte Logik für Todesfälle, Abstimmungen und Siegbedingungen für dich übernommen wird. Ich empfehle, die Timer beim ersten Mal zu deaktivieren und die Phasen vom Administrator manuell voranschalten zu lassen. Viel Spaß!</p>
+
+<p><b>Hauptmerkmale:</b></p>
+<ul>
+    <li><b>Automatisierte Spielschleife:</b> Der Server verwaltet alle Phasen, Nachtaktionen und Siegprüfungen (Sieg der Dorfbewohner, Sieg der Wölfe oder Einzelsiege).</li>
+    <li><b>📱 Pass-and-Play-Modus:</b> Du hast nur ein Gerät? Spielt, indem ihr ein einzelnes Telefon im Raum herumreicht – mit einer sicheren Benutzeroberfläche, die die Spieler anleitet, ihre Identität zu bestätigen, bevor sie ihre geheime Rolle sehen.</li>
+    <li><b>👻 Geist-Modus:</b> Halte ausgeschiedene Spieler am Spielgeschehen beteiligt! Geister haben eine kleine Chance, während der Beschuldigungs- und Lnych-Abstimmungsphasen teilzunehmen.</li>
+    <li><b>🎭 24 einzigartige Rollen:</b> Spiele mit komplexen Rollen wie dem Alpha-Werwolf, der Prostituierten, dem Anwalt und dem Serienmörder.</li>
+    <li><b>🏆 Einzelsieg-Bedingungen:</b> Neutrale Rollen wie das Monster, der Narr oder der Verrückte Dorfbewohner können das Spiel alleine gewinnen und traditionelle Teamloyalitäten ignorieren.</li>
+    <li><b>🌍 Mehrere Sprachen:</b> Spielt ein einzelnes Spiel mit einer Benutzeroberfläche, die gleichzeitig in mehrere Sprachen übersetzt wird.</li>
+    <li><b>Robuste Administrator-Steuerung:</b> Der Administrator der Lobby kann die Dauer der Timer anpassen, Spieler herausschmeißen und Spielregeln spontan ändern.</li>
+</ul>
+
+<p>Versammle deine Freunde, verbindet euch mit demselben WLAN und findet heraus, wer von euch ein Werwolf ist!</p>

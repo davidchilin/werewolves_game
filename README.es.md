@@ -285,8 +285,8 @@ Para ejecutar este proyecto localmente, sigue estos pasos:
 ### Agregar localización / Traducción de Idiomas
 
 Para agregar tu idioma debe agregar un archivo de idioma, por ejemplo
-static/de.json para Deutsch Y editar templates/index.html (agrege "option value"
-y loginTranslations)
+static/de.json para Aleman Y editar templates/index.html (agrege "option value"
+y loginTranslations) Y agregar "de" en app.py `for lang in ["en", "es", "de"]:`
 
 ### Android App
 

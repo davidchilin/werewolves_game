@@ -312,7 +312,8 @@ Um dieses Projekt lokal auszuführen, befolgen Sie diese Schritte:
 
 Um Ihre Sprache hinzuzufügen, müssen Sie eine Sprachdatei hinzufügen, zum
 Beispiel „static/de.json“ für Deutsch UND „templates/index.html“ bearbeiten
-(fügen Sie „option value“ und „loginTranslations“ hinzu).
+(fügen Sie „option value“ und „loginTranslations“ hinzu) UND "de" zu app.py
+hinzufügen `for lang in ["en", "es", "de"]:`
 
 ### Android App
 
