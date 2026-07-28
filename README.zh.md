@@ -1,8 +1,8 @@
-[🇺🇸 English](README.md) | [🇪🇸 Español](README.es.md) |
+[🇺🇸 English](README.md) | [🇬🇹 Español](README.es.md) |
 [🇩🇪 Deutsch](README.de.md)
 <a href="https://f-droid.org/packages/io.github.davidchilin.werewolves_game/"><img src="https://fdroid.gitlab.io/artwork/badge/get-it-on-en.svg" alt="Get it on F-Droid" align="right" height=80/></a>
 <a href="https://apt.izzysoft.de/fdroid/index/apk/io.github.davidchilin.werewolves_game?repo=main"><img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" align="right" height=80/></a>
-
+<a href="https://github.com/davidchilin/werewolves_game/releases"><img src="https://raw.githubusercontent.com/andOTP/andOTP/master/assets/badges/get-it-on-github.png" alt="Get it on GitHub" align="right" height="80"></a>
 ![](https://repository-images.githubusercontent.com/1001769057/79681f17-e6ca-4261-bbb5-22fa20221af8)
 
 一款自托管的多人社交推理游戏（只需一个人运行应用）。使用 Python
@@ -24,7 +24,7 @@
 
 ## **核心功能**
 
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/lobby.zh.png" width="25%" align="right"/>
+<img src="fastlane/metadata/android/zh/images/phoneScreenshots/lobby.zh.png" width="25%" align="right"/>
 
 - **📱 轮流玩模式：**
   使用一台手机（或多台）在房间里传递。界面会引导玩家确认身份后再显示私密角色界面。
@@ -60,7 +60,7 @@
 
 ## **游戏阶段**
 
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/game_over.zh.png" width="50%" align="right"/>
+<img src="fastlane/metadata/android/zh/images/phoneScreenshots/game_over.zh.png" width="50%" align="right"/>
 
 - **夜晚阶段：**
 
@@ -125,7 +125,7 @@
 - **怪物：** 免疫狼人攻击。如果与 1 只狼人单独存活则获胜。
 - **蜜罐：** 如果被杀，杀死蜜罐的人也会死（复仇）。
 
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/game_screen.zh.png" width="80%" align="center"/>
+<img src="fastlane/metadata/android/zh/images/phoneScreenshots/game_screen.zh.png" width="80%" align="center"/>
 
 ## **搭建与运行**
 
@@ -238,7 +238,7 @@
 要添加新语言，需要添加语言文件（例如 `static/fr.json`），并编辑
 `templates/index.html`（添加 `option value`
 和 loginTranslations）。并将 “fr” 添加到 app.py
-`for lang in ["en", "es", "fr"]:`
+`for lang in ["en", "es", "fr"]:` 。奖励：为 F-Droid 添加 fastlane 文档。
 
 ### Android 应用
 

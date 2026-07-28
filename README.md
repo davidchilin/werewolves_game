@@ -2,7 +2,7 @@
 [🇨🇳 中文](README.zh.md)
 <a href="https://f-droid.org/packages/io.github.davidchilin.werewolves_game/"><img src="https://fdroid.gitlab.io/artwork/badge/get-it-on-en.svg" alt="Get it on F-Droid" align="right" height=80/></a>
 <a href="https://apt.izzysoft.de/fdroid/index/apk/io.github.davidchilin.werewolves_game?repo=main"><img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" align="right" height=80/></a>
-
+<a href="https://github.com/davidchilin/werewolves_game/releases"><img src="https://raw.githubusercontent.com/andOTP/andOTP/master/assets/badges/get-it-on-github.png" alt="Get it on GitHub" align="right" height="80"></a>
 ![](https://repository-images.githubusercontent.com/1001769057/79681f17-e6ca-4261-bbb5-22fa20221af8)
 A self-hosted multiplayer social deduction game (only one person needs to run
 the app). Built with Python (Flask) and WebSockets, supporting 24 unique roles,
@@ -273,13 +273,14 @@ To run this project locally, follow these steps:
 
 ### Add Localization / Language Translation
 
-In order to add your language you must add a language file, for example
-static/de.json for Deutsch AND edit templates/index.html (add "option value" and
-loginTranslations) AND add "de" to app.py `for lang in ["en", "es", "de"]:`
+In order to add your language you must add/edit language files, for example
+static/de.json for Deutsch AND edit templates/index.html (add `option value` and
+`loginTranslations`) AND add "de" to app.py `for lang in ["en", "es", "de"]:`.
+Bonus: add fastlane documentation for F-Droid.
 
 ### Android App
 
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/android.jpg" width="50%" align="right"/>
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/android.jpg" width="30%" align="right"/>
 
 Check it out in
 [Releases](https://github.com/davidchilin/werewolves_game/releases), autobuild

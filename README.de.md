@@ -1,7 +1,7 @@
 [🇺🇸 English](README.md) | [🇬🇹 Español](README.es.md) | [🇨🇳 中文](README.zh.md)
 <a href="https://f-droid.org/packages/io.github.davidchilin.werewolves_game/"><img src="https://fdroid.gitlab.io/artwork/badge/get-it-on-en.svg" alt="Get it on F-Droid" align="right" height=80/></a>
 <a href="https://apt.izzysoft.de/fdroid/index/apk/io.github.davidchilin.werewolves_game?repo=main"><img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" align="right" height=80/></a>
-
+<a href="https://github.com/davidchilin/werewolves_game/releases"><img src="https://raw.githubusercontent.com/andOTP/andOTP/master/assets/badges/get-it-on-github.png" alt="Get it on GitHub" align="right" height="80"></a>
 ![](https://repository-images.githubusercontent.com/1001769057/79681f17-e6ca-4261-bbb5-22fa20221af8)
 Ein funktionsreiches, selbst gehostetes Echtzeit-Multiplayer-Spiel für soziale
 Deduktion. Entwickelt mit Python (Flask) und WebSockets, hat sich dieses Projekt
@@ -86,7 +86,7 @@ von einem bis mehreren Geräten im **Pass-and-Play**-Modus.
 
 ## **Spielphasen**
 
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/game_over.de.png" width="50%" align="right"/>
+<img src="fastlane/metadata/android/de/images/phoneScreenshots/game_over.de.png" width="50%" align="right"/>
 
 - **Nachtphase:**
 
@@ -184,7 +184,7 @@ Das Spiel unterstützt jetzt **24 einzigartige Rollen**:
 - **Honigtopf (Honeypot):** Wenn er getötet wird, stirbt der Mörder
   (Vergeltung).
 
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/game_screen.de.png" width="80%" align="center"/>
+<img src="fastlane/metadata/android/de/images/phoneScreenshots/game_screen.de.png" width="80%" align="center"/>
 
 ## **Setup und Ausführung**
 
@@ -313,7 +313,8 @@ Um dieses Projekt lokal auszuführen, befolgen Sie diese Schritte:
 Um Ihre Sprache hinzuzufügen, müssen Sie eine Sprachdatei hinzufügen, zum
 Beispiel „static/de.json“ für Deutsch UND „templates/index.html“ bearbeiten
 (fügen Sie „option value“ und „loginTranslations“ hinzu) UND "de" zu app.py
-hinzufügen `for lang in ["en", "es", "de"]:`
+hinzufügen `for lang in ["en", "es", "de"]:` Bonus: Fastlane-Dokumentation für
+F-Droid hinzufügen.
 
 ### Android App
 
