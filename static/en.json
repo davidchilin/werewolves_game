@@ -28,7 +28,8 @@
       "error_code_length": "Game code is too long.",
       "error_code_invalid": "Invalid game code.",
       "error_lobby_full": "Lobby is full.",
-      "error_name_taken": "Name is already taken."
+      "error_name_taken": "Name is already taken.",
+      "error_too_late": "Game is already in session."
     },
     "lobby": {
       "add_player_btn": "Add Player",

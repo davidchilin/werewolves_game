@@ -28,7 +28,8 @@
       "error_code_length": "Spielcode ist zu lang.",
       "error_code_invalid": "Ungültiger Spielcode.",
       "error_lobby_full": "Lobby ist voll.",
-      "error_name_taken": "Name ist bereits vergeben."
+      "error_name_taken": "Name ist bereits vergeben.",
+      "error_too_late": "Das Spiel läuft bereits."
     },
     "lobby": {
       "add_player_btn": "Spieler hinzufügen",

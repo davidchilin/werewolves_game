@@ -28,7 +28,8 @@
       "error_code_length": "游戏码太长。",
       "error_code_invalid": "无效的游戏码。",
       "error_lobby_full": "大厅已满。",
-      "error_name_taken": "该名字已被使用。"
+      "error_name_taken": "该名字已被使用。",
+      "error_too_late": "比赛已经开始。"
     },
     "lobby": {
       "add_player_btn": "添加玩家",

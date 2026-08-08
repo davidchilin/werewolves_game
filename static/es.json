@@ -28,7 +28,8 @@
       "error_code_length": "El código es demasiado largo.",
       "error_code_invalid": "Código de juego inválido.",
       "error_lobby_full": "La sala está llena.",
-      "error_name_taken": "El nombre ya está en uso."
+      "error_name_taken": "El nombre ya está en uso.",
+      "error_too_late": "El juengo ya comenzo."
     },
     "lobby": {
       "add_player_btn": "Agregar Jugador",

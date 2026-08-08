@@ -1,6 +1,6 @@
 """
 app.py
-Version: 5.2.6.1
+Version: 5.2.6.2
 """
 import json
 import logging
@@ -485,8 +485,8 @@ def index():
 
         raw_name = request.form.get("name", "").strip()
         name = html.escape(raw_name)
-
         code = request.form.get("game_code", "").strip().upper()
+
         if not name:
             return render_template("index.html", error=t_server("ui.login.error_name_required", lang))
         if len(name) > 20:
@@ -501,6 +501,8 @@ def index():
             return render_template("index.html", error=t_server("ui.login.error_code_invalid", lang))
         if len(game["players"]) >= 32:
              return render_template("index.html", error=t_server("ui.login.error_lobby_full", lang))
+        if game["game_state"] != PHASE_LOBBY:
+             return render_template("index.html", error=t_server("ui.login.error_too_late", lang))
 
         for p in game["players"].values():
             if p.name.lower() == name.lower():

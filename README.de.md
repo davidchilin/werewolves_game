@@ -1,7 +1,7 @@
 [🇺🇸 English](README.md) | [🇬🇹 Español](README.es.md) | [🇨🇳 中文](README.zh.md)
-<a href="https://f-droid.org/packages/io.github.davidchilin.werewolves_game/"><img src="https://fdroid.gitlab.io/artwork/badge/get-it-on-en.svg" alt="Get it on F-Droid" align="right" height=80/></a>
-<a href="https://apt.izzysoft.de/fdroid/index/apk/io.github.davidchilin.werewolves_game?repo=main"><img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" align="right" height=80/></a>
-<a href="https://github.com/davidchilin/werewolves_game/releases"><img src="https://raw.githubusercontent.com/andOTP/andOTP/master/assets/badges/get-it-on-github.png" alt="Get it on GitHub" align="right" height="80"></a>
+<a href="https://f-droid.org/packages/io.github.davidchilin.werewolves_game/"><img src="https://fdroid.gitlab.io/artwork/badge/get-it-on-en.svg" alt="Get it on F-Droid" align="right" height=60/></a>
+<a href="https://apt.izzysoft.de/fdroid/index/apk/io.github.davidchilin.werewolves_game?repo=main"><img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" align="right" height=60/></a>
+<a href="https://github.com/davidchilin/werewolves_game/releases"><img src="https://raw.githubusercontent.com/andOTP/andOTP/master/assets/badges/get-it-on-github.png" alt="Get it on GitHub" align="right" height=60></a>
 ![](https://repository-images.githubusercontent.com/1001769057/79681f17-e6ca-4261-bbb5-22fa20221af8)
 Ein funktionsreiches, selbst gehostetes Echtzeit-Multiplayer-Spiel für soziale
 Deduktion. Entwickelt mit Python (Flask) und WebSockets, hat sich dieses Projekt
@@ -299,6 +299,8 @@ Um dieses Projekt lokal auszuführen, befolgen Sie diese Schritte:
 
 ### Eigene Rollen hinzufügen
 
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/android.jpg" width="30%" align="right"/>
+
 1. roles.py: Erstellen Sie eine Klasse, die von Role erbt. Definieren Sie team,
    night_action, etc.
 2. app.py: Importieren Sie Ihre neue Rolle und fügen Sie sie zum AVAILABLE_ROLES
@@ -317,8 +319,6 @@ hinzufügen `for lang in ["en", "es", "de"]:` Bonus: Fastlane-Dokumentation für
 F-Droid hinzufügen.
 
 ### Android App
-
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/android.jpg" width="30%" align="right"/>
 
 Sehen Sie sich das unter
 [Releases](https://github.com/davidchilin/werewolves_game/releases) an. Stellen

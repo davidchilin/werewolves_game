@@ -1,8 +1,8 @@
 [🇺🇸 English](README.md) | [🇬🇹 Español](README.es.md) |
 [🇩🇪 Deutsch](README.de.md)
-<a href="https://f-droid.org/packages/io.github.davidchilin.werewolves_game/"><img src="https://fdroid.gitlab.io/artwork/badge/get-it-on-en.svg" alt="Get it on F-Droid" align="right" height=80/></a>
-<a href="https://apt.izzysoft.de/fdroid/index/apk/io.github.davidchilin.werewolves_game?repo=main"><img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" align="right" height=80/></a>
-<a href="https://github.com/davidchilin/werewolves_game/releases"><img src="https://raw.githubusercontent.com/andOTP/andOTP/master/assets/badges/get-it-on-github.png" alt="Get it on GitHub" align="right" height="80"></a>
+<a href="https://f-droid.org/packages/io.github.davidchilin.werewolves_game/"><img src="https://fdroid.gitlab.io/artwork/badge/get-it-on-en.svg" alt="Get it on F-Droid" align="right" height=60/></a>
+<a href="https://apt.izzysoft.de/fdroid/index/apk/io.github.davidchilin.werewolves_game?repo=main"><img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" align="right" height=60/></a>
+<a href="https://github.com/davidchilin/werewolves_game/releases"><img src="https://raw.githubusercontent.com/andOTP/andOTP/master/assets/badges/get-it-on-github.png" alt="Get it on GitHub" align="right" height=60></a>
 ![](https://repository-images.githubusercontent.com/1001769057/79681f17-e6ca-4261-bbb5-22fa20221af8)
 
 一款自托管的多人社交推理游戏（只需一个人运行应用）。使用 Python
@@ -228,6 +228,8 @@
 
 ### 添加自定义角色
 
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/android.jpg" width="30%" align="right"/>
+
 1. roles.py：创建继承自 Role 的类。定义 team、night_action 等。
 2. app.py：导入新角色并添加到 AVAILABLE_ROLES 字典。
 3. static/game.js：添加角色键（const）并更新 updateRoleTooltip 的颜色/图标。
@@ -241,8 +243,6 @@
 `for lang in ["en", "es", "fr"]:` 。奖励：为 F-Droid 添加 fastlane 文档。
 
 ### Android 应用
-
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/android.jpg" width="30%" align="right"/>
 
 查看
 [Releases](https://github.com/davidchilin/werewolves_game/releases)，使用 GitHub
