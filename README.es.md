@@ -44,8 +44,9 @@ lugar, O en persona usando uno o varios dispositivos en modo **Pasar-y-Jugar**.
 - **🏆 Victoria Solitario:** Roles neutrales como el **Monstruo**, **Loco** o
   **Cuidadano Demente** pueden ganar solos, ignorando las lealtades del equipo.
 
-- **Controles de Admin Robustos:** El primer jugador en unirse se convierte en
-  el administrador y tiene la capacidad de:
+- **Controles de Admin Robustos:** El primer jugador en unirse a la sala O
+  jugador que use el DEFAULT_ADMIN_CODE se convierte en el administrador y tiene
+  la capacidad de:
   - Excluir jugadores de la sala.
   - Iniciar el juego una vez que se hayan unido suficientes jugadores (mínimo
     4).
@@ -267,6 +268,8 @@ Para ejecutar este proyecto localmente, sigue estos pasos:
 
 - DEFAULT_CODE: Establece el código inicial, normalmente `W`, no distingue entre
   mayúsculas y minúsculas.
+- DEFAULT_ADMIN_CODE: Inicial game_admin_code, normalmente `BLM`, no distingue
+  entre mayúsculas y minúsculas.
 - DEFAULT_LANGUAGE: Configurar como "es" o "de" para cambiar el idioma en que
   empieza el servidor.
 - TIME_NIGHT / TIME_ACCUSATION: Cambiar las duraciones predeterminadas (en

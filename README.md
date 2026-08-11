@@ -44,8 +44,8 @@ _Jitsi Meet_ or Zoom), where the real-time discussion and deception take place
 - **🏆 Solo Win Conditions:** Neutral roles like the **Monster**, **Fool**, or
   **Demented Villager** can win alone, ignoring team allegiances.
 
-- **Robust Admin Controls:** The first player to join the game becomes admin and
-  has the ability to:
+- **Robust Admin Controls:** The admin is first player to join the lobby OR
+  player using the DEFAULT_ADMIN_CODE. Admin has the ability to:
   - Exclude players from the lobby
   - Start the game once enough players have joined (minimum of 4)
   - Set custom timer durations (in seconds) for the Night, Accusation, and Lynch
@@ -257,6 +257,7 @@ To run this project locally, follow these steps:
 ### Game Configuration (config.py)
 
 - DEFAULT_CODE: Set initial default game_code, normally `W`, case insensitive.
+- DEFAULT_ADMIN_CODE: Default game_admin_code, normally `BLM`, case insensitive.
 - DEFAULT_LANGUAGE: Set to "es" or "de" to change the server default.
 - TIME_NIGHT / TIME_ACCUSATION: Change default durations (seconds).
 - PAUSE_DURATION: Seconds to pause between phases (to read text).

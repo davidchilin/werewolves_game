@@ -50,8 +50,8 @@ von einem bis mehreren Geräten im **Pass-and-Play**-Modus.
   oder der **Demente Dorfbewohner** können alleine gewinnen und
   Teamzugehörigkeiten ignorieren.
 
-- **Robuste Admin-Kontrollen:** Der erste Spieler, der beitritt, wird
-  Administrator und hat die Fähigkeit:
+- **Robuste Admin-Kontrollen:** Der erste Spieler, der dem Lobby beitritt oder
+  DEFAULT_ADMIN_CODE verwendet, wird Administrator und hat die Fähigkeit:
   - Spieler aus der Lobby auszuschließen.
   - Das Spiel zu starten, sobald genügend Spieler beigetreten sind (mindestens
     4).
@@ -291,6 +291,8 @@ Um dieses Projekt lokal auszuführen, befolgen Sie diese Schritte:
 ### Spielkonfiguration (config.py)
 
 - DEFAULT_CODE: Setzt den anfängliche game_code, normalerweise `W`, case
+  insensitive.
+- DEFAULT_ADMIN_CODE: Default game_admin_code, normalerweise `BLM`, case
   insensitive.
 - DEFAULT_LANGUAGE: Auf "es" oder "de" setzen, um den Serverstandard zu ändern.
 - TIME_NIGHT / TIME_ACCUSATION: Standarddauer ändern (Sekunden).

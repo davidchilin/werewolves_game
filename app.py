@@ -150,6 +150,7 @@ socketio = SocketIO(
 game = {
     "admin_sid": None,
     "game_code": GAME_DEFAULTS["DEFAULT_CODE"],
+    "game_admin_code": GAME_DEFAULTS["DEFAULT_ADMIN_CODE"],
     "game_state": PHASE_LOBBY,
     "players": {},  # Dict[player_id(uuid), PlayerWrapper_Obj]
 }
@@ -497,7 +498,7 @@ def index():
             return render_template("index.html", error=t_server("ui.login.error_code_alnum", lang))
         if len(code) > 20:
             return render_template("index.html", error=t_server("ui.login.error_code_length", lang))
-        if code != game["game_code"]:
+        if code != game["game_code"] and code != game["game_admin_code"]:
             return render_template("index.html", error=t_server("ui.login.error_code_invalid", lang))
         if len(game["players"]) >= 32:
              return render_template("index.html", error=t_server("ui.login.error_lobby_full", lang))
@@ -510,6 +511,8 @@ def index():
 
         session["language"] = lang
         session["player_id"], session["name"] = str(uuid.uuid4()), name
+        if code == game["game_admin_code"]:
+            session["admin_code"] = True
         return redirect(url_for("lobby"))
     return render_template("index.html")
 
@@ -626,7 +629,7 @@ def handle_connect(auth=None):
         # OR if we are in Pass-and-Play mode, grant admin to the newly added player
         # so they can control the lobby from the single device
         is_pnp = lobby_state.get("settings", {}).get("mode") == "pass_and_play"
-        if not game["admin_sid"] or is_pnp:
+        if not game["admin_sid"] or is_pnp or session.get("admin_code"):
             new_player.is_admin = True
             game["admin_sid"] = request.sid
             log_and_emit(f"===> +++ New player Admin {new_player.name} added to game.")
