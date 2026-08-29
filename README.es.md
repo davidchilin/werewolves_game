@@ -262,7 +262,8 @@ Para ejecutar este proyecto localmente, sigue estos pasos:
     del juego establecida en `.env.werewolves CORS_ALLOWED_ORIGINS`.
     Normalmente: `http://127.0.0.1:5000`. Abre múltiples pestañas o navegadores
     para simular diferentes jugadores uniéndose al juego. El Código de Juego
-    Inicial es `W` y el primer jugador en unirse es el **Admin**.
+    Inicial es `W` y el primer jugador en unirse es el **Admin** o user Código
+    Inicial del Admin `BLM`.
 
 ### Configuración de Juego (config.py)
 

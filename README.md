@@ -252,7 +252,7 @@ To run this project locally, follow these steps:
     port set in `.env.werewolves CORS_ALLOWED_ORIGINS`. Defaults:
     `http://127.0.0.1:5000`. Open multiple tabs or browsers to simulate
     different players joining the game. Initial Game Code is `W` and first
-    player to join is **Admin**.
+    player to join is **Admin**, or Initial Admin Code is `BLM`.
 
 ### Game Configuration (config.py)
 

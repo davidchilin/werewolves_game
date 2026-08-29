@@ -1,1 +1,1 @@
-Multiplayer server for classic Mafia game Werewolves. Plays in browser on WiFi
+Multiplayer server for Mafia party game Werewolves. Plays in webbrowser on WiFi.
