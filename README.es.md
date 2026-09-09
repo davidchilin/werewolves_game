@@ -14,12 +14,12 @@ applicacion servidor para
 
 Este proyecto es una implementación web del clásico juego de fiesta
 _Werewolves_. Los jugadores (mínimo 4, idealmente +7) se unen en una sala usando
-el código de juego "w", se les asignan roles secretamente (Cuidadano, Lobo o
-Vidente, etc), y luego pasan por fases de "noche" y "día". Durante la noche, los
-lobos eligen secretamente a un jugador para eliminar, y el vidente puede
-investigar el rol de un jugador. Durante el día, los jugadores discuten y votan
-para linchar a alguien que sospechen de ser un lobo. El juego tiene
-interacciones complejas: amantes vinculados por Cupido, muertes en cadena
+el código de juego (normalmente "w"), se les asignan roles secretamente
+(Cuidadano, Lobo o Vidente, etc), y luego pasan por fases de "noche" y "día".
+Durante la noche, los lobos eligen secretamente a un jugador para eliminar, y el
+vidente puede investigar el rol de un jugador. Durante el día, los jugadores
+discuten y votan para linchar a alguien que sospechen de ser un lobo. El juego
+tiene interacciones complejas: amantes vinculados por Cupido, muertes en cadena
 (Mielera/Cazador), roles con victoria solitario (Asesino/Pendejo), y "Modo
 Fantasma" donde los jugadores muertos aún pueden influir en el resultado.
 

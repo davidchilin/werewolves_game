@@ -16,15 +16,16 @@ herunterladen für
 
 Dieses Projekt ist eine webbasierte Implementierung des klassischen Partyspiels
 Werwölfe (Die Werwölfe von Düsterwald). Spieler (mindestens 4, idealerweise 7+)
-treten einer Lobby mit einem einzigartigen Spielcode bei, erhalten geheim Rollen
-zugewiesen (Dorfbewohner, Wolf oder Seherin) und durchlaufen dann abwechselnd
-"Nacht"- und "Tag"-Phasen. Während der Nacht wählen die Wölfe heimlich einen
-Spieler aus, um ihn zu eliminieren, und die Seherin kann die Rolle eines
-Spielers untersuchen. Während des Tages diskutieren die Spieler und stimmen ab,
-um jemanden zu lynchen, den sie für einen Wolf halten. Das Spiel unterstützt
-komplexe Interaktionen: durch Amor verbundene Liebende, Kettenreaktions-Tode
-(Honigtopf/Jäger), Rollen mit Solo-Sieg (Serienmörder/Narr) und einen
-"Geistermodus", bei dem tote Spieler das Ergebnis noch beeinflussen können.
+treten einer Lobby mit einem einzigartigen Spielcode bei (Standard "w"),
+erhalten geheim Rollen zugewiesen (Dorfbewohner, Wolf oder Seherin) und
+durchlaufen dann abwechselnd "Nacht"- und "Tag"-Phasen. Während der Nacht wählen
+die Wölfe heimlich einen Spieler aus, um ihn zu eliminieren, und die Seherin
+kann die Rolle eines Spielers untersuchen. Während des Tages diskutieren die
+Spieler und stimmen ab, um jemanden zu lynchen, den sie für einen Wolf halten.
+Das Spiel unterstützt komplexe Interaktionen: durch Amor verbundene Liebende,
+Kettenreaktions-Tode (Honigtopf/Jäger), Rollen mit Solo-Sieg (Serienmörder/Narr)
+und einen "Geistermodus", bei dem tote Spieler das Ergebnis noch beeinflussen
+können.
 
 Das Spiel ist so konzipiert, dass es neben einem separaten Video- oder
 Sprachchat (wie _Jitsi Meet_ oder Zoom) gespielt wird, wo die

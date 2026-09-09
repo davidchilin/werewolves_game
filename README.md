@@ -16,13 +16,14 @@ for
 
 This application is a web-based implementation of the classic party game
 _Werewolves_. Players (minimum of 4, ideally +7) join a lobby using a unique
-game code "w", are secretly assigned roles (Villager, Wolf, Seer, ...), and then
-cycle through "night" and "day" phases. During the night, wolves secretly choose
-a player to eliminate, and the seer can investigate a player's role. During the
-day, players discuss and vote to lynch whoever they suspect is a wolf. The game
-supports complex interactions: linked lovers by Cupid, chain-reaction deaths
-(Honeypot/Hunter), solo-winning roles (Serial Killer/Fool), and "Ghost Mode"
-where dead players can still influence the game outcome.
+game code (default "w"), are secretly assigned roles (Villager, Wolf, Seer,
+...), and then cycle through "night" and "day" phases. During the night, wolves
+secretly choose a player to eliminate, and the seer can investigate a player's
+role. During the day, players discuss and vote to lynch whoever they suspect is
+a wolf. The game supports complex interactions: linked lovers by Cupid,
+chain-reaction deaths (Honeypot/Hunter), solo-winning roles (Serial
+Killer/Fool), and "Ghost Mode" where dead players can still influence the game
+outcome.
 
 The game is designed to be played alongside a separate video or voice chat (like
 _Jitsi Meet_ or Zoom), where the real-time discussion and deception take place
